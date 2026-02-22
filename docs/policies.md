@@ -62,6 +62,13 @@ This architecture ensures:
 - Separate factual premises from definitional or normative ones
 - Continue decomposition even for "obvious" claims—obviousness can hide complexity
 
+**Multiple arguments**:
+- A claim may have multiple distinct arguments—independent lines of reasoning bearing on its truth
+- Each argument groups its own subclaims; different arguments may share subclaims
+- When two people decompose a claim differently, create separate arguments rather than forcing a single decomposition
+- For simple claims with one natural decomposition, no explicit argument grouping is needed
+- When an argument's framework is itself disputed, include "this framework is valid" as a PRESUPPOSES subclaim within that argument
+
 ### Policy 3: Uniform Treatment Across Claim Types
 
 **Principle**: Factual, definitional, evaluative, causal, and normative claims are treated uniformly.
@@ -73,12 +80,13 @@ This architecture ensures:
 
 ### Policy 4: Liberal Creation, Rigorous Mapping
 
-**Principle**: When uncertain if two formulations are the same claim, create both and map the relationship.
+**Principle**: When uncertain if two formulations are the same claim, create both and map the relationship. The same applies to arguments.
 
 **Operational rules**:
 - Do not force false equivalence to minimize nodes
-- Two claims are identical iff their decomposition trees are identical
+- Two claims are identical iff they would decompose identically
 - Create explicit relationships (aliases, specifications, contradictions) between related claims
+- When two decompositions of a claim differ, represent them as separate arguments rather than choosing one
 
 ### Policy 5: Evidence Over Authority
 
@@ -204,13 +212,21 @@ This architecture ensures:
 
 **Constitution sections**: §1-4 (decomposition), §16-18 (canonical forms), §19-22 (operations)
 
-**Role**: Maintain a claim's canonical form, decomposition, and assessment.
+**Role**: Maintain a claim's canonical form, arguments, decomposition, and assessment.
 
 **Key policies**:
 - Keep canonical form explicit with all parameters specified (§16)
-- Propagate assessment changes from subclaims (§19, §22)
+- Manage the claim's arguments: create, name, and maintain distinct lines of reasoning (§2)
+- When notified of subclaim changes, exercise judgment about whether reassessment is warranted (§22)
+- Do not mechanically propagate status changes—assess materiality first
 - Link instances faithfully, noting ambiguity when present (§17)
 - Propose merges/splits when appropriate, logging all operations (§18)
+
+**Assessment guidance**:
+- Assessment is a holistic judgment across all arguments, not a mechanical aggregation
+- A claim with strong arguments for and strong arguments against is CONTESTED
+- A claim whose arguments all depend on verified subclaims with no credible challenges is VERIFIED
+- The admin determines the assessment status; no hard-coded rules override admin judgment
 
 ### Contribution Reviewer
 
