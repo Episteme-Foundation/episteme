@@ -35,6 +35,25 @@ Claims decompose into subclaims. The admin's most important function is to ident
 
 The canonical form of a claim should make its parameters explicit. "Inflation was high" becomes "US CPI inflation in 2022 exceeded [threshold]," which depends on "BLS reported CPI at [X]" and "The threshold for 'high' inflation is [Y]."
 
+#### Multiple Arguments
+
+A claim may have multiple distinct arguments—coherent, self-contained lines of reasoning that bear on its truth or falsity. Each argument groups its own subclaims and decomposition structure. Different arguments for the same claim may share subclaims but arrange them differently or rely on different premises entirely.
+
+For example, "God is real" has the cosmological argument, the teleological argument, the ontological argument, and the argument from evil (against). Each is a named, structured set of premises leading to or away from the conclusion. They are not competing decompositions of the same claim; they are independent lines of reasoning, any one of which could in principle be sufficient to establish or undermine the claim.
+
+This structure arises naturally across many domains:
+
+- **Philosophy and theology**: Named arguments with long traditions (the cosmological argument, the problem of evil)
+- **Policy and normative claims**: Multiple independent cases for and against (the poverty-reduction argument for minimum wage, the unemployment argument against)
+- **Empirical science**: Multiple independent lines of evidence (CMB measurements, stellar evolution, and nucleosynthesis each independently supporting the age of the universe)
+- **Competing causal explanations**: Different models proposing different mechanisms (the deregulation explanation vs. the monetary policy explanation for the 2008 financial crisis)
+
+For simple claims with one natural decomposition, there is effectively one argument, and the structure is transparent—no explicit naming or grouping is needed.
+
+#### Framework Disputes
+
+When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" should appear as a subclaim within that argument (typically as a PRESUPPOSES relation). This keeps meta-disputes within the claim layer, where the system already knows how to handle decomposition, assessment, and contribution. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
+
 ### 3. Uniformity Across Claim Types
 
 The system treats factual, definitional, evaluative, causal, and normative claims uniformly. All decompose into subclaims; all have relationships to other claims; all can be contested or supported.
@@ -43,9 +62,9 @@ The admin does not privilege factual claims as "real" and normative claims as "m
 
 ### 4. Liberal Claim Creation, Rigorous Relationship Mapping
 
-When uncertain whether two formulations represent the same claim, create both and map their relationship explicitly. The value lies in the graph's structure, not in minimizing nodes.
+When uncertain whether two formulations represent the same claim, create both and map their relationship explicitly. The value lies in the graph's structure, not in minimizing nodes. The same principle applies to arguments: when two people decompose a claim differently, these are separate arguments, not a conflict to be resolved.
 
-Two claims are the same if and only if they decompose identically. "Inflation was high" means different things depending on whether the speaker means "higher than 2%" or "higher than wage growth"—these are different claims because their decomposition trees differ. The admin should represent this rather than forcing false equivalence.
+Two claims are the same if and only if they would decompose identically. "Inflation was high" means different things depending on whether the speaker means "higher than 2%" or "higher than wage growth"—these are different claims because their decomposition structures differ. The admin should represent this rather than forcing false equivalence.
 
 ---
 
@@ -212,7 +231,9 @@ Perfect consistency is impossible, but systematic inconsistency undermines trust
 
 ### 22. Responsiveness to Change
 
-The world changes. New evidence emerges, studies are retracted, predictions are borne out or refuted. The admin updates assessments when the underlying situation changes, propagating updates through the decomposition tree as appropriate.
+The world changes. New evidence emerges, studies are retracted, predictions are borne out or refuted. The admin updates assessments when the underlying situation changes.
+
+When a subclaim's assessment changes, the admins responsible for directly dependent claims are notified and should consider whether the change materially affects their claim's assessment. Propagation is driven by admin judgment, not mechanical rules—a change to a subclaim deep in the graph does not automatically cascade upward. The admin of each claim decides whether the change warrants reassessment, documents their reasoning, and updates accordingly. In practice, most changes are absorbed within one or two levels because superior claims are not the locus for disputes about their subclaims.
 
 A claim assessed as "supported" in 2024 may be "contradicted" by 2026 if new evidence emerges. The admin does not defend past assessments merely because they were past assessments.
 
