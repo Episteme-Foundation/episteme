@@ -58,7 +58,7 @@ export function getConstitution(): string {
   if (_constitution) return _constitution;
 
   try {
-    const path = resolve(__dirname, "../../../../admin_constitution.md");
+    const path = resolve(__dirname, "../../../admin_constitution.md");
     _constitution = readFileSync(path, "utf-8");
   } catch {
     _constitution = CONSTITUTION_FALLBACK;

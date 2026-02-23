@@ -1,5 +1,7 @@
+import crypto from "crypto";
 import Fastify from "fastify";
 import { loadConfig } from "../config.js";
+import { registerSwagger } from "./plugins/swagger.js";
 import { registerCors } from "./plugins/cors.js";
 import { registerAuth } from "./plugins/auth.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
@@ -18,10 +20,16 @@ export async function buildApp() {
         config.env === "development"
           ? { target: "pino-pretty", options: { translateTime: "HH:MM:ss Z" } }
           : undefined,
+      redact:
+        config.env === "production"
+          ? ["req.headers.authorization", 'req.headers["x-api-key"]']
+          : undefined,
     },
+    genReqId: () => crypto.randomUUID(),
   });
 
-  // Plugins
+  // Plugins (swagger must be registered before routes)
+  await registerSwagger(app);
   await registerCors(app);
   await registerAuth(app);
   await registerErrorHandler(app);

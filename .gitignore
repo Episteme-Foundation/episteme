@@ -25,5 +25,10 @@ coverage/
 # Drizzle
 drizzle/meta/
 
+# CDK
+cdk.out/
+infra/dist/
+infra/node_modules/
+
 # Misc
 which

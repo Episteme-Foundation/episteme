@@ -2,9 +2,18 @@ import "dotenv/config";
 import { buildApp } from "./server/app.js";
 import { loadConfig } from "./config.js";
 import { closeDb } from "./db/client.js";
+import { runMigrations } from "./db/migrate.js";
 
 async function main() {
   const config = loadConfig();
+
+  // Run migrations at startup in production
+  if (config.env === "production") {
+    console.log("Running database migrations...");
+    await runMigrations(config.databaseUrl);
+    console.log("Migrations complete.");
+  }
+
   const app = await buildApp();
 
   // Graceful shutdown
