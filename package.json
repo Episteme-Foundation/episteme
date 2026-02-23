@@ -1,0 +1,41 @@
+{
+  "name": "episteme",
+  "version": "0.1.0",
+  "description": "Knowledge graph of claims with transparent provenance and validity assessment",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.11.0",
+    "@aws-sdk/client-sqs": "^3.500.0",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.5",
+    "dotenv": "^16.4.0",
+    "drizzle-orm": "^0.38.0",
+    "fastify": "^5.2.0",
+    "openai": "^4.80.0",
+    "pg": "^8.13.0",
+    "pino": "^9.6.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
