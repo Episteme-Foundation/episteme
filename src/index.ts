@@ -1,16 +1,21 @@
 import "dotenv/config";
+import { join } from "path";
+import { sql } from "drizzle-orm";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { buildApp } from "./server/app.js";
 import { loadConfig } from "./config.js";
-import { closeDb } from "./db/client.js";
-import { runMigrations } from "./db/migrate.js";
+import { getDb, closeDb } from "./db/client.js";
 
 async function main() {
   const config = loadConfig();
 
-  // Run migrations at startup in production
   if (config.env === "production") {
     console.log("Running database migrations...");
-    await runMigrations(config.databaseUrl);
+    const db = getDb();
+    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`);
+    await migrate(db, {
+      migrationsFolder: join(process.cwd(), "drizzle-migrations"),
+    });
     console.log("Migrations complete.");
   }
 

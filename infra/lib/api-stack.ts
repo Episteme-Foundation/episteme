@@ -52,7 +52,9 @@ export class ApiStack extends cdk.Stack {
     );
 
     const container = taskDef.addContainer("api", {
-      image: ecs.ContainerImage.fromAsset(".."),
+      image: ecs.ContainerImage.fromAsset("..", {
+        platform: cdk.aws_ecr_assets.Platform.LINUX_AMD64,
+      }),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: "episteme-api" }),
       environment: {
         ENVIRONMENT: "production",
