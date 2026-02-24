@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import { loadConfig } from "../../config.js";
+import { BedrockBudgetExceededError } from "../../llm/errors.js";
 
 export async function registerErrorHandler(
   app: FastifyInstance
@@ -19,6 +20,17 @@ export async function registerErrorHandler(
             path: i.path.join("."),
             message: i.message,
           })),
+          request_id: requestId,
+        },
+      });
+    }
+
+    if (error instanceof BedrockBudgetExceededError) {
+      app.log.warn({ err: error, requestId }, "LLM budget exceeded");
+      return reply.code(503).send({
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "LLM processing temporarily unavailable due to usage limits",
           request_id: requestId,
         },
       });

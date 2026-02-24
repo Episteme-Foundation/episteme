@@ -52,12 +52,5 @@ export class NetworkStack extends cdk.Stack {
       allowAllOutbound: false,
     });
     this.dbSg.addIngressRule(this.apiSg, ec2.Port.tcp(5432), "From API");
-
-    // Bedrock VPC endpoint for private access
-    this.vpc.addInterfaceEndpoint("BedrockEndpoint", {
-      service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME,
-      privateDnsEnabled: true,
-      securityGroups: [this.apiSg],
-    });
   }
 }

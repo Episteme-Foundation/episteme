@@ -36,4 +36,5 @@ new ApiStack(app, "EpistemeApi", {
   urlExtractionQueue: queues.urlExtractionQueue,
   claimPipelineQueue: queues.claimPipelineQueue,
   openaiApiKeySecret: secrets.openaiApiKeySecret,
+  anthropicApiKeySecret: secrets.anthropicApiKeySecret,
 });

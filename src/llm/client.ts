@@ -1,5 +1,4 @@
-import AnthropicBedrock from "@anthropic-ai/bedrock-sdk";
-import type Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 
 type MessageParam = Anthropic.MessageParam;
 type ContentBlock = Anthropic.ContentBlock;
@@ -8,6 +7,7 @@ type TextBlock = Anthropic.TextBlock;
 type Tool = Anthropic.Tool;
 type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 import { loadConfig } from "../config.js";
+import { checkBudget, recordUsage } from "./budget-tracker.js";
 
 export interface TokenUsage {
   inputTokens: number;
@@ -32,16 +32,16 @@ export interface ToolCompletionResult extends CompletionResult {
   rawContent: ContentBlock[];
 }
 
-let _client: AnthropicBedrock | null = null;
+let _client: Anthropic | null = null;
 
-function getBedrockClient(): AnthropicBedrock {
+function getClient(): Anthropic {
   if (_client) return _client;
   const config = loadConfig();
-  _client = new AnthropicBedrock({ awsRegion: config.awsRegion });
+  _client = new Anthropic({ apiKey: config.anthropicApiKey });
   return _client;
 }
 
-const DEFAULT_MODEL = "us.anthropic.claude-sonnet-4-20250514";
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export async function complete(options: {
   messages: MessageParam[];
@@ -51,7 +51,9 @@ export async function complete(options: {
   temperature?: number;
   tools?: Tool[];
 }): Promise<CompletionResult> {
-  const client = getBedrockClient();
+  checkBudget();
+
+  const client = getClient();
   const model = options.model ?? DEFAULT_MODEL;
 
   const response = await client.messages.create({
@@ -67,6 +69,8 @@ export async function complete(options: {
     inputTokens: response.usage.input_tokens,
     outputTokens: response.usage.output_tokens,
   };
+
+  recordUsage(usage.inputTokens, usage.outputTokens);
 
   let content = "";
   for (const block of response.content) {
@@ -86,7 +90,9 @@ export async function completeWithTools(options: {
   maxTokens?: number;
   temperature?: number;
 }): Promise<ToolCompletionResult> {
-  const client = getBedrockClient();
+  checkBudget();
+
+  const client = getClient();
   const model = options.model ?? DEFAULT_MODEL;
 
   const response = await client.messages.create({
@@ -102,6 +108,8 @@ export async function completeWithTools(options: {
     inputTokens: response.usage.input_tokens,
     outputTokens: response.usage.output_tokens,
   };
+
+  recordUsage(usage.inputTokens, usage.outputTokens);
 
   let textContent = "";
   const toolUses: ToolUse[] = [];

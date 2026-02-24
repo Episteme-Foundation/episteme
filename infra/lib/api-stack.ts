@@ -2,7 +2,6 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
@@ -17,6 +16,7 @@ export interface ApiStackProps extends cdk.StackProps {
   urlExtractionQueue: sqs.Queue;
   claimPipelineQueue: sqs.Queue;
   openaiApiKeySecret: secretsmanager.Secret;
+  anthropicApiKeySecret: secretsmanager.Secret;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -43,13 +43,7 @@ export class ApiStack extends cdk.Stack {
     props.claimPipelineQueue.grantConsumeMessages(taskDef.taskRole);
     props.dbSecret.grantRead(taskDef.taskRole);
     props.openaiApiKeySecret.grantRead(taskDef.taskRole);
-
-    taskDef.taskRole.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: ["bedrock:InvokeModel"],
-        resources: ["*"],
-      })
-    );
+    props.anthropicApiKeySecret.grantRead(taskDef.taskRole);
 
     const container = taskDef.addContainer("api", {
       image: ecs.ContainerImage.fromAsset("..", {
@@ -65,12 +59,17 @@ export class ApiStack extends cdk.Stack {
         DB_NAME: "episteme",
         SQS_URL_EXTRACTION_QUEUE: props.urlExtractionQueue.queueUrl,
         SQS_CLAIM_PIPELINE_QUEUE: props.claimPipelineQueue.queueUrl,
+        BEDROCK_HOURLY_CALL_LIMIT: "500",
+        BEDROCK_DAILY_CALL_LIMIT: "5000",
       },
       secrets: {
         DB_USERNAME: ecs.Secret.fromSecretsManager(props.dbSecret, "username"),
         DB_PASSWORD: ecs.Secret.fromSecretsManager(props.dbSecret, "password"),
         OPENAI_API_KEY: ecs.Secret.fromSecretsManager(
           props.openaiApiKeySecret
+        ),
+        ANTHROPIC_API_KEY: ecs.Secret.fromSecretsManager(
+          props.anthropicApiKeySecret
         ),
       },
     });
