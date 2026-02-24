@@ -81,6 +81,9 @@ export const treeNodeResponse: z.ZodType<TreeNode> = z.lazy(() =>
     confidence: z.number().nullable(),
     assessment_status: assessmentStatusEnum.nullable(),
     assessment_confidence: z.number().nullable(),
+    argument_id: uuidSchema.nullable(),
+    argument_name: z.string().nullable(),
+    argument_stance: stanceEnum.nullable(),
     children: z.array(treeNodeResponse),
   })
 );
@@ -96,6 +99,9 @@ export interface TreeNode {
   confidence: number | null;
   assessment_status: string | null;
   assessment_confidence: number | null;
+  argument_id: string | null;
+  argument_name: string | null;
+  argument_stance: string | null;
   children: TreeNode[];
 }
 

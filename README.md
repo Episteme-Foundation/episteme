@@ -62,7 +62,7 @@ This might sound impossibly ambitious, but several factors make it feasible:
 Given any claim, the system produces:
 
 - **Decomposition tree** — what subclaims this claim depends on
-- **Assessment status** — verified, contested, unsupported, or unknown
+- **Assessment status** — verified, supported, contested, unsupported, contradicted, or unknown
 - **Evidence links** — where each subclaim is supported or contradicted
 - **Discourse history** — all contributions, challenges, and resolutions
 - **Reasoning traces** — exactly why the system reached its conclusions
@@ -98,7 +98,7 @@ This is valuable whether the claim is "the Earth is 4.5 billion years old" (veri
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       STORAGE LAYER                              │
-│  Neo4j (Graph)  │  Pinecone (Vectors)  │  PostgreSQL (Documents)│
+│        PostgreSQL + pgvector (unified data + vector store)       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -129,13 +129,12 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 
 | Component | Technology |
 |-----------|------------|
-| Language | Python 3.12+ |
-| API | FastAPI |
-| Graph Database | Neo4j Aura |
-| Vector Database | Pinecone |
-| Document Store | PostgreSQL (AWS RDS) |
-| Task Queue | Celery + Redis |
-| LLM | Anthropic Claude |
+| Language | TypeScript (Node.js) |
+| API | Fastify |
+| Database | PostgreSQL + pgvector (Drizzle ORM) |
+| Queue | AWS SQS (in-memory for local dev) |
+| LLM | Anthropic Claude via AWS Bedrock |
+| Infrastructure | AWS CDK (ECS Fargate, RDS, SQS) |
 | Frontend | React + TypeScript |
 | Browser Extension | Plasmo |
 

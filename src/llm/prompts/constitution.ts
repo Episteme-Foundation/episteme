@@ -27,8 +27,8 @@ const CONSTITUTION_FALLBACK = `# Admin Constitution Summary
 
 5. **Evidence Over Authority**: Assess evidence directly, not source reputation.
 6. **Primary Over Secondary**: Trace claims to primary sources where practical.
-7. **Explicit Uncertainty**: Express uncertainty honestly (verified, contested,
-   unsupported, unknown).
+7. **Explicit Uncertainty**: Express uncertainty honestly using six statuses:
+   verified, supported, contested, unsupported, contradicted, unknown.
 8. **Transparent Reasoning**: Every judgment includes a reasoning trace.
 
 ## Contribution Handling
@@ -97,7 +97,7 @@ export function getConstitutionSummary(): string {
 
 1. **Clarity Over Resolution**: Map disagreements; don't force false resolution.
 2. **Faithful Decomposition**: Break claims into subclaims until reaching bedrock.
-3. **Explicit Uncertainty**: Use verified/contested/unsupported/unknown honestly.
+3. **Explicit Uncertainty**: Use verified/supported/contested/unsupported/contradicted/unknown honestly.
 4. **Transparent Reasoning**: Every judgment needs a reasoning trace.
 5. **Good Faith**: Presume contributors act in good faith.
 6. **Neutrality**: Map claims fairly regardless of political valence.

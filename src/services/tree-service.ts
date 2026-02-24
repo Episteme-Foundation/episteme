@@ -13,6 +13,9 @@ interface TreeRow {
   depth: number;
   assessment_status: string | null;
   assessment_confidence: number | null;
+  argument_id: string | null;
+  argument_name: string | null;
+  argument_stance: string | null;
 }
 
 /**
@@ -28,20 +31,24 @@ export async function getClaimTree(
     WITH RECURSIVE tree AS (
       SELECT c.id, c.text, c.claim_type, c.state,
         NULL::uuid AS parent_id, NULL::text AS relation_type,
-        NULL::text AS reasoning, NULL::real AS confidence, 0 AS depth
+        NULL::text AS reasoning, NULL::real AS confidence,
+        NULL::uuid AS argument_id, 0 AS depth
       FROM claims c WHERE c.id = $1
       UNION ALL
       SELECT child.id, child.text, child.claim_type, child.state,
         cr.parent_claim_id, cr.relation_type, cr.reasoning, cr.confidence,
-        tree.depth + 1
+        cr.argument_id, tree.depth + 1
       FROM tree
       JOIN claim_relationships cr ON cr.parent_claim_id = tree.id
       JOIN claims child ON child.id = cr.child_claim_id
       WHERE tree.depth < $2
     )
-    SELECT t.*, a.status AS assessment_status, a.confidence AS assessment_confidence
+    SELECT t.*,
+      a.status AS assessment_status, a.confidence AS assessment_confidence,
+      arg.name AS argument_name, arg.stance AS argument_stance
     FROM tree t
     LEFT JOIN assessments a ON a.claim_id = t.id AND a.is_current = true
+    LEFT JOIN arguments arg ON arg.id = t.argument_id
     `,
     [claimId, maxDepth]
   );
@@ -83,6 +90,9 @@ function assembleTree(rows: TreeRow[]): TreeNode {
         confidence: row.confidence,
         assessment_status: row.assessment_status,
         assessment_confidence: row.assessment_confidence,
+        argument_id: row.argument_id,
+        argument_name: row.argument_name,
+        argument_stance: row.argument_stance,
         children: [],
       });
     }
@@ -100,6 +110,9 @@ function assembleTree(rows: TreeRow[]): TreeNode {
           relation_type: row.relation_type,
           reasoning: row.reasoning,
           confidence: row.confidence,
+          argument_id: row.argument_id,
+          argument_name: row.argument_name,
+          argument_stance: row.argument_stance,
         };
         parent.children.push(childWithEdge);
       }

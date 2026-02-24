@@ -8,7 +8,7 @@ vi.mock("../../../../src/llm/client.js", () => ({
 import { computeFallbackAssessment } from "../../../../src/llm/agents/assessor.js";
 
 describe("assessor fallback", () => {
-  it("returns unsupported when required subclaim is unsupported", () => {
+  it("returns unsupported when a subclaim is unsupported", () => {
     const result = computeFallbackAssessment([
       { relation: "requires", status: "verified", confidence: 0.9 },
       { relation: "requires", status: "unsupported", confidence: 0.3 },
@@ -19,7 +19,7 @@ describe("assessor fallback", () => {
     expect(result.confidence).toBeCloseTo(0.3 * 0.9, 5);
   });
 
-  it("returns contested when required subclaim is contested", () => {
+  it("returns contested when a subclaim is contested", () => {
     const result = computeFallbackAssessment([
       { relation: "requires", status: "verified", confidence: 0.9 },
       { relation: "requires", status: "contested", confidence: 0.5 },
@@ -47,12 +47,40 @@ describe("assessor fallback", () => {
     expect(result.status).toBe("unknown");
   });
 
-  it("unsupported takes priority over contested", () => {
+  it("contested takes priority over unsupported", () => {
     const result = computeFallbackAssessment([
       { relation: "requires", status: "contested", confidence: 0.5 },
       { relation: "requires", status: "unsupported", confidence: 0.2 },
     ]);
 
-    expect(result.status).toBe("unsupported");
+    // Contested is more informative than unsupported -- genuine disagreement
+    // is a stronger signal than absence of evidence
+    expect(result.status).toBe("contested");
+  });
+
+  it("returns supported when mix of verified and supported subclaims", () => {
+    const result = computeFallbackAssessment([
+      { relation: "requires", status: "verified", confidence: 0.9 },
+      { relation: "supports", status: "supported", confidence: 0.7 },
+    ]);
+
+    expect(result.status).toBe("supported");
+  });
+
+  it("returns contested when any subclaim is contradicted", () => {
+    const result = computeFallbackAssessment([
+      { relation: "requires", status: "verified", confidence: 0.9 },
+      { relation: "contradicts", status: "contradicted", confidence: 0.8 },
+    ]);
+
+    // A contradicted subclaim means there's active evidence against,
+    // so the overall claim is at minimum contested
+    expect(result.status).toBe("contested");
+  });
+
+  it("returns unknown for empty subclaims", () => {
+    const result = computeFallbackAssessment([]);
+
+    expect(result.status).toBe("unknown");
   });
 });

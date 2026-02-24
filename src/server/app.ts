@@ -9,6 +9,8 @@ import { healthRoutes } from "../routes/health.js";
 import { claimRoutes } from "../routes/claims.js";
 import { sourceRoutes } from "../routes/sources.js";
 import { jobRoutes } from "../routes/jobs.js";
+import { contributionRoutes } from "../routes/contributions.js";
+import { appealRoutes } from "../routes/appeals.js";
 
 export async function buildApp() {
   const config = loadConfig();
@@ -39,6 +41,8 @@ export async function buildApp() {
   await app.register(claimRoutes, { prefix: "/claims" });
   await app.register(sourceRoutes, { prefix: "/sources" });
   await app.register(jobRoutes, { prefix: "/jobs" });
+  await app.register(contributionRoutes, { prefix: "/contributions" });
+  await app.register(appealRoutes, { prefix: "/appeals" });
 
   return app;
 }

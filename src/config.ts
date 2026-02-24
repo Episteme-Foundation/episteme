@@ -44,6 +44,26 @@ const configSchema = z.object({
   maxDecompositionDepth: z.coerce.number().default(5),
   matchingSimilarityThreshold: z.coerce.number().default(0.85),
   matchingTopK: z.coerce.number().default(20),
+
+  // Governance
+  governanceModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
+  arbitrationModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
+  enableContributions: z
+    .string()
+    .transform((s) => s === "true")
+    .default("false"),
+  enableMultiModelConsensus: z
+    .string()
+    .transform((s) => s === "true")
+    .default("false"),
+  escalationConfidenceThreshold: z.coerce.number().default(0.6),
+  auditSampleRate: z.coerce.number().default(0.05),
+
+  // SQS governance queues
+  sqsContributionQueue: z.string().default(""),
+  sqsArbitrationQueue: z.string().default(""),
+  sqsStewardQueue: z.string().default(""),
+  sqsAuditQueue: z.string().default(""),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -75,6 +95,16 @@ export function loadConfig(): Config {
     maxDecompositionDepth: process.env.MAX_DECOMPOSITION_DEPTH,
     matchingSimilarityThreshold: process.env.MATCHING_SIMILARITY_THRESHOLD,
     matchingTopK: process.env.MATCHING_TOP_K,
+    governanceModel: process.env.GOVERNANCE_MODEL,
+    arbitrationModel: process.env.ARBITRATION_MODEL,
+    enableContributions: process.env.ENABLE_CONTRIBUTIONS,
+    enableMultiModelConsensus: process.env.ENABLE_MULTI_MODEL_CONSENSUS,
+    escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
+    auditSampleRate: process.env.AUDIT_SAMPLE_RATE,
+    sqsContributionQueue: process.env.SQS_CONTRIBUTION_QUEUE,
+    sqsArbitrationQueue: process.env.SQS_ARBITRATION_QUEUE,
+    sqsStewardQueue: process.env.SQS_STEWARD_QUEUE,
+    sqsAuditQueue: process.env.SQS_AUDIT_QUEUE,
   });
 
   // If DATABASE_URL is the default and individual DB fields are set, construct URL

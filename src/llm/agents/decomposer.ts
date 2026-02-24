@@ -18,12 +18,20 @@ export interface SubClaimResult {
   existing_claim_id: string | null;
   is_atomic: boolean;
   atomic_type: string | null;
+  argument_name: string | null;
+}
+
+export interface ArgumentResult {
+  name: string;
+  stance: string;
+  description: string;
 }
 
 export interface DecompositionResult {
   is_atomic: boolean;
   atomic_type: string | null;
   subclaims: SubClaimResult[];
+  arguments: ArgumentResult[];
   reasoning_summary: string;
 }
 
@@ -44,8 +52,22 @@ const DECOMPOSITION_RESPONSE_SCHEMA = {
           existing_claim_id: { type: ["string", "null"], description: "UUID of matching existing claim" },
           is_atomic: { type: "boolean", description: "Whether this subclaim is atomic" },
           atomic_type: { type: ["string", "null"], description: "If atomic: bedrock_fact, contested_empirical, or value_premise" },
+          argument_name: { type: ["string", "null"], description: "Name of the argument this subclaim belongs to (if applicable)" },
         },
         required: ["text", "relation", "reasoning", "confidence"],
+      },
+    },
+    arguments: {
+      type: "array",
+      description: "Distinct arguments (lines of reasoning) identified",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Short descriptive name for this argument" },
+          stance: { type: "string", enum: ["for", "against", "neutral"], description: "Whether this argument supports, opposes, or is neutral" },
+          description: { type: "string", description: "Brief description of this line of reasoning" },
+        },
+        required: ["name", "stance", "description"],
       },
     },
     reasoning_summary: { type: "string", description: "Overall explanation of the decomposition" },
@@ -118,6 +140,7 @@ async function decomposeWithTools(
     is_atomic: false,
     atomic_type: null,
     subclaims: [],
+    arguments: [],
     reasoning_summary: result.content || "Decomposition completed without structured output",
   };
 }
