@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema.js";
@@ -13,6 +15,12 @@ function getPool(): pg.Pool {
     max: 20,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
+    ...(config.env === "production" && {
+      ssl: {
+        ca: readFileSync(join(process.cwd(), "rds-ca-bundle.pem"), "utf8"),
+        rejectUnauthorized: true,
+      },
+    }),
   });
   return _pool;
 }

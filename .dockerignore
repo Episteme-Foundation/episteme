@@ -13,5 +13,5 @@ infra
 cdk.out
 .github
 tests
-drizzle/meta
+drizzle
 .context

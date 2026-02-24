@@ -22,8 +22,8 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       try {
         await rawQuery("SELECT 1");
         dbStatus = "connected";
-      } catch {
-        // DB not reachable
+      } catch (err) {
+        app.log.error({ err }, "Health check DB connection failed");
       }
 
       return reply.send({
