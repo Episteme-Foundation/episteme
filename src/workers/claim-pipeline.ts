@@ -9,7 +9,8 @@ import { decomposeClaim } from "../llm/agents/decomposer.js";
 import { assessAtomicClaim, assessClaim } from "../llm/agents/assessor.js";
 import { generateEmbedding } from "../services/embedding-service.js";
 import { findSimilarClaims } from "../services/search-service.js";
-import { enqueueClaimPipeline } from "../services/queue-service.js";
+import { addArgument } from "../services/argument-service.js";
+import { enqueueClaimPipeline, enqueueSteward } from "../services/queue-service.js";
 import { loadConfig } from "../config.js";
 import type { ClaimPipelineMessage } from "../services/queue-service.js";
 
@@ -91,6 +92,22 @@ export async function handleClaimPipeline(
       return;
     }
 
+    // Create argument records for named arguments
+    const argumentIdMap = new Map<string, string>();
+    if (result.arguments && result.arguments.length > 0) {
+      for (const arg of result.arguments) {
+        const argument = await addArgument({
+          claimId: message.claimId,
+          stance: arg.stance as "for" | "against" | "neutral",
+          content: arg.description,
+          name: arg.name,
+          description: arg.description,
+          createdBy: "decomposer",
+        });
+        argumentIdMap.set(arg.name, argument.id);
+      }
+    }
+
     // Process subclaims
     let childrenTotal = 0;
 
@@ -134,6 +151,11 @@ export async function handleClaimPipeline(
         childClaimId = newClaim!.id;
       }
 
+      // Resolve argument ID from name
+      const argumentId = subclaim.argument_name
+        ? argumentIdMap.get(subclaim.argument_name) ?? null
+        : null;
+
       // Cycle detection
       if (message.ancestorIds.includes(childClaimId!)) {
         // Create relationship but don't enqueue (cycle)
@@ -142,7 +164,8 @@ export async function handleClaimPipeline(
           childClaimId!,
           subclaim.relation,
           subclaim.reasoning,
-          subclaim.confidence
+          subclaim.confidence,
+          argumentId
         );
         continue;
       }
@@ -153,7 +176,8 @@ export async function handleClaimPipeline(
         childClaimId!,
         subclaim.relation,
         subclaim.reasoning,
-        subclaim.confidence
+        subclaim.confidence,
+        argumentId
       );
 
       childrenTotal++;
@@ -199,7 +223,8 @@ async function createRelationship(
   childId: string,
   relationType: string,
   reasoning: string,
-  confidence: number
+  confidence: number,
+  argumentId?: string | null
 ): Promise<void> {
   const db = getDb();
   try {
@@ -209,6 +234,7 @@ async function createRelationship(
       relationType,
       reasoning,
       confidence,
+      argumentId: argumentId ?? null,
     });
   } catch {
     // Unique constraint violation - relationship already exists, ignore
@@ -334,6 +360,15 @@ async function checkParentCompletion(
         updated.claimType,
         false
       );
+
+      // Enqueue steward to evaluate whether the assessment change
+      // is material enough to propagate to dependents
+      await enqueueSteward({
+        claimId: updated.id,
+        trigger: "subclaim_change",
+        context: `All ${updated.childrenTotal} subclaims assessed. Parent claim reassessed.`,
+      });
+
       // Propagate upward
       await checkParentCompletion(updated.id, jobId);
     }

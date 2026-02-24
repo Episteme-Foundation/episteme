@@ -26,8 +26,10 @@ export const claimStateEnum = z.enum([
 
 export const assessmentStatusEnum = z.enum([
   "verified",
+  "supported",
   "contested",
   "unsupported",
+  "contradicted",
   "unknown",
 ]);
 
@@ -40,7 +42,31 @@ export const decompositionRelationEnum = z.enum([
   "presupposes",
 ]);
 
-export const stanceEnum = z.enum(["for", "against"]);
+export const stanceEnum = z.enum(["for", "against", "neutral"]);
+
+export const contributionTypeEnum = z.enum([
+  "challenge",
+  "support",
+  "propose_merge",
+  "propose_split",
+  "propose_edit",
+  "add_instance",
+  "propose_argument",
+]);
+
+export const reviewDecisionEnum = z.enum([
+  "accept",
+  "reject",
+  "escalate",
+]);
+
+export const arbitrationOutcomeEnum = z.enum([
+  "uphold_original",
+  "overturn",
+  "modify",
+  "mark_contested",
+  "human_review",
+]);
 
 export const informationDepthEnum = z.enum(["cursory", "standard", "deep"]);
 

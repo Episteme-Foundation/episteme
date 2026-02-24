@@ -177,6 +177,8 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
           const args = await getArgumentsForClaim(claim_id);
           response.arguments = args.map((a) => ({
             id: a.id,
+            name: a.name,
+            description: a.description,
             stance: a.stance,
             content: a.content,
             evidence_urls: a.evidenceUrls,

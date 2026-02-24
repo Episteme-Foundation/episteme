@@ -85,6 +85,9 @@ export const claimRelationships = pgTable(
       .notNull()
       .references(() => claims.id, { onDelete: "cascade" }),
     relationType: text("relation_type").notNull().default("requires"),
+    argumentId: uuid("argument_id").references(() => arguments_.id, {
+      onDelete: "set null",
+    }),
     reasoning: text("reasoning").notNull(),
     confidence: real("confidence").notNull().default(1.0),
     createdBy: text("created_by").notNull().default("decomposer"),
@@ -143,6 +146,8 @@ export const arguments_ = pgTable(
     claimId: uuid("claim_id")
       .notNull()
       .references(() => claims.id, { onDelete: "cascade" }),
+    name: text("name"),
+    description: text("description"),
     stance: text("stance").notNull(),
     content: text("content").notNull(),
     evidenceUrls: text("evidence_urls").array().notNull().default([]),
@@ -184,6 +189,7 @@ export const claimInstances = pgTable(
       .references(() => sources.id, { onDelete: "cascade" }),
     originalText: text("original_text").notNull(),
     context: text("context"),
+    summaryContext: text("summary_context"),
     confidence: real("confidence").notNull().default(1.0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -215,6 +221,131 @@ export const jobs = pgTable(
   (table) => [index("idx_jobs_status").on(table.status)]
 );
 
+// ---------------------------------------------------------------------------
+// contributors
+// ---------------------------------------------------------------------------
+export const contributors = pgTable("contributors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  externalId: text("external_id").unique(),
+  displayName: text("display_name").notNull(),
+  reputationScore: real("reputation_score").notNull().default(50),
+  contributionsAccepted: integer("contributions_accepted").notNull().default(0),
+  contributionsRejected: integer("contributions_rejected").notNull().default(0),
+  contributionsEscalated: integer("contributions_escalated")
+    .notNull()
+    .default(0),
+  isVerified: boolean("is_verified").notNull().default(false),
+  isSuspended: boolean("is_suspended").notNull().default(false),
+  suspensionReason: text("suspension_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// contributions
+// ---------------------------------------------------------------------------
+export const contributions = pgTable(
+  "contributions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    claimId: uuid("claim_id")
+      .notNull()
+      .references(() => claims.id, { onDelete: "cascade" }),
+    contributorId: uuid("contributor_id")
+      .notNull()
+      .references(() => contributors.id),
+    contributionType: text("contribution_type").notNull(),
+    content: text("content").notNull(),
+    evidenceUrls: text("evidence_urls").array().notNull().default([]),
+    submittedAt: timestamp("submitted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    reviewStatus: text("review_status").notNull().default("pending"),
+    mergeTargetClaimId: uuid("merge_target_claim_id").references(
+      () => claims.id
+    ),
+    proposedCanonicalForm: text("proposed_canonical_form"),
+  },
+  (table) => [
+    index("idx_contributions_claim").on(table.claimId),
+    index("idx_contributions_contributor").on(table.contributorId),
+    index("idx_contributions_status").on(table.reviewStatus),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// contribution_reviews
+// ---------------------------------------------------------------------------
+export const contributionReviews = pgTable("contribution_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contributionId: uuid("contribution_id")
+    .notNull()
+    .references(() => contributions.id, { onDelete: "cascade" }),
+  decision: text("decision").notNull(),
+  reasoning: text("reasoning").notNull(),
+  confidence: real("confidence").notNull(),
+  policyCitations: text("policy_citations").array().notNull().default([]),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  reviewedBy: text("reviewed_by").notNull().default("contribution_reviewer"),
+});
+
+// ---------------------------------------------------------------------------
+// appeals
+// ---------------------------------------------------------------------------
+export const appeals = pgTable(
+  "appeals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    contributionId: uuid("contribution_id")
+      .notNull()
+      .references(() => contributions.id, { onDelete: "cascade" }),
+    originalReviewId: uuid("original_review_id")
+      .notNull()
+      .references(() => contributionReviews.id),
+    appellantId: uuid("appellant_id")
+      .notNull()
+      .references(() => contributors.id),
+    appealReasoning: text("appeal_reasoning").notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    status: text("status").notNull().default("pending"),
+  },
+  (table) => [
+    index("idx_appeals_contribution").on(table.contributionId),
+    index("idx_appeals_status").on(table.status),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// arbitration_results
+// ---------------------------------------------------------------------------
+export const arbitrationResults = pgTable("arbitration_results", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contributionId: uuid("contribution_id")
+    .notNull()
+    .references(() => contributions.id, { onDelete: "cascade" }),
+  appealId: uuid("appeal_id").references(() => appeals.id),
+  outcome: text("outcome").notNull(),
+  decision: text("decision").notNull(),
+  reasoning: text("reasoning").notNull(),
+  consensusAchieved: boolean("consensus_achieved"),
+  modelVotes: jsonb("model_votes"),
+  humanReviewRecommended: boolean("human_review_recommended")
+    .notNull()
+    .default(false),
+  arbitratedAt: timestamp("arbitrated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  arbitratedBy: text("arbitrated_by").notNull().default("dispute_arbitrator"),
+});
+
 // Type exports
 export type Claim = typeof claims.$inferSelect;
 export type NewClaim = typeof claims.$inferInsert;
@@ -230,3 +361,13 @@ export type ClaimInstance = typeof claimInstances.$inferSelect;
 export type NewClaimInstance = typeof claimInstances.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
+export type Contributor = typeof contributors.$inferSelect;
+export type NewContributor = typeof contributors.$inferInsert;
+export type Contribution = typeof contributions.$inferSelect;
+export type NewContribution = typeof contributions.$inferInsert;
+export type ContributionReview = typeof contributionReviews.$inferSelect;
+export type NewContributionReview = typeof contributionReviews.$inferInsert;
+export type Appeal = typeof appeals.$inferSelect;
+export type NewAppeal = typeof appeals.$inferInsert;
+export type ArbitrationResult = typeof arbitrationResults.$inferSelect;
+export type NewArbitrationResult = typeof arbitrationResults.$inferInsert;

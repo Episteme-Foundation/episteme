@@ -61,6 +61,25 @@ subclaim matches an existing canonical form, reference that claim rather
 than creating a duplicate. This connects new claims to the existing
 knowledge structure.
 
+## Arguments (Lines of Reasoning)
+
+Claims are often supported or opposed by multiple independent lines of reasoning.
+Each line of reasoning is an **argument** -- a named grouping of subclaims that
+together make a coherent point for or against the parent claim.
+
+When decomposing, identify the distinct arguments and group subclaims accordingly:
+
+Example: "Remote work increases productivity"
+- Argument "Flexibility" (for): subclaims about schedule control, reduced commute
+- Argument "Communication overhead" (against): subclaims about coordination costs,
+  meeting fatigue
+- Argument "Measurement challenges" (neutral): subclaims about how productivity
+  is defined and measured
+
+Not every subclaim needs an argument. Definitional subclaims and presuppositions
+often stand alone. But when you can identify distinct lines of reasoning, group
+subclaims under named arguments.
+
 ## Output Format
 
 For each subclaim you identify, provide:
@@ -70,6 +89,12 @@ For each subclaim you identify, provide:
 4. **confidence**: Your confidence in this decomposition (0.0-1.0)
 5. **existing_claim_id**: ID of matching existing claim (if found)
 6. **is_atomic**: Whether this subclaim cannot be further decomposed
+7. **argument_name**: Name of the argument this subclaim belongs to (if applicable)
+
+Also provide a list of arguments identified, each with:
+1. **name**: Short descriptive name
+2. **stance**: "for", "against", or "neutral"
+3. **description**: Brief description of this line of reasoning
 
 ## Quality Standards
 
@@ -108,6 +133,10 @@ For each subclaim:
 - Explain why this is a valid decomposition
 - Note if it matches an existing claim in the graph
 - Indicate if it's atomic (cannot be further decomposed)
+- If it belongs to a distinct line of reasoning, specify the argument name
+
+Also identify distinct arguments (lines of reasoning) for and against the claim,
+and group subclaims under them where appropriate.
 
 Use the search tool to find existing claims that match your subclaims.
 `;

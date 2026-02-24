@@ -18,7 +18,11 @@ export interface AssessmentResult {
 const ASSESSMENT_RESPONSE_SCHEMA = {
   type: "object" as const,
   properties: {
-    status: { type: "string", description: "One of: verified, contested, unsupported, unknown" },
+    status: {
+      type: "string",
+      enum: ["verified", "supported", "contested", "unsupported", "contradicted", "unknown"],
+      description: "One of: verified, supported, contested, unsupported, contradicted, unknown",
+    },
     confidence: { type: "number", description: "Confidence in this assessment (0.0-1.0)" },
     reasoning_trace: { type: "string", description: "Detailed explanation of how this assessment was reached" },
     evidence_for: { type: "array", items: { type: "string" }, description: "UUIDs of claims supporting this claim" },
@@ -92,6 +96,10 @@ export async function assessAtomicClaim(input: {
 
 /**
  * Compute a heuristic fallback assessment when LLM is unavailable.
+ *
+ * This is a simplified heuristic -- the real assessment comes from the LLM.
+ * The fallback provides a reasonable default based on subclaim status counts
+ * and relationships, covering all 6 statuses.
  */
 export function computeFallbackAssessment(
   subclaims: Array<{
@@ -102,32 +110,46 @@ export function computeFallbackAssessment(
 ): AssessmentResult {
   const statusCounts: Record<string, number> = {
     verified: 0,
+    supported: 0,
     contested: 0,
     unsupported: 0,
+    contradicted: 0,
     unknown: 0,
   };
   let minConfidence = 1.0;
-  let hasRequiredUnsupported = false;
-  let hasRequiredContested = false;
+  let hasContradicted = false;
+  let hasContested = false;
+  let hasUnsupported = false;
+  let allVerifiedOrSupported = true;
 
   for (const sc of subclaims) {
     const status = sc.status.toLowerCase();
     statusCounts[status] = (statusCounts[status] ?? 0) + 1;
     minConfidence = Math.min(minConfidence, sc.confidence);
 
-    if (sc.relation.toLowerCase() === "requires") {
-      if (status === "unsupported") hasRequiredUnsupported = true;
-      if (status === "contested") hasRequiredContested = true;
+    if (status === "contradicted") hasContradicted = true;
+    if (status === "contested") hasContested = true;
+    if (status === "unsupported") hasUnsupported = true;
+    if (status !== "verified" && status !== "supported") {
+      allVerifiedOrSupported = false;
     }
   }
 
   let status: string;
-  if (hasRequiredUnsupported) {
-    status = "unsupported";
-  } else if (hasRequiredContested) {
+  if (subclaims.length === 0) {
+    status = "unknown";
+  } else if (hasContradicted) {
+    // If any subclaim is actively contradicted, this is at minimum contested
     status = "contested";
-  } else if (statusCounts.verified! > 0 && statusCounts.contested === 0) {
-    status = "verified";
+  } else if (hasContested) {
+    status = "contested";
+  } else if (hasUnsupported) {
+    status = "unsupported";
+  } else if (allVerifiedOrSupported) {
+    // If everything is verified or supported, lean toward supported
+    // (only LLM judgment can fully verify)
+    const allVerified = statusCounts.verified === subclaims.length;
+    status = allVerified ? "verified" : "supported";
   } else {
     status = "unknown";
   }
