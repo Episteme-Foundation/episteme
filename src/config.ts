@@ -48,6 +48,7 @@ const configSchema = z.object({
   // Governance
   governanceModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
   arbitrationModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
+  secondOpinionModel: z.string().default("us.anthropic.claude-haiku-4-5-20251001"),
   enableContributions: z
     .string()
     .transform((s) => s === "true")
@@ -97,6 +98,7 @@ export function loadConfig(): Config {
     matchingTopK: process.env.MATCHING_TOP_K,
     governanceModel: process.env.GOVERNANCE_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
+    secondOpinionModel: process.env.SECOND_OPINION_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
     enableMultiModelConsensus: process.env.ENABLE_MULTI_MODEL_CONSENSUS,
     escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
