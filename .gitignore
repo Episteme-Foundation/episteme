@@ -30,5 +30,8 @@ cdk.out/
 infra/dist/
 infra/node_modules/
 
+# Claude Code
+.claude/
+
 # Misc
 which
