@@ -1,3 +1,4 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import { completeStructured } from "../client.js";
 import {
   getAssessorSystemPrompt,
@@ -85,12 +86,19 @@ export async function assessAtomicClaim(input: {
     input.instances
   );
 
+  const webSearchTool: Anthropic.Messages.WebSearchTool20260209 = {
+    type: "web_search_20260209",
+    name: "web_search",
+    max_uses: 3,
+  };
+
   return completeStructured<AssessmentResult>({
     messages: [{ role: "user", content: userPrompt }],
     schema: ASSESSMENT_RESPONSE_SCHEMA,
     schemaName: "AssessmentResponse",
     system: getAssessorSystemPrompt(),
     model: input.model,
+    serverTools: [webSearchTool],
   });
 }
 
