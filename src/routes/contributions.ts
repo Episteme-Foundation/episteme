@@ -58,6 +58,18 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
             },
           },
         },
+        403: {
+          type: "object",
+          properties: {
+            error: {
+              type: "object",
+              properties: {
+                code: { type: "string" },
+                message: { type: "string" },
+              },
+            },
+          },
+        },
         404: {
           type: "object",
           properties: {
@@ -89,6 +101,16 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
         externalId: body.contributor_external_id,
         displayName: body.contributor_display_name,
       });
+
+      // Check if contributor is suspended
+      if (contributor.isSuspended) {
+        return reply.status(403).send({
+          error: {
+            code: "CONTRIBUTOR_SUSPENDED",
+            message: `Contributor is suspended: ${contributor.suspensionReason ?? "No reason provided"}`,
+          },
+        });
+      }
 
       // Create contribution
       const contribution = await createContribution({
