@@ -125,6 +125,8 @@ export const assessments = pgTable(
     reasoningTrace: text("reasoning_trace").notNull(),
     isCurrent: boolean("is_current").notNull().default(true),
     subclaimSummary: jsonb("subclaim_summary").notNull().default({}),
+    trigger: text("trigger"),
+    triggerContext: text("trigger_context"),
     assessedAt: timestamp("assessed_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -189,6 +189,7 @@ export async function executeStewardTool(
           confidence,
           reasoningTrace,
           isCurrent: true,
+          trigger: "steward_reassessment",
         });
 
         return JSON.stringify({

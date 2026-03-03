@@ -282,6 +282,8 @@ async function assessAndStore(
       confidence: result.confidence,
       reasoningTrace: result.reasoning_trace,
       subclaimSummary: result.subclaim_summary,
+      trigger: "pipeline_assessment",
+      triggerContext: isAtomic ? "atomic_claim_assessment" : "subclaim_aggregation",
     });
   } catch {
     // Assessment failed - claim will stay without assessment

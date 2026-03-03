@@ -137,6 +137,48 @@ export const claimDetailResponse = z.object({
     .optional(),
 });
 
+// ---- Assessment history / trajectory schemas ----
+
+export const assessmentHistoryParams = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  since: z.coerce.date().optional(),
+  until: z.coerce.date().optional(),
+});
+
+export const assessmentHistoryItem = z.object({
+  id: uuidSchema,
+  claim_id: uuidSchema,
+  status: assessmentStatusEnum,
+  confidence: z.number(),
+  reasoning_trace: z.string(),
+  is_current: z.boolean(),
+  subclaim_summary: z.record(z.unknown()),
+  trigger: z.string().nullable(),
+  trigger_context: z.string().nullable(),
+  assessed_at: z.string(),
+});
+
+export const assessmentHistoryResponse = z.object({
+  assessments: z.array(assessmentHistoryItem),
+  total: z.number(),
+});
+
+export const trajectoryPoint = z.object({
+  status: assessmentStatusEnum,
+  confidence: z.number(),
+  assessed_at: z.string(),
+  is_current: z.boolean(),
+  trigger: z.string().nullable(),
+});
+
+export const assessmentTrajectoryResponse = z.object({
+  current: trajectoryPoint.nullable(),
+  history: z.array(trajectoryPoint),
+  total_assessments: z.number(),
+  status_transitions: z.number(),
+});
+
 export const claimProposeResponse = z.object({
   claim: claimResponse,
   argument: z.object({
