@@ -6,6 +6,7 @@ type ContentBlock = Anthropic.ContentBlock;
 type ToolUseBlock = Anthropic.ToolUseBlock;
 type TextBlock = Anthropic.TextBlock;
 type Tool = Anthropic.Tool;
+type ToolUnion = Anthropic.Messages.ToolUnion;
 type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 import { loadConfig } from "../config.js";
 
@@ -49,7 +50,7 @@ export async function complete(options: {
   model?: string;
   maxTokens?: number;
   temperature?: number;
-  tools?: Tool[];
+  tools?: ToolUnion[];
 }): Promise<CompletionResult> {
   const client = getBedrockClient();
   const model = options.model ?? DEFAULT_MODEL;
@@ -80,7 +81,7 @@ export async function complete(options: {
 
 export async function completeWithTools(options: {
   messages: MessageParam[];
-  tools: Tool[];
+  tools: ToolUnion[];
   system?: string;
   model?: string;
   maxTokens?: number;
@@ -141,6 +142,7 @@ export async function completeStructured<T>(options: {
   model?: string;
   maxTokens?: number;
   temperature?: number;
+  serverTools?: ToolUnion[];
 }): Promise<T> {
   const tool: Tool = {
     name: "respond",
@@ -148,23 +150,28 @@ export async function completeStructured<T>(options: {
     input_schema: options.schema as Tool["input_schema"],
   };
 
+  const allTools: ToolUnion[] = [tool, ...(options.serverTools ?? [])];
+
   const enhancedSystem = (options.system ?? "") +
     "\n\nYou must use the 'respond' tool to provide your response. Do not respond with plain text.";
 
   const result = await completeWithTools({
     messages: options.messages,
-    tools: [tool],
+    tools: allTools,
     system: enhancedSystem,
     model: options.model,
     maxTokens: options.maxTokens,
     temperature: options.temperature,
   });
 
-  if (result.toolUses.length === 0) {
+  // Find the respond tool_use (skip server_tool_use blocks from web search etc.)
+  const respondToolUse = result.toolUses.find((tu) => tu.name === "respond");
+
+  if (!respondToolUse) {
     throw new Error("Model did not use the respond tool");
   }
 
-  return result.toolUses[0]!.input as T;
+  return respondToolUse.input as T;
 }
 
 /**
@@ -209,7 +216,7 @@ export async function completeStructuredList<T>(options: {
  */
 export async function toolUseLoop(options: {
   initialMessages: MessageParam[];
-  tools: Tool[];
+  tools: ToolUnion[];
   system?: string;
   model?: string;
   maxTokens?: number;

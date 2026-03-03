@@ -3,6 +3,8 @@ import { getDb } from "../db/client.js";
 import {
   claims,
   claimRelationships,
+  claimInstances,
+  sources,
   assessments,
 } from "../db/schema.js";
 import { decomposeClaim } from "../llm/agents/decomposer.js";
@@ -254,10 +256,29 @@ async function assessAndStore(
     let result;
 
     if (isAtomic) {
+      // Fetch instances for this claim
+      const claimInstanceRows = await db
+        .select({
+          source_title: sources.title,
+          source_type: sources.sourceType,
+          original_text: claimInstances.originalText,
+          confidence: claimInstances.confidence,
+        })
+        .from(claimInstances)
+        .innerJoin(sources, eq(claimInstances.sourceId, sources.id))
+        .where(eq(claimInstances.claimId, claimId))
+        .limit(10);
+
       result = await assessAtomicClaim({
         claimText,
         claimType,
         atomicType: atomicType ?? null,
+        instances: claimInstanceRows.map((r) => ({
+          source_title: r.source_title,
+          source_type: r.source_type,
+          original_text: r.original_text,
+          confidence: Number(r.confidence),
+        })),
       });
     } else {
       // Get subclaim assessments
