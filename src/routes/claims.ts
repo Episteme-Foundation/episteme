@@ -1,12 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import {
   assessments,
   claimInstances,
   sources,
 } from "../db/schema.js";
-import { claimSearchParams, claimGetParams, claimProposeBody, claimPatchBody } from "../schemas/claim.js";
+import { claimSearchParams, claimGetParams, claimProposeBody, claimPatchBody, assessmentHistoryParams } from "../schemas/claim.js";
+import { getAssessmentHistory, getAssessmentTrajectory } from "../services/assessment-service.js";
 import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount } from "../services/tree-service.js";
 import { getClaimById, proposeClaim } from "../services/claim-service.js";
@@ -153,7 +154,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
         const [assessment] = await db
           .select()
           .from(assessments)
-          .where(eq(assessments.claimId, claim_id))
+          .where(and(eq(assessments.claimId, claim_id), eq(assessments.isCurrent, true)))
           .limit(1);
 
         const subclaimCount = await getSubclaimCount(claim_id);
@@ -263,6 +264,160 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
     },
   });
 
+  // GET /claims/:claim_id/assessments
+  app.get<{ Params: { claim_id: string }; Querystring: Record<string, string> }>(
+    "/:claim_id/assessments",
+    {
+      schema: {
+        tags: ["claims"],
+        summary: "Get paginated assessment history for a claim",
+        params: {
+          type: "object",
+          properties: {
+            claim_id: { type: "string", format: "uuid" },
+          },
+        },
+        querystring: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+            offset: { type: "integer", minimum: 0, default: 0 },
+            since: { type: "string", format: "date-time" },
+            until: { type: "string", format: "date-time" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              assessments: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", format: "uuid" },
+                    claim_id: { type: "string", format: "uuid" },
+                    status: { type: "string" },
+                    confidence: { type: "number" },
+                    reasoning_trace: { type: "string" },
+                    is_current: { type: "boolean" },
+                    subclaim_summary: { type: "object" },
+                    trigger: { type: "string", nullable: true },
+                    trigger_context: { type: "string", nullable: true },
+                    assessed_at: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+              total: { type: "integer" },
+            },
+          },
+          404: errorEnvelope,
+        },
+      },
+      handler: async (request, reply) => {
+        const { claim_id } = request.params;
+        const params = assessmentHistoryParams.parse(request.query);
+
+        const claim = await getClaimById(claim_id);
+        if (!claim) {
+          return reply.code(404).send({
+            error: {
+              code: "NOT_FOUND",
+              message: "Claim not found",
+              request_id: request.id,
+            },
+          });
+        }
+
+        const result = await getAssessmentHistory(claim_id, {
+          limit: params.limit,
+          offset: params.offset,
+          since: params.since,
+          until: params.until,
+        });
+
+        return reply.send({
+          assessments: result.assessments.map(formatAssessmentHistory),
+          total: result.total,
+        });
+      },
+    }
+  );
+
+  // GET /claims/:claim_id/assessments/trajectory
+  app.get<{ Params: { claim_id: string } }>(
+    "/:claim_id/assessments/trajectory",
+    {
+      schema: {
+        tags: ["claims"],
+        summary: "Get assessment trajectory summary for a claim",
+        params: {
+          type: "object",
+          properties: {
+            claim_id: { type: "string", format: "uuid" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              current: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  status: { type: "string" },
+                  confidence: { type: "number" },
+                  assessed_at: { type: "string", format: "date-time" },
+                  is_current: { type: "boolean" },
+                  trigger: { type: "string", nullable: true },
+                },
+              },
+              history: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string" },
+                    confidence: { type: "number" },
+                    assessed_at: { type: "string", format: "date-time" },
+                    is_current: { type: "boolean" },
+                    trigger: { type: "string", nullable: true },
+                  },
+                },
+              },
+              total_assessments: { type: "integer" },
+              status_transitions: { type: "integer" },
+            },
+          },
+          404: errorEnvelope,
+        },
+      },
+      handler: async (request, reply) => {
+        const { claim_id } = request.params;
+
+        const claim = await getClaimById(claim_id);
+        if (!claim) {
+          return reply.code(404).send({
+            error: {
+              code: "NOT_FOUND",
+              message: "Claim not found",
+              request_id: request.id,
+            },
+          });
+        }
+
+        const trajectory = await getAssessmentTrajectory(claim_id);
+
+        return reply.send({
+          current: trajectory.current ? formatTrajectoryPoint(trajectory.current) : null,
+          history: trajectory.history.map(formatTrajectoryPoint),
+          total_assessments: trajectory.totalAssessments,
+          status_transitions: trajectory.statusTransitions,
+        });
+      },
+    }
+  );
+
   // PATCH /claims/:claim_id
   app.patch<{ Params: { claim_id: string } }>("/:claim_id", {
     schema: {
@@ -369,5 +524,47 @@ function formatAssessment(a: { id: string; status: string; confidence: number; r
     reasoning_trace: a.reasoningTrace,
     subclaim_summary: a.subclaimSummary,
     assessed_at: a.assessedAt.toISOString(),
+  };
+}
+
+function formatAssessmentHistory(a: {
+  id: string;
+  claimId: string;
+  status: string;
+  confidence: number;
+  reasoningTrace: string;
+  isCurrent: boolean;
+  subclaimSummary: unknown;
+  trigger: string | null;
+  triggerContext: string | null;
+  assessedAt: Date;
+}) {
+  return {
+    id: a.id,
+    claim_id: a.claimId,
+    status: a.status,
+    confidence: a.confidence,
+    reasoning_trace: a.reasoningTrace,
+    is_current: a.isCurrent,
+    subclaim_summary: a.subclaimSummary,
+    trigger: a.trigger,
+    trigger_context: a.triggerContext,
+    assessed_at: a.assessedAt.toISOString(),
+  };
+}
+
+function formatTrajectoryPoint(p: {
+  status: string;
+  confidence: number;
+  assessedAt: Date;
+  isCurrent: boolean;
+  trigger: string | null;
+}) {
+  return {
+    status: p.status,
+    confidence: p.confidence,
+    assessed_at: p.assessedAt.toISOString(),
+    is_current: p.isCurrent,
+    trigger: p.trigger,
   };
 }
