@@ -42,7 +42,9 @@ Please:
 4. Evaluate decision quality, consistency, and process compliance.
 5. Use flag_issue for any problems found, with appropriate severity.
 6. Use recommend_re_review if a decision should be re-evaluated.
-7. Use adjust_contributor_reputation if patterns warrant reputation changes.`;
+7. Use adjust_contributor_reputation if patterns warrant reputation changes.
+8. Use suspend_contributor for serious or repeated violations that warrant blocking further submissions.
+9. Use unsuspend_contributor to restore access for contributors whose suspensions should be lifted.`;
 
   await toolUseLoop({
     initialMessages: [{ role: "user", content: userMessage }],

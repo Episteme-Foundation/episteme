@@ -105,6 +105,42 @@ export function getAuditToolDefinitions(): Tool[] {
         required: ["contributor_id", "delta", "reason"],
       },
     },
+    {
+      name: "suspend_contributor",
+      description:
+        "Suspend a contributor, preventing them from submitting new " +
+        "contributions or appeals",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          contributor_id: {
+            type: "string",
+            description: "The ID of the contributor to suspend",
+          },
+          reason: {
+            type: "string",
+            description: "Reason for suspension",
+          },
+        },
+        required: ["contributor_id", "reason"],
+      },
+    },
+    {
+      name: "unsuspend_contributor",
+      description:
+        "Unsuspend a contributor, restoring their ability to submit " +
+        "contributions and appeals",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          contributor_id: {
+            type: "string",
+            description: "The ID of the contributor to unsuspend",
+          },
+        },
+        required: ["contributor_id"],
+      },
+    },
   ];
 }
 
@@ -194,6 +230,37 @@ export async function executeAuditTool(
           success: true,
           message: `Reputation adjusted by ${delta > 0 ? "+" : ""}${delta} for contributor ${contributorId}. Reason: ${reason}`,
           new_score: updated?.reputationScore,
+        });
+      }
+
+      case "suspend_contributor": {
+        const contributorId = input.contributor_id as string;
+        const reason = input.reason as string;
+
+        const db = getDb();
+        await db
+          .update(contributors)
+          .set({ isSuspended: true, suspensionReason: reason })
+          .where(eq(contributors.id, contributorId));
+
+        return JSON.stringify({
+          success: true,
+          message: `Contributor ${contributorId} has been suspended. Reason: ${reason}`,
+        });
+      }
+
+      case "unsuspend_contributor": {
+        const contributorId = input.contributor_id as string;
+
+        const db = getDb();
+        await db
+          .update(contributors)
+          .set({ isSuspended: false, suspensionReason: null })
+          .where(eq(contributors.id, contributorId));
+
+        return JSON.stringify({
+          success: true,
+          message: `Contributor ${contributorId} has been unsuspended.`,
         });
       }
 
