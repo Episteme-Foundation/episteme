@@ -4,6 +4,7 @@ import {
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
 import { loadConfig } from "../config.js";
+import { LlmBudgetExceededError } from "../llm/errors.js";
 
 export type MessageHandler<T> = (message: T) => Promise<void>;
 
@@ -54,10 +55,18 @@ export function startPoller<T>(options: {
                 })
               );
             } catch (err) {
-              options.logger.error(
-                "Failed to process message",
-                err instanceof Error ? err.message : err
-              );
+              if (err instanceof LlmBudgetExceededError) {
+                options.logger.error(
+                  "Budget exceeded, pausing poller for 60s:",
+                  err.message
+                );
+                await new Promise((r) => setTimeout(r, 60_000));
+              } else {
+                options.logger.error(
+                  "Failed to process message",
+                  err instanceof Error ? err.message : err
+                );
+              }
               // Message will return to queue after visibility timeout
             }
           }

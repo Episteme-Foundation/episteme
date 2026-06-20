@@ -33,8 +33,15 @@ const configSchema = z.object({
   // OpenAI embeddings
   openaiApiKey: z.string().default(""),
 
-  // AWS Bedrock
+  // Anthropic API
+  anthropicApiKey: z.string().default(""),
   awsRegion: z.string().default("us-east-1"),
+
+  // Budget limits (0 = unlimited)
+  llmHourlyCallLimit: z.coerce.number().default(0),
+  llmDailyCallLimit: z.coerce.number().default(0),
+  llmHourlyTokenLimit: z.coerce.number().default(0),
+  llmDailyTokenLimit: z.coerce.number().default(0),
 
   // SQS queues
   sqsUrlExtractionQueue: z.string().default(""),
@@ -89,7 +96,12 @@ export function loadConfig(): Config {
     apiKeys: process.env.API_KEYS,
     corsOrigins: process.env.CORS_ORIGINS,
     openaiApiKey: process.env.OPENAI_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     awsRegion: process.env.AWS_REGION,
+    llmHourlyCallLimit: process.env.LLM_HOURLY_CALL_LIMIT,
+    llmDailyCallLimit: process.env.LLM_DAILY_CALL_LIMIT,
+    llmHourlyTokenLimit: process.env.LLM_HOURLY_TOKEN_LIMIT,
+    llmDailyTokenLimit: process.env.LLM_DAILY_TOKEN_LIMIT,
     sqsUrlExtractionQueue: process.env.SQS_URL_EXTRACTION_QUEUE,
     sqsClaimPipelineQueue: process.env.SQS_CLAIM_PIPELINE_QUEUE,
     maxDecompositionDepth: process.env.MAX_DECOMPOSITION_DEPTH,
