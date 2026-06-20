@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../../../src/config.js", () => {
   let _limits = {
-    bedrockHourlyCallLimit: 10,
-    bedrockDailyCallLimit: 100,
-    bedrockHourlyTokenLimit: 50000,
-    bedrockDailyTokenLimit: 500000,
+    llmHourlyCallLimit: 10,
+    llmDailyCallLimit: 100,
+    llmHourlyTokenLimit: 50000,
+    llmDailyTokenLimit: 500000,
   };
   return {
     loadConfig: vi.fn(() => _limits),
@@ -21,7 +21,7 @@ import {
   resetBudgetCounters,
   getBudgetStatus,
 } from "../../../src/llm/budget-tracker.js";
-import { BedrockBudgetExceededError } from "../../../src/llm/errors.js";
+import { LlmBudgetExceededError } from "../../../src/llm/errors.js";
 
 describe("BudgetTracker", () => {
   beforeEach(() => {
@@ -42,7 +42,7 @@ describe("BudgetTracker", () => {
       checkBudget();
       recordUsage(100, 200);
     }
-    expect(() => checkBudget()).toThrow(BedrockBudgetExceededError);
+    expect(() => checkBudget()).toThrow(LlmBudgetExceededError);
   });
 
   it("throws with correct metadata", () => {
@@ -54,8 +54,8 @@ describe("BudgetTracker", () => {
       checkBudget();
       expect.unreachable("should have thrown");
     } catch (err) {
-      expect(err).toBeInstanceOf(BedrockBudgetExceededError);
-      const e = err as BedrockBudgetExceededError;
+      expect(err).toBeInstanceOf(LlmBudgetExceededError);
+      const e = err as LlmBudgetExceededError;
       expect(e.limitType).toBe("hourly_call_count");
       expect(e.currentValue).toBe(10);
       expect(e.limitValue).toBe(10);
@@ -65,7 +65,7 @@ describe("BudgetTracker", () => {
   it("throws when hourly token limit is reached", () => {
     checkBudget();
     recordUsage(25000, 25000);
-    expect(() => checkBudget()).toThrow(BedrockBudgetExceededError);
+    expect(() => checkBudget()).toThrow(LlmBudgetExceededError);
   });
 
   it("tracks daily limits separately from hourly", () => {
@@ -88,10 +88,10 @@ describe("BudgetTracker", () => {
       __setLimits: (limits: Record<string, number>) => void;
     };
     __setLimits({
-      bedrockHourlyCallLimit: 0,
-      bedrockDailyCallLimit: 0,
-      bedrockHourlyTokenLimit: 0,
-      bedrockDailyTokenLimit: 0,
+      llmHourlyCallLimit: 0,
+      llmDailyCallLimit: 0,
+      llmHourlyTokenLimit: 0,
+      llmDailyTokenLimit: 0,
     });
 
     for (let i = 0; i < 1000; i++) {
@@ -102,10 +102,10 @@ describe("BudgetTracker", () => {
 
     // Restore
     __setLimits({
-      bedrockHourlyCallLimit: 10,
-      bedrockDailyCallLimit: 100,
-      bedrockHourlyTokenLimit: 50000,
-      bedrockDailyTokenLimit: 500000,
+      llmHourlyCallLimit: 10,
+      llmDailyCallLimit: 100,
+      llmHourlyTokenLimit: 50000,
+      llmDailyTokenLimit: 500000,
     });
   });
 
@@ -116,7 +116,7 @@ describe("BudgetTracker", () => {
       checkBudget();
       recordUsage(100, 200);
     }
-    expect(() => checkBudget()).toThrow(BedrockBudgetExceededError);
+    expect(() => checkBudget()).toThrow(LlmBudgetExceededError);
 
     // Advance past hour boundary
     vi.advanceTimersByTime(3_600_001);

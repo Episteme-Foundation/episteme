@@ -4,7 +4,7 @@ import {
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
 import { loadConfig } from "../config.js";
-import { BedrockBudgetExceededError } from "../llm/errors.js";
+import { LlmBudgetExceededError } from "../llm/errors.js";
 
 export type MessageHandler<T> = (message: T) => Promise<void>;
 
@@ -55,7 +55,7 @@ export function startPoller<T>(options: {
                 })
               );
             } catch (err) {
-              if (err instanceof BedrockBudgetExceededError) {
+              if (err instanceof LlmBudgetExceededError) {
                 options.logger.error(
                   "Budget exceeded, pausing poller for 60s:",
                   err.message

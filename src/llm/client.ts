@@ -41,6 +41,8 @@ function getClient(): Anthropic {
   return _client;
 }
 
+// Pinned to Claude Sonnet 4.6. Note: the prior Bedrock client used Sonnet 4
+// ("claude-sonnet-4-20250514"); this is a deliberate version bump.
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export async function complete(options: {

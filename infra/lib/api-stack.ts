@@ -59,8 +59,8 @@ export class ApiStack extends cdk.Stack {
         DB_NAME: "episteme",
         SQS_URL_EXTRACTION_QUEUE: props.urlExtractionQueue.queueUrl,
         SQS_CLAIM_PIPELINE_QUEUE: props.claimPipelineQueue.queueUrl,
-        BEDROCK_HOURLY_CALL_LIMIT: "500",
-        BEDROCK_DAILY_CALL_LIMIT: "5000",
+        LLM_HOURLY_CALL_LIMIT: "500",
+        LLM_DAILY_CALL_LIMIT: "5000",
       },
       secrets: {
         DB_USERNAME: ecs.Secret.fromSecretsManager(props.dbSecret, "username"),

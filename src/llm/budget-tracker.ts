@@ -1,5 +1,5 @@
 import { loadConfig } from "../config.js";
-import { BedrockBudgetExceededError } from "./errors.js";
+import { LlmBudgetExceededError } from "./errors.js";
 
 interface BudgetCounters {
   hourlyCallCount: number;
@@ -37,59 +37,59 @@ function rolloverIfNeeded(): void {
 }
 
 /**
- * Check limits before making a Bedrock call. Throws if any limit is exceeded.
+ * Check limits before making an LLM call. Throws if any limit is exceeded.
  */
 export function checkBudget(): void {
   rolloverIfNeeded();
   const config = loadConfig();
 
   if (
-    config.bedrockHourlyCallLimit > 0 &&
-    _counters.hourlyCallCount >= config.bedrockHourlyCallLimit
+    config.llmHourlyCallLimit > 0 &&
+    _counters.hourlyCallCount >= config.llmHourlyCallLimit
   ) {
-    throw new BedrockBudgetExceededError(
+    throw new LlmBudgetExceededError(
       "hourly_call_count",
       _counters.hourlyCallCount,
-      config.bedrockHourlyCallLimit
+      config.llmHourlyCallLimit
     );
   }
 
   if (
-    config.bedrockDailyCallLimit > 0 &&
-    _counters.dailyCallCount >= config.bedrockDailyCallLimit
+    config.llmDailyCallLimit > 0 &&
+    _counters.dailyCallCount >= config.llmDailyCallLimit
   ) {
-    throw new BedrockBudgetExceededError(
+    throw new LlmBudgetExceededError(
       "daily_call_count",
       _counters.dailyCallCount,
-      config.bedrockDailyCallLimit
+      config.llmDailyCallLimit
     );
   }
 
   if (
-    config.bedrockHourlyTokenLimit > 0 &&
-    _counters.hourlyTokenCount >= config.bedrockHourlyTokenLimit
+    config.llmHourlyTokenLimit > 0 &&
+    _counters.hourlyTokenCount >= config.llmHourlyTokenLimit
   ) {
-    throw new BedrockBudgetExceededError(
+    throw new LlmBudgetExceededError(
       "hourly_token_count",
       _counters.hourlyTokenCount,
-      config.bedrockHourlyTokenLimit
+      config.llmHourlyTokenLimit
     );
   }
 
   if (
-    config.bedrockDailyTokenLimit > 0 &&
-    _counters.dailyTokenCount >= config.bedrockDailyTokenLimit
+    config.llmDailyTokenLimit > 0 &&
+    _counters.dailyTokenCount >= config.llmDailyTokenLimit
   ) {
-    throw new BedrockBudgetExceededError(
+    throw new LlmBudgetExceededError(
       "daily_token_count",
       _counters.dailyTokenCount,
-      config.bedrockDailyTokenLimit
+      config.llmDailyTokenLimit
     );
   }
 }
 
 /**
- * Record usage after a successful Bedrock call.
+ * Record usage after a successful LLM call.
  */
 export function recordUsage(inputTokens: number, outputTokens: number): void {
   rolloverIfNeeded();

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import { loadConfig } from "../../config.js";
-import { BedrockBudgetExceededError } from "../../llm/errors.js";
+import { LlmBudgetExceededError } from "../../llm/errors.js";
 
 export async function registerErrorHandler(
   app: FastifyInstance
@@ -25,7 +25,7 @@ export async function registerErrorHandler(
       });
     }
 
-    if (error instanceof BedrockBudgetExceededError) {
+    if (error instanceof LlmBudgetExceededError) {
       app.log.warn({ err: error, requestId }, "LLM budget exceeded");
       return reply.code(503).send({
         error: {

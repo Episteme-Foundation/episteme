@@ -38,10 +38,10 @@ const configSchema = z.object({
   awsRegion: z.string().default("us-east-1"),
 
   // Budget limits (0 = unlimited)
-  bedrockHourlyCallLimit: z.coerce.number().default(0),
-  bedrockDailyCallLimit: z.coerce.number().default(0),
-  bedrockHourlyTokenLimit: z.coerce.number().default(0),
-  bedrockDailyTokenLimit: z.coerce.number().default(0),
+  llmHourlyCallLimit: z.coerce.number().default(0),
+  llmDailyCallLimit: z.coerce.number().default(0),
+  llmHourlyTokenLimit: z.coerce.number().default(0),
+  llmDailyTokenLimit: z.coerce.number().default(0),
 
   // SQS queues
   sqsUrlExtractionQueue: z.string().default(""),
@@ -98,10 +98,10 @@ export function loadConfig(): Config {
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     awsRegion: process.env.AWS_REGION,
-    bedrockHourlyCallLimit: process.env.BEDROCK_HOURLY_CALL_LIMIT,
-    bedrockDailyCallLimit: process.env.BEDROCK_DAILY_CALL_LIMIT,
-    bedrockHourlyTokenLimit: process.env.BEDROCK_HOURLY_TOKEN_LIMIT,
-    bedrockDailyTokenLimit: process.env.BEDROCK_DAILY_TOKEN_LIMIT,
+    llmHourlyCallLimit: process.env.LLM_HOURLY_CALL_LIMIT,
+    llmDailyCallLimit: process.env.LLM_DAILY_CALL_LIMIT,
+    llmHourlyTokenLimit: process.env.LLM_HOURLY_TOKEN_LIMIT,
+    llmDailyTokenLimit: process.env.LLM_DAILY_TOKEN_LIMIT,
     sqsUrlExtractionQueue: process.env.SQS_URL_EXTRACTION_QUEUE,
     sqsClaimPipelineQueue: process.env.SQS_CLAIM_PIPELINE_QUEUE,
     maxDecompositionDepth: process.env.MAX_DECOMPOSITION_DEPTH,
