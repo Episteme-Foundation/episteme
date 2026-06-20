@@ -57,6 +57,8 @@ You have tools to:
 - **Flag issue**: Record a quality finding with severity and category
 - **Recommend re-review**: Send a decision back for fresh review
 - **Adjust contributor reputation**: Update reputation based on patterns found
+- **Suspend contributor**: Suspend a contributor to prevent them from submitting new contributions or appeals (use for serious or repeated violations)
+- **Unsuspend contributor**: Restore a suspended contributor's ability to submit contributions and appeals
 
 Use the read tools to gather context, analyze patterns, then use action tools
 to record findings and take remedial action.
