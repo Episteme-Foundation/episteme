@@ -238,10 +238,18 @@ export async function executeAuditTool(
         const reason = input.reason as string;
 
         const db = getDb();
-        await db
+        const suspended = await db
           .update(contributors)
           .set({ isSuspended: true, suspensionReason: reason })
-          .where(eq(contributors.id, contributorId));
+          .where(eq(contributors.id, contributorId))
+          .returning({ id: contributors.id });
+
+        if (suspended.length === 0) {
+          return JSON.stringify({
+            success: false,
+            message: `Contributor ${contributorId} not found.`,
+          });
+        }
 
         return JSON.stringify({
           success: true,
@@ -253,10 +261,18 @@ export async function executeAuditTool(
         const contributorId = input.contributor_id as string;
 
         const db = getDb();
-        await db
+        const unsuspended = await db
           .update(contributors)
           .set({ isSuspended: false, suspensionReason: null })
-          .where(eq(contributors.id, contributorId));
+          .where(eq(contributors.id, contributorId))
+          .returning({ id: contributors.id });
+
+        if (unsuspended.length === 0) {
+          return JSON.stringify({
+            success: false,
+            message: `Contributor ${contributorId} not found.`,
+          });
+        }
 
         return JSON.stringify({
           success: true,

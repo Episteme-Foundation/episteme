@@ -104,7 +104,7 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
 
       // Check if contributor is suspended
       if (contributor.isSuspended) {
-        return reply.status(403).send({
+        return reply.code(403).send({
           error: {
             code: "CONTRIBUTOR_SUSPENDED",
             message: `Contributor is suspended: ${contributor.suspensionReason ?? "No reason provided"}`,
