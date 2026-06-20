@@ -14,7 +14,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "corpus:fetch": "tsx scripts/corpus/fetch.ts",
+    "corpus:reset": "tsx scripts/corpus/reset.ts",
+    "corpus:run": "tsx scripts/corpus/run.ts",
+    "corpus:report": "tsx scripts/corpus/report.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

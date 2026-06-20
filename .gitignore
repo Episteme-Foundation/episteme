@@ -33,5 +33,9 @@ infra/node_modules/
 # Claude Code
 .claude/
 
+# Corpus harness — run outputs and extraction cache (post markdown IS committed)
+runs/
+corpus/**/.cache/
+
 # Misc
 which
