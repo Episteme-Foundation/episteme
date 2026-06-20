@@ -9,8 +9,11 @@ below are the *known* things to look at; the most valuable observations will oft
 anticipated. Section H exists to capture those. When a new failure mode recurs, promote it into a named
 item here so the next reviewer looks for it.
 
-Scope: the **ingestion path** that a corpus run exercises — Extract → Match → Decompose → Assess. It does
-not cover contributions, arbitration, or stewardship (those aren't triggered by ingestion).
+Scope: a corpus run drives the agent organization to a stable state — Extract → Match → Decompose →
+Assess, plus the **stewardship propagation** those assessments trigger (section G). It does **not** yet
+exercise community **contributions, conflict review, escalation, or arbitration**: those are driven by
+contributions submitted through the API, which a corpus ingest does not generate. A separate contributions
+scenario is needed to test that half of the organization (see section G and the README).
 
 How to use it: read the run report top to bottom with these dimensions in mind. Each dimension gives the
 **standard** (with citations), the **failure modes** to watch for, and **where in the report** to look.
@@ -167,7 +170,42 @@ carries a substantive reasoning trace; assessment is holistic judgment, not mech
 
 ---
 
-## G. Cross-cutting properties
+## G. Stewardship & propagation — the organization settling
+
+**Standard.** Ingestion doesn't stop at the first assessment. When a parent claim is (re)assessed, the
+**Claim Steward** is invoked to decide — by judgment, not mechanical rule — whether the change is material
+enough to propagate to dependent claims, and to maintain canonical forms, arguments, and merge/split
+proposals. Propagation should be **self-limiting**: most changes absorb within one or two levels, because
+superior claims are not the locus for disputes about their subclaims. The run drains the steward queue (and
+anything it triggers) to quiescence; this dimension judges whether that settling behaves well.
+(Constitution §18, §19, §22; Policy: Claim Steward; architecture-plan §3.)
+
+**Failure modes.**
+- **Non-termination / runaway propagation** — stewardship keeps enqueuing more stewardship work and the
+  run hits the safety cap instead of reaching quiescence (the run log prints `CAPPED`). A sign propagation
+  isn't self-limiting.
+- **Infectious contestation** — a single contested subclaim deep in the graph propagates upward and flips
+  many ancestors to `contested`, exactly the failure architecture-plan §3 warns about. Watch the assessment
+  distribution before vs. after the steward pass.
+- **Inert steward** — the steward runs but never changes anything (no reassessments, no canonical-form
+  edits, no merge proposals) across the whole corpus, suggesting it's a no-op rather than exercising
+  judgment.
+- **Spurious merges/splits** — steward-proposed merges that collapse genuinely distinct claims, or splits
+  that fragment a good canonical claim (rubric C failure modes, but steward-initiated).
+- **Handler errors** — steward invocations erroring out (the run log reports `handler errors`); since the
+  pipeline swallows assessment errors, a steward that silently fails leaves propagation half-done.
+
+**Where to look.** The per-post `agents:` line in the run log (how much steward/arbitration/audit work
+fired, whether it `CAPPED`); the assessment-status distribution (section 7); claims whose assessment or
+canonical form changed after their instances were first created.
+
+> **Conflict, escalation, arbitration** are part of this organization but are **not exercised by ingestion**
+> — they require contributions submitted via the API. Until a contributions scenario exists, treat their
+> absence in a run as expected, not as a pass. The wiring also has a known gap: the **audit** agent is
+> defined and drained but nothing currently enqueues audit work (no `enqueueAudit` call site), so the audit
+> path never runs even in production. Flag in Field Notes if a run suggests otherwise.
+
+## H. Cross-cutting properties
 
 Applies to every stage above.
 
@@ -181,7 +219,7 @@ Applies to every stage above.
 
 ---
 
-## H. Field notes — emergent and unforeseen behaviors
+## I. Field notes — emergent and unforeseen behaviors
 
 **The point of this section.** The dimensions above are what we currently know to look for. The system will
 do things we didn't predict. When you see behavior that feels wrong — even if it maps to none of A–G, even if

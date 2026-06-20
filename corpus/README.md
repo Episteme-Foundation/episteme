@@ -1,9 +1,17 @@
 # Corpus test harness
 
-A small, pinned set of documents for testing and iterating on the ingestion
-pipeline (Extract → Match → Decompose → Assess), with a focus on whether
-disambiguation, canonicalization, and related-claim handling hold up as more
-overlapping claims are ingested.
+A small, pinned set of documents for testing and iterating on the claim agent
+organization. A run drives the whole pipeline to a stable state — Extract →
+Match → Decompose → Assess, plus the **stewardship propagation** those
+assessments trigger — so you can see whether the agents fit together and settle
+correctly as more overlapping claims are ingested. The focus is disambiguation,
+canonicalization, related-claim handling, and propagation behavior.
+
+**Not yet exercised:** community contributions, conflict review, escalation, and
+arbitration. Those are driven by contributions submitted through the API, which a
+corpus ingest doesn't generate — testing them needs a separate contributions
+scenario (a planned follow-up). The harness drains those queues too, so they'll
+run as soon as something enqueues them.
 
 It runs against an **isolated database** (`episteme_corpus` by default), never
 the main graph, so you can wipe and re-run freely.
@@ -61,7 +69,8 @@ dump for deeper digging.
 ## Cost & nondeterminism
 
 - The full cluster is a real LLM workload (extraction over ~85k words, then
-  recursive decomposition and assessment, some with web search). Start with
+  recursive decomposition, assessment with web search, and a stewardship pass —
+  each steward invocation is itself a multi-tool agent call). Start with
   `--limit=2` while iterating on prompts; run the full set less often.
 - LLM output is nondeterministic. Treat a single run as one sample: run 2–3×
   and watch whether the metrics and failure modes are **stable**, not whether
@@ -70,8 +79,17 @@ dump for deeper digging.
 ## Notes for maintainers
 
 - Locally there is no SQS and nothing drains the in-memory queues, so the
-  harness calls the worker handlers directly (`driver.ts`) instead of going
-  through `POST /sources`.
+  harness calls the worker handlers directly. `driver.ts`'s `drainAll()` runs
+  every local queue (claim-pipeline, steward, contribution, arbitration, audit)
+  to quiescence, dispatching each message to its handler — so the full agent
+  organization settles, not just ingestion. It has a safety cap to bound runaway
+  propagation; the run log prints `CAPPED` if it's hit.
+- The deeper fix this works around: `src/` has no local in-memory queue consumer
+  (`poller.ts` is SQS-only, started only when `SQS_*` env is set). A shared
+  local-queue runner in `src/` would let both a future `npm run dev` worker and
+  this harness exercise the same drain path.
+- `enqueueAudit` has no call site anywhere, so the audit agent never runs even in
+  production — the harness drains the audit queue but it stays empty.
 - The matcher retrieves candidates at cosine 0.8 (top-level, in
   `url-extraction.ts`) while subclaim matching uses
   `MATCHING_SIMILARITY_THRESHOLD` (0.85) with no LLM. These thresholds are the

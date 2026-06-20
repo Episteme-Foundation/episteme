@@ -33,8 +33,17 @@ import { sources } from "../../src/db/schema.js";
 import { createJob, getJobById } from "../../src/services/job-service.js";
 import { handleUrlExtraction } from "../../src/workers/url-extraction.js";
 import { resetCorpusDb } from "./reset.js";
-import { drainClaimPipeline } from "./driver.js";
+import { drainAll, type DrainStats } from "./driver.js";
 import { generateReport } from "./report.js";
+
+function formatActivity(stats: DrainStats): string {
+  const acts = Object.entries(stats.processed).map(([q, n]) => `${q} ${n}`);
+  const errs = Object.values(stats.errors).reduce((a, b) => a + b, 0);
+  let s = acts.join(", ") || "no follow-up work";
+  if (errs) s += `, ${errs} handler errors`;
+  if (stats.capped) s += " (CAPPED — did not reach quiescence)";
+  return s;
+}
 
 function selectPosts(all: ManifestPost[]): ManifestPost[] {
   const only = argFlag("posts")
@@ -117,14 +126,17 @@ async function main(): Promise<void> {
       const job = await createJob("url_extraction", { sourceId: src!.id, url });
 
       await handleUrlExtraction({ sourceId: src!.id, jobId: job.id, url });
-      const steps = await drainClaimPipeline();
+      // Run the whole organization to a stable state: decomposition, assessment,
+      // stewardship propagation, and any conflict/escalation/arbitration work
+      // those agents trigger.
+      const stats = await drainAll();
       const finished = await getJobById(job.id);
       const r = (finished?.result ?? {}) as Record<string, number>;
       const secs = ((Date.now() - started) / 1000).toFixed(0);
       console.log(
         ` ✓ ${r.claims_extracted ?? "?"} extracted, ` +
-          `${r.claims_created ?? "?"} new / ${r.claims_matched ?? "?"} matched, ` +
-          `${steps} decomp steps (${secs}s)`
+          `${r.claims_created ?? "?"} new / ${r.claims_matched ?? "?"} matched ` +
+          `(${secs}s)\n      agents: ${formatActivity(stats)}`
       );
       succeeded++;
     } catch (err) {
@@ -132,7 +144,7 @@ async function main(): Promise<void> {
       console.log(` ✗ ${msg}`);
       // Drain whatever this post already enqueued so partial work is processed
       // and attributed here, not orphaned or leaked into the next post.
-      await drainClaimPipeline().catch(() => {});
+      await drainAll().catch(() => {});
       if (/budget/i.test(msg)) {
         console.log("\nLLM budget exceeded — stopping early. Report will cover what was ingested.");
         break;

@@ -170,7 +170,7 @@ export async function generateReport(cluster: string): Promise<string> {
   w();
   w(`Read this alongside [\`corpus/RUBRIC.md\`](../../corpus/RUBRIC.md). Each section notes the`);
   w(`rubric dimension it serves. Nothing here is a verdict — it's organized raw material for`);
-  w(`your judgment. Log anything that looks wrong in the rubric's Field Notes (section H).`);
+  w(`your judgment. Log anything that looks wrong in the rubric's Field Notes (section I).`);
   w();
 
   w(`## 1. Counts — rubric A, C, E`);
@@ -316,7 +316,7 @@ export async function generateReport(cluster: string): Promise<string> {
 
   w(`## 9. Field notes`);
   w();
-  w(`Record anything that looks wrong — even if it fits none of A–G — in the Field Notes`);
+  w(`Record anything that looks wrong — even if it fits none of A–H — in the Field Notes`);
   w(`section of [\`corpus/RUBRIC.md\`](../../corpus/RUBRIC.md). When a behavior recurs across`);
   w(`runs, promote it to a named failure mode there.`);
   w();
