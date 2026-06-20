@@ -75,4 +75,6 @@ dump for deeper digging.
 - The matcher retrieves candidates at cosine 0.8 (top-level, in
   `url-extraction.ts`) while subclaim matching uses
   `MATCHING_SIMILARITY_THRESHOLD` (0.85) with no LLM. These thresholds are the
-  main disambiguation knobs — vary them via env between runs.
+  main disambiguation knobs. Note the asymmetry: only the subclaim threshold is
+  env-configurable (`MATCHING_SIMILARITY_THRESHOLD`); the top-level 0.8 is
+  hardcoded in `url-extraction.ts`, so changing it means editing that file.

@@ -11,7 +11,7 @@
 import "./lib.js"; // must be first: pins DATABASE_URL to the corpus DB
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { RUNS_ROOT } from "./lib.js";
+import { assertCorpusDb, RUNS_ROOT } from "./lib.js";
 import { closeDb, rawQuery } from "../../src/db/client.js";
 
 const NEAR_DUP_THRESHOLD = 0.9; // cosine ≥ this but unmerged ⇒ fragmentation candidate
@@ -27,6 +27,7 @@ function trunc(s: unknown, n: number): string {
 }
 
 export async function generateReport(cluster: string): Promise<string> {
+  assertCorpusDb(); // never report off (or connect to) the main graph
   const out: string[] = [];
   const w = (line = "") => out.push(line);
 

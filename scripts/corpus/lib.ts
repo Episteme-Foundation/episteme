@@ -10,6 +10,7 @@ import { config as loadDotenv } from "dotenv";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadConfig } from "../../src/config.js";
 
 loadDotenv(); // pull ANTHROPIC_API_KEY / OPENAI_API_KEY etc. from .env if present
 
@@ -29,6 +30,26 @@ if (process.env.ENVIRONMENT === "production") {
 // Belt-and-suspenders: make sure we never accidentally drain to real SQS.
 delete process.env.SQS_URL_EXTRACTION_QUEUE;
 delete process.env.SQS_CLAIM_PIPELINE_QUEUE;
+
+/**
+ * Fail loudly if the DB the app actually resolved is not the isolated corpus DB.
+ * This is the runtime backstop for the import-ordering contract above: if any
+ * src module ever causes loadConfig() to cache before DATABASE_URL was pinned,
+ * we abort here rather than silently writing to (or truncating) the main graph.
+ * Call this before any destructive or write operation.
+ */
+export function assertCorpusDb(): void {
+  const active = loadConfig().databaseUrl;
+  if (active !== CORPUS_DATABASE_URL) {
+    throw new Error(
+      `Active database (${active}) is not the corpus DB (${CORPUS_DATABASE_URL}). ` +
+        `Config was likely cached before lib.ts pinned DATABASE_URL — check import ordering.`
+    );
+  }
+  if (new URL(active).pathname.replace(/^\//, "") === "episteme") {
+    throw new Error("Refusing to operate on the main 'episteme' database.");
+  }
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(__dirname, "..", "..");
