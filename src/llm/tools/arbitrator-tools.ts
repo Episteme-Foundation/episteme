@@ -16,6 +16,7 @@ import {
 import { enqueueSteward } from "../../services/queue-service.js";
 import { complete } from "../client.js";
 import { loadConfig } from "../../config.js";
+import { getArbitrationPolicies } from "../prompts/policies.js";
 
 export function getArbitratorToolDefinitions(): Tool[] {
   return [
@@ -63,6 +64,12 @@ export function getArbitratorToolDefinitions(): Tool[] {
             type: "boolean",
             description: "Whether multi-model consensus was achieved (if used)",
           },
+          model_votes: {
+            type: "object",
+            description:
+              "Model vote records when multi-model consensus was used. " +
+              "Keys are model identifiers, values are objects with outcome, reasoning, and confidence.",
+          },
         },
         required: [
           "contribution_id",
@@ -99,21 +106,21 @@ export function getArbitratorToolDefinitions(): Tool[] {
     {
       name: "flag_for_human_review",
       description:
-        "Flag a claim or contribution for human review. Use when the " +
+        "Flag a specific contribution for human review. Use when the " +
         "situation is beyond what automated arbitration can handle.",
       input_schema: {
         type: "object" as const,
         properties: {
-          claim_id: {
+          contribution_id: {
             type: "string",
-            description: "The UUID of the claim to flag",
+            description: "The UUID of the contribution to flag for human review",
           },
           reason: {
             type: "string",
             description: "Why human review is needed",
           },
         },
-        required: ["claim_id", "reason"],
+        required: ["contribution_id", "reason"],
       },
     },
     {
@@ -152,17 +159,19 @@ export async function executeArbitratorTool(
         const consensusAchieved = input.consensus_achieved as boolean | undefined;
 
         const db = getDb();
+        const policyCitations = (input.policy_citations as string[] | undefined) ?? [];
+        const modelVotes = input.model_votes as Record<string, unknown> | undefined;
 
         await db.insert(arbitrationResults).values({
           contributionId,
           appealId: appealId ?? null,
           outcome,
           decision,
-          reasoning,
+          reasoning: policyCitations.length > 0
+            ? `${reasoning}\n\nPolicy citations: ${policyCitations.join(", ")}`
+            : reasoning,
           consensusAchieved: consensusAchieved ?? null,
-          modelVotes: input.policy_citations
-            ? { policy_citations: input.policy_citations }
-            : null,
+          modelVotes: modelVotes ?? null,
           humanReviewRecommended: outcome === "human_review",
           arbitratedBy: "dispute_arbitrator",
         });
@@ -216,19 +225,18 @@ export async function executeArbitratorTool(
       }
 
       case "flag_for_human_review": {
-        const claimId = input.claim_id as string;
+        const contributionId = input.contribution_id as string;
         const reason = input.reason as string;
 
-        // Mark the claim for human review
         const db = getDb();
         await db
           .update(contributions)
           .set({ reviewStatus: "human_review" })
-          .where(eq(contributions.claimId, claimId));
+          .where(eq(contributions.id, contributionId));
 
         return JSON.stringify({
           success: true,
-          message: `Claim ${claimId} flagged for human review: ${reason}`,
+          message: `Contribution ${contributionId} flagged for human review: ${reason}`,
         });
       }
 
@@ -243,7 +251,11 @@ export async function executeArbitratorTool(
           });
         }
 
-        // Call a second model with the same context but independently
+        // Use a distinct model for the second opinion to achieve genuine
+        // multi-model consensus. Falls back to arbitrationModel only if
+        // secondOpinionModel is not configured.
+        const secondModel = config.secondOpinionModel ?? config.arbitrationModel;
+
         const result = await complete({
           messages: [
             {
@@ -254,20 +266,21 @@ Do NOT try to guess what another reviewer might say -- reason independently.
 
 ${caseSummary}
 
-Provide:
-1. Your recommended outcome (uphold_original, overturn, modify, mark_contested, or human_review)
-2. Your reasoning
-3. Your confidence (0.0-1.0)`,
+Provide your response in the following format:
+OUTCOME: <one of: uphold_original, overturn, modify, mark_contested, human_review>
+CONFIDENCE: <a number between 0.0 and 1.0>
+REASONING: <your detailed reasoning>`,
             },
           ],
-          model: config.arbitrationModel,
+          system: getArbitrationPolicies(),
+          model: secondModel,
           maxTokens: 4096,
         });
 
         return JSON.stringify({
           success: true,
           second_opinion: result.content,
-          model_used: config.arbitrationModel,
+          model_used: secondModel,
         });
       }
 
