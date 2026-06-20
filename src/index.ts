@@ -6,6 +6,7 @@ import { buildApp } from "./server/app.js";
 import { loadConfig } from "./config.js";
 import { getDb, closeDb } from "./db/client.js";
 import { startPoller } from "./workers/poller.js";
+import { startLocalRunner } from "./workers/local-runner.js";
 import { handleClaimPipeline } from "./workers/claim-pipeline.js";
 import { handleUrlExtraction } from "./workers/url-extraction.js";
 import { handleContributionMessage } from "./workers/contribution-pipeline.js";
@@ -89,6 +90,19 @@ async function main() {
       handler: handleAuditMessage,
       logger,
     }));
+  }
+
+  // No SQS configured (local dev): drain the in-memory queues in-process so the
+  // system actually processes work without AWS.
+  const anySqsConfigured =
+    config.sqsUrlExtractionQueue ||
+    config.sqsClaimPipelineQueue ||
+    config.sqsContributionQueue ||
+    config.sqsArbitrationQueue ||
+    config.sqsStewardQueue ||
+    config.sqsAuditQueue;
+  if (!anySqsConfigured) {
+    pollers.push(startLocalRunner({ logger }));
   }
 
   // Graceful shutdown

@@ -27,6 +27,9 @@ process.env.DATABASE_URL = CORPUS_DATABASE_URL;
 if (process.env.ENVIRONMENT === "production") {
   process.env.ENVIRONMENT = "development";
 }
+// Keep the real app's request/worker logging quiet by default so the harness's
+// own structured output stays readable; override with LOG_LEVEL for debugging.
+process.env.LOG_LEVEL ??= "warn";
 // Belt-and-suspenders: make sure we never accidentally drain to real SQS.
 delete process.env.SQS_URL_EXTRACTION_QUEUE;
 delete process.env.SQS_CLAIM_PIPELINE_QUEUE;

@@ -1,8 +1,12 @@
 /**
  * "Hit run and see results" — the corpus harness entry point.
  *
- *   reset DB (unless --no-reset) -> for each post: insert source, extract,
- *   drain decomposition/assessment -> generate a report.
+ * This runs the REAL system against the isolated corpus DB: it builds the actual
+ * Fastify app and submits each post through the real `POST /sources` route
+ * (via in-process injection), then drains the in-memory queues with the same
+ * local runner the dev server uses. Inputs and processing are exactly what
+ * production does; only the database differs. A trace of every agent message is
+ * recorded so inter-agent behavior and propagation are observable.
  *
  * Usage:
  *   tsx scripts/corpus/run.ts [cluster] [flags]
@@ -17,8 +21,8 @@
  *   npm run corpus:run -- lethalities               # full cluster
  */
 import "./lib.js"; // must be first: pins DATABASE_URL to the corpus DB
-import { existsSync, readFileSync } from "node:fs";
-import { eq } from "drizzle-orm";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   argFlag,
   assertCorpusDb,
@@ -26,14 +30,15 @@ import {
   loadManifest,
   positional,
   postMarkdownPath,
+  RUNS_ROOT,
 } from "./lib.js";
 import type { ManifestPost } from "./lib.js";
-import { closeDb, getDb } from "../../src/db/client.js";
-import { sources } from "../../src/db/schema.js";
-import { createJob, getJobById } from "../../src/services/job-service.js";
-import { handleUrlExtraction } from "../../src/workers/url-extraction.js";
+import { closeDb } from "../../src/db/client.js";
+import { getJobById } from "../../src/services/job-service.js";
+import { buildApp } from "../../src/server/app.js";
+import { drainLocalQueues } from "../../src/workers/local-runner.js";
+import type { DrainStats, RunnerEvent } from "../../src/workers/local-runner.js";
 import { resetCorpusDb } from "./reset.js";
-import { drainAll, type DrainStats } from "./driver.js";
 import { generateReport } from "./report.js";
 
 function formatActivity(stats: DrainStats): string {
@@ -83,7 +88,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Backstop: make sure we resolved the isolated corpus DB, not the main graph,
+  // Backstop: confirm we resolved the isolated corpus DB, not the main graph,
   // before we reset or write anything.
   assertCorpusDb();
 
@@ -96,66 +101,77 @@ async function main(): Promise<void> {
     console.log("--no-reset: ingesting on top of the existing graph");
   }
 
-  const db = getDb();
+  const runDir = join(RUNS_ROOT, `${cluster}-${new Date().toISOString().replace(/[:.]/g, "-")}`);
+  mkdirSync(runDir, { recursive: true });
+  const trace: RunnerEvent[] = [];
+
+  // The actual production app, pointed at the corpus DB.
+  const app = await buildApp();
   let succeeded = 0;
 
-  for (const [i, p] of posts.entries()) {
-    const tag = `[${i + 1}/${posts.length}]`;
-    const mdPath = postMarkdownPath(cluster, p.id);
-    if (!existsSync(mdPath)) {
-      console.log(`  ${tag} ${p.id} — MISSING markdown; run \`npm run corpus:fetch\` first`);
-      continue;
-    }
-    const url = `https://www.lesswrong.com/posts/${p.id}/${p.slug}`;
-    process.stdout.write(`  ${tag} ${p.title.slice(0, 50).padEnd(50)} extract…`);
-    const started = Date.now();
-    try {
-      // Skip posts already ingested (relevant under --no-reset) — re-inserting
-      // would violate the sources.url unique constraint and re-create instances.
-      const [existing] = await db.select().from(sources).where(eq(sources.url, url)).limit(1);
-      if (existing) {
-        console.log(" already ingested — skipping (reset to re-run)");
+  try {
+    for (const [i, p] of posts.entries()) {
+      const tag = `[${i + 1}/${posts.length}]`;
+      const mdPath = postMarkdownPath(cluster, p.id);
+      if (!existsSync(mdPath)) {
+        console.log(`  ${tag} ${p.id} — MISSING markdown; run \`npm run corpus:fetch\` first`);
         continue;
       }
-
       const content = readFileSync(mdPath, "utf8");
-      const [src] = await db
-        .insert(sources)
-        .values({ url, title: p.title, rawContent: content, sourceType: "lesswrong_post" })
-        .returning();
-      const job = await createJob("url_extraction", { sourceId: src!.id, url });
+      const url = `https://www.lesswrong.com/posts/${p.id}/${p.slug}`;
 
-      await handleUrlExtraction({ sourceId: src!.id, jobId: job.id, url });
-      // Run the whole organization to a stable state: decomposition, assessment,
-      // stewardship propagation, and any conflict/escalation/arbitration work
-      // those agents trigger.
-      const stats = await drainAll();
-      const finished = await getJobById(job.id);
-      const r = (finished?.result ?? {}) as Record<string, number>;
-      const secs = ((Date.now() - started) / 1000).toFixed(0);
-      console.log(
-        ` ✓ ${r.claims_extracted ?? "?"} extracted, ` +
-          `${r.claims_created ?? "?"} new / ${r.claims_matched ?? "?"} matched ` +
-          `(${secs}s)\n      agents: ${formatActivity(stats)}`
-      );
-      succeeded++;
-    } catch (err) {
-      const msg = (err as Error).message;
-      console.log(` ✗ ${msg}`);
-      // Drain whatever this post already enqueued so partial work is processed
-      // and attributed here, not orphaned or leaked into the next post.
-      await drainAll().catch(() => {});
-      if (/budget/i.test(msg)) {
-        console.log("\nLLM budget exceeded — stopping early. Report will cover what was ingested.");
-        break;
+      process.stdout.write(`  ${tag} ${p.title.slice(0, 50).padEnd(50)} submit…`);
+      const started = Date.now();
+      try {
+        // Submit through the real route, exactly as an API client would.
+        const res = await app.inject({
+          method: "POST",
+          url: "/sources",
+          payload: { url, title: p.title, content },
+        });
+        if (res.statusCode !== 202) {
+          console.log(` ✗ POST /sources -> ${res.statusCode} ${res.body.slice(0, 120)}`);
+          continue;
+        }
+        const { job_id } = res.json() as { job_id: string };
+
+        // Drive the whole organization to a stable state, tracing every message.
+        const before = trace.length;
+        const stats = await drainLocalQueues({ onEvent: (e) => trace.push(e) });
+
+        const finished = await getJobById(job_id);
+        const r = (finished?.result ?? {}) as Record<string, number>;
+        const secs = ((Date.now() - started) / 1000).toFixed(0);
+        console.log(
+          ` ✓ ${r.claims_extracted ?? "?"} extracted, ` +
+            `${r.claims_created ?? "?"} new / ${r.claims_matched ?? "?"} matched ` +
+            `(${secs}s, ${trace.length - before} agent msgs)\n      agents: ${formatActivity(stats)}`
+        );
+        succeeded++;
+      } catch (err) {
+        const msg = (err as Error).message;
+        console.log(` ✗ ${msg}`);
+        // Drain whatever this post already enqueued so partial work is processed
+        // and attributed here, not orphaned or leaked into the next post.
+        await drainLocalQueues({ onEvent: (e) => trace.push(e) }).catch(() => {});
+        if (/budget/i.test(msg)) {
+          console.log("\nLLM budget exceeded — stopping early. Report covers what was ingested.");
+          break;
+        }
       }
     }
+  } finally {
+    await app.close();
   }
 
+  // Observability artifact: the full ordered stream of agent activity.
+  writeFileSync(join(runDir, "trace.jsonl"), trace.map((e) => JSON.stringify(e)).join("\n"));
+
   console.log(`\n${succeeded}/${posts.length} posts ingested. Generating report…`);
-  const reportPath = await generateReport(cluster);
+  const reportPath = await generateReport(cluster, runDir);
   console.log(`\nReport: ${reportPath}`);
-  console.log("Read it alongside corpus/RUBRIC.md.");
+  console.log(`Trace:  ${join(runDir, "trace.jsonl")} (${trace.length} agent messages)`);
+  console.log("Read the report alongside corpus/RUBRIC.md.");
 
   await closeDb();
 }

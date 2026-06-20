@@ -26,7 +26,7 @@ function trunc(s: unknown, n: number): string {
   return t.length > n ? t.slice(0, n - 1) + "…" : t;
 }
 
-export async function generateReport(cluster: string): Promise<string> {
+export async function generateReport(cluster: string, outDir?: string): Promise<string> {
   assertCorpusDb(); // never report off (or connect to) the main graph
   const out: string[] = [];
   const w = (line = "") => out.push(line);
@@ -323,7 +323,7 @@ export async function generateReport(cluster: string): Promise<string> {
 
   // --- write ----------------------------------------------------------------
   const stamp = now.replace(/[:.]/g, "-");
-  const dir = join(RUNS_ROOT, `${cluster}-${stamp}`);
+  const dir = outDir ?? join(RUNS_ROOT, `${cluster}-${stamp}`);
   mkdirSync(dir, { recursive: true });
   const reportPath = join(dir, "report.md");
   writeFileSync(reportPath, out.join("\n"));

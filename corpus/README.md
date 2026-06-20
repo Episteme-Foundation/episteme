@@ -78,18 +78,23 @@ dump for deeper digging.
 
 ## Notes for maintainers
 
-- Locally there is no SQS and nothing drains the in-memory queues, so the
-  harness calls the worker handlers directly. `driver.ts`'s `drainAll()` runs
-  every local queue (claim-pipeline, steward, contribution, arbitration, audit)
-  to quiescence, dispatching each message to its handler — so the full agent
-  organization settles, not just ingestion. It has a safety cap to bound runaway
-  propagation; the run log prints `CAPPED` if it's hit.
-- The deeper fix this works around: `src/` has no local in-memory queue consumer
-  (`poller.ts` is SQS-only, started only when `SQS_*` env is set). A shared
-  local-queue runner in `src/` would let both a future `npm run dev` worker and
-  this harness exercise the same drain path.
+- The harness IS the real system: `run.ts` builds the actual Fastify app and
+  submits each post through the real `POST /sources` route via `app.inject`
+  (in-process HTTP). Only the database differs (`episteme_corpus`).
+- Processing runs through the real workers, drained by
+  `src/workers/local-runner.ts` — the in-memory queue consumer that production
+  lacked. `index.ts` now starts it automatically when no `SQS_*` queues are
+  configured, so `npm run dev` also processes work locally. `drainLocalQueues()`
+  runs every queue (claim-pipeline, steward, contribution, arbitration, audit)
+  to quiescence with a safety cap; the run log prints `CAPPED` if it's hit.
+- The agent tools are NOT HTTP wrappers — they read/write the graph in-process
+  via the shared `getDb()`/`rawQuery` pool, which resolves `DATABASE_URL`. So
+  pointing `DATABASE_URL` at the corpus DB redirects the entire system, tools
+  included; no dev-specific tool wiring is needed.
+- Every processed message is recorded to `runs/<run>/trace.jsonl` (queue, message,
+  ok/error, duration) so inter-agent behavior and propagation are observable.
 - `enqueueAudit` has no call site anywhere, so the audit agent never runs even in
-  production — the harness drains the audit queue but it stays empty.
+  production — the runner drains the audit queue but it stays empty.
 - The matcher retrieves candidates at cosine 0.8 (top-level, in
   `url-extraction.ts`) while subclaim matching uses
   `MATCHING_SIMILARITY_THRESHOLD` (0.85) with no LLM. These thresholds are the
