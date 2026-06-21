@@ -48,9 +48,11 @@ export default async function ClaimsIndex({
               {c.assessment_status && <StatusBadge status={c.assessment_status} />}
               <span className="tag kind">{CLAIM_TYPE_LABEL[c.claim_type]}</span>
               {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
-              <span className="conf-num" style={{ marginLeft: "auto" }} title="search relevance">
-                {c.similarity_score.toFixed(2)}
-              </span>
+              {typeof c.similarity_score === "number" && (
+                <span className="conf-num" style={{ marginLeft: "auto" }} title="search relevance">
+                  {c.similarity_score.toFixed(2)}
+                </span>
+              )}
             </div>
           </Link>
         ))}

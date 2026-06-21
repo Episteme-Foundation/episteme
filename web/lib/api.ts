@@ -50,7 +50,10 @@ export async function fetchSearch(query: string): Promise<SearchResultItem[]> {
 }
 
 export async function fetchList(limit = 40): Promise<SearchResultItem[]> {
-  const r = await apiGet<{ results: SearchResultItem[]; total: number }>(
+  // The browse feed paginates via an opaque keyset cursor (next_cursor); we
+  // currently surface only the first page. There is no `total` — a recency
+  // feed deliberately doesn't count the full table.
+  const r = await apiGet<{ results: SearchResultItem[]; next_cursor: string | null }>(
     `/claims?limit=${limit}`,
   );
   return r.results;
