@@ -57,9 +57,10 @@ const configSchema = z.object({
   maxSubclaimsPerClaim: z.coerce.number().default(0),
 
   // Governance
-  governanceModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
-  arbitrationModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
-  secondOpinionModel: z.string().default("us.anthropic.claude-haiku-4-5-20251001"),
+  // Anthropic API model IDs (not Bedrock "us.anthropic.*" — those 404 here).
+  governanceModel: z.string().default("claude-sonnet-4-6"),
+  arbitrationModel: z.string().default("claude-sonnet-4-6"),
+  secondOpinionModel: z.string().default("claude-haiku-4-5-20251001"),
   enableContributions: z
     .string()
     .transform((s) => s === "true")

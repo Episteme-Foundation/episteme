@@ -239,7 +239,9 @@ async function createRelationship(
     await db.insert(claimRelationships).values({
       parentClaimId: parentId,
       childClaimId: childId,
-      relationType,
+      // Normalize case so "REQUIRES" and "requires" don't fragment the taxonomy
+      // (also keeps the (parent, child, relation_type) unique index meaningful).
+      relationType: relationType.toLowerCase(),
       reasoning,
       confidence,
       argumentId: argumentId ?? null,

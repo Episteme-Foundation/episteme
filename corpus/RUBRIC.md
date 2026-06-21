@@ -231,4 +231,19 @@ above so it stops being a surprise.
 
 > _(log observations below)_
 
-- …
+**Run 2026-06-21, AGI Ruin only (caps 5/depth 1/3):**
+
+- **[fixed] Governance layer 404'd on every call.** Steward fired 5×, all failed instantly with
+  `404 not_found_error: model: us.anthropic.claude-sonnet-4-20250514` — stale Bedrock model IDs in the
+  governance/arbitration/second-opinion config defaults, invalid for the Anthropic API. The whole governance
+  layer (steward, audit, arbitrator, contribution-reviewer) was non-functional. Fixed by switching the
+  defaults to Anthropic IDs. Stage: governance agents.
+- **[fixed] Relation-type casing fragmented the taxonomy.** Decomposer emitted both `REQUIRES` (7) and
+  `requires` (3), `SUPPORTS`, etc. — same relations stored as distinct strings. Now normalized to lowercase
+  on write. Stage: decomposer → claim-pipeline.
+- **[open — calibration] Assessment over-uses "contested" on near-bedrock claims.** 13/18 claims contested,
+  including definitional/mechanical ones like "outer optimization selects parameters that minimize loss on
+  training data" and the DEFINES claim "'capabilities' refers to task-performance competence." These read as
+  bedrock/definitional, not genuinely contested. Early sign of the infectious-contestation risk
+  (architecture-plan §3) at the leaf level. Watch across runs; likely an assessor-prompt calibration issue
+  (rubric F). Stage: assessor.
