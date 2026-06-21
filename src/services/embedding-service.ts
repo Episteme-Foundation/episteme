@@ -6,7 +6,17 @@ let _client: OpenAI | null = null;
 function getClient(): OpenAI {
   if (_client) return _client;
   const config = loadConfig();
-  _client = new OpenAI({ apiKey: config.openaiApiKey });
+  _client = new OpenAI({
+    apiKey: config.openaiApiKey,
+    // The SDK's bundled HTTP client (node-fetch) fails with "Premature close"
+    // against api.openai.com in some environments (observed on ECS Fargate /
+    // Node 22) — every embeddings call errors. Native fetch works reliably
+    // there (verified raw fetch + this override both succeed), so force the
+    // SDK to use it.
+    fetch: ((...args: Parameters<typeof fetch>) => fetch(...args)) as unknown as NonNullable<
+      ConstructorParameters<typeof OpenAI>[0]
+    >["fetch"],
+  });
   return _client;
 }
 
