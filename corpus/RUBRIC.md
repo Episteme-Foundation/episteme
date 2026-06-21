@@ -246,4 +246,23 @@ above so it stops being a surprise.
   training data" and the DEFINES claim "'capabilities' refers to task-performance competence." These read as
   bedrock/definitional, not genuinely contested. Early sign of the infectious-contestation risk
   (architecture-plan §3) at the leaf level. Watch across runs; likely an assessor-prompt calibration issue
-  (rubric F). Stage: assessor.
+  (rubric F). Stage: assessor. _(Persisted in the 2-post run: 25/32 contested.)_
+
+**Run 2026-06-21, AGI Ruin + Christiano response (caps 5/depth 1/3, governance fixed):**
+
+- **[open] No cross-document canonicalization — but mostly a cap artifact.** dedup ratio 1.00, 0 shared
+  subclaims across 2 posts. Each post's 5 extracted claims are genuinely different propositions: Christiano's
+  *response* makes meta-claims (Eliezer overconfident, pivotal-act misguided, alignment-difficulty unknown)
+  rather than restating Yudkowsky's claims, and his engagements with Yudkowsky's specific claims were
+  deprioritized by EXTRACTION_MAX_CLAIMS=5. The disambiguation test is suppressed by the tight cap — raise it
+  to actually exercise cross-doc merging. Stage: extractor cap + matcher.
+- **[open] Weak subclaim reuse.** Structurally near-identical subclaims recur across trees as distinct claims
+  (the embedding-only 0.85 subclaim matcher isn't collapsing them). One near-dup left unmerged at 0.905 —
+  a decomposer subclaim that nearly restates its own parent, which `excludeId` then prevents from matching
+  the parent, yielding a near-duplicate sibling. Stage: decomposer + claim-pipeline matching.
+- **[bug] Steward-created claims are orphaned.** The steward created 1 claim via its decomposition-edge tool;
+  it's stuck `decomposition_status=pending`, never enqueued for decomposition/assessment. Stage: steward
+  tools (no enqueueClaimPipeline on claim creation).
+- **[watch] Steward reassessed nothing.** 8 steward invocations, 0 assessment changes (all still
+  `pipeline_assessment`). Could be correct self-limiting propagation (§22) or an under-active steward —
+  distinguish on a run where a subclaim genuinely flips. Stage: steward.
