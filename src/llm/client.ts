@@ -9,6 +9,7 @@ type ToolUnion = Anthropic.Messages.ToolUnion;
 type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 import { loadConfig } from "../config.js";
 import { checkBudget, recordUsage } from "./budget-tracker.js";
+import { DEFAULT_MODEL } from "./models.js";
 
 export interface TokenUsage {
   inputTokens: number;
@@ -42,9 +43,9 @@ function getClient(): Anthropic {
   return _client;
 }
 
-// Pinned to Claude Sonnet 4.6. Note: the prior Bedrock client used Sonnet 4
+// DEFAULT_MODEL (Claude Sonnet 4.6) lives in ./models.ts — the single source of
+// truth for model IDs. Note: the prior Bedrock client used Sonnet 4
 // ("claude-sonnet-4-20250514"); this is a deliberate version bump.
-const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export async function complete(options: {
   messages: MessageParam[];
