@@ -529,13 +529,14 @@ function formatClaim(claim: { id: string; text: string; claimType: string; state
   };
 }
 
-function formatAssessment(a: { id: string; status: string; confidence: number; reasoningTrace: string; subclaimSummary: unknown; assessedAt: Date }) {
+export function formatAssessment(a: { id: string; status: string; confidence: number; reasoningTrace: string; subclaimSummary: unknown; assessedAt: Date }) {
   return {
     id: a.id,
     status: a.status,
     confidence: a.confidence,
     reasoning_trace: a.reasoningTrace,
-    subclaim_summary: a.subclaimSummary,
+    // Guarantee a non-null object so clients can safely Object.entries() it (issue #17).
+    subclaim_summary: a.subclaimSummary ?? {},
     assessed_at: a.assessedAt.toISOString(),
   };
 }
@@ -559,7 +560,7 @@ function formatAssessmentHistory(a: {
     confidence: a.confidence,
     reasoning_trace: a.reasoningTrace,
     is_current: a.isCurrent,
-    subclaim_summary: a.subclaimSummary,
+    subclaim_summary: a.subclaimSummary ?? {},
     trigger: a.trigger,
     trigger_context: a.triggerContext,
     assessed_at: a.assessedAt.toISOString(),

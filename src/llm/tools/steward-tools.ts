@@ -6,7 +6,7 @@
  */
 import type Anthropic from "@anthropic-ai/sdk";
 type Tool = Anthropic.Tool;
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb, rawQuery } from "../../db/client.js";
 import {
   claims,
@@ -176,6 +176,16 @@ export async function executeStewardTool(
 
         const db = getDb();
 
+        // Carry over the current assessment's subclaim breakdown: a steward
+        // reassessment of status/confidence shouldn't wipe it. Filter on
+        // isCurrent so we read the active row (not an arbitrary historical one),
+        // and fall back to {} so the column is never null (it is notNull).
+        const [prev] = await db
+          .select({ subclaimSummary: assessments.subclaimSummary })
+          .from(assessments)
+          .where(and(eq(assessments.claimId, claimId), eq(assessments.isCurrent, true)))
+          .limit(1);
+
         // Mark previous assessment as non-current
         await db
           .update(assessments)
@@ -188,6 +198,7 @@ export async function executeStewardTool(
           status,
           confidence,
           reasoningTrace,
+          subclaimSummary: prev?.subclaimSummary ?? {},
           isCurrent: true,
           trigger: "steward_reassessment",
         });
