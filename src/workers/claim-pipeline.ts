@@ -74,7 +74,13 @@ export async function handleClaimPipeline(
     const result = await decomposeClaim({
       claimText: claim.text,
       claimType: claim.claimType,
+      maxSubclaims: config.maxSubclaimsPerClaim,
     });
+
+    // Hard cap as a safety net in case the model exceeds the requested limit.
+    if (config.maxSubclaimsPerClaim > 0) {
+      result.subclaims = result.subclaims.slice(0, config.maxSubclaimsPerClaim);
+    }
 
     if (result.is_atomic || result.subclaims.length === 0) {
       // Atomic claim - assess directly

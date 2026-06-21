@@ -72,6 +72,12 @@ dump for deeper digging.
   recursive decomposition, assessment with web search, and a stewardship pass —
   each steward invocation is itself a multi-tool agent call). Start with
   `--limit=2` while iterating on prompts; run the full set less often.
+- **Bound the fan-out for iteration.** Extraction count multiplies everything
+  downstream, so for fast/cheap iteration set these in `.env` (0 = unlimited):
+  `EXTRACTION_MAX_CLAIMS` (most-central claims per doc), `MAX_DECOMPOSITION_DEPTH`
+  (tree depth), `MAX_SUBCLAIMS_PER_CLAIM` (tree width). A good starting point:
+  `EXTRACTION_MAX_CLAIMS=8`, `MAX_DECOMPOSITION_DEPTH=2`, `MAX_SUBCLAIMS_PER_CLAIM=4`.
+  Leave them at 0 for a faithful full run.
 - LLM output is nondeterministic. Treat a single run as one sample: run 2–3×
   and watch whether the metrics and failure modes are **stable**, not whether
   any one number matches.

@@ -84,11 +84,14 @@ export async function decomposeClaim(input: {
   context?: string;
   useTools?: boolean;
   model?: string;
+  /** Cap the number of subclaims requested (0 = unlimited). Bounds tree width. */
+  maxSubclaims?: number;
 }): Promise<DecompositionResult> {
   const userPrompt = getDecompositionPrompt(
     input.claimText,
     input.claimType,
-    input.context
+    input.context,
+    input.maxSubclaims
   );
 
   if (input.useTools !== false) {

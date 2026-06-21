@@ -8,6 +8,7 @@ import { findSimilarClaims } from "../services/search-service.js";
 import { updateJob } from "../services/job-service.js";
 import { enqueueClaimPipeline } from "../services/queue-service.js";
 import type { UrlExtractionMessage } from "../services/queue-service.js";
+import { loadConfig } from "../config.js";
 
 /**
  * Handle a URL extraction message:
@@ -55,6 +56,7 @@ export async function handleUrlExtraction(
       content,
       sourceType: source.sourceType,
       additionalContext: source.title,
+      maxClaims: loadConfig().extractionMaxClaims,
     });
 
     let claimsCreated = 0;

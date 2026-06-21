@@ -111,7 +111,8 @@ export function getDecomposerSystemPrompt(): string {
 export function getDecompositionPrompt(
   canonicalForm: string,
   claimType: string,
-  context?: string
+  context?: string,
+  maxSubclaims = 0
 ): string {
   let prompt = `Please decompose the following claim into its constituent subclaims.
 
@@ -140,6 +141,12 @@ and group subclaims under them where appropriate.
 
 Use the search tool to find existing claims that match your subclaims.
 `;
+
+  if (maxSubclaims > 0) {
+    prompt += `\nIMPORTANT: Identify AT MOST ${maxSubclaims} subclaims — the most \
+material to the claim's truth. Prefer the load-bearing dependencies over exhaustive \
+enumeration. Do not exceed ${maxSubclaims} subclaims.\n`;
+  }
 
   if (context) {
     prompt += `\n**Additional context:** ${context}\n`;
