@@ -38,3 +38,8 @@ runs/
 
 # Misc
 which
+.vercel
+
+# Local scratch — Playwright screenshots & snapshots from dev iteration
+.playwright-mcp/
+/*.png
