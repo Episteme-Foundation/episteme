@@ -48,3 +48,10 @@ export async function fetchSearch(query: string): Promise<SearchResultItem[]> {
   );
   return r.results;
 }
+
+export async function fetchList(limit = 40): Promise<SearchResultItem[]> {
+  const r = await apiGet<{ results: SearchResultItem[]; total: number }>(
+    `/claims?limit=${limit}`,
+  );
+  return r.results;
+}

@@ -10,7 +10,7 @@ import { claimSearchParams, claimGetParams, claimProposeBody, claimPatchBody, as
 import { getAssessmentHistory, getAssessmentTrajectory } from "../services/assessment-service.js";
 import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount } from "../services/tree-service.js";
-import { getClaimById, proposeClaim } from "../services/claim-service.js";
+import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
 import { addArgument, getArgumentsForClaim } from "../services/argument-service.js";
 
 const claimSchema = {
@@ -55,6 +55,54 @@ const errorEnvelope = {
 } as const;
 
 export async function claimRoutes(app: FastifyInstance): Promise<void> {
+  // GET /claims — list claims for browsing, most-recently-updated first
+  app.get<{ Querystring: Record<string, string> }>(
+    "/",
+    {
+      schema: {
+        tags: ["claims"],
+        summary: "List claims (browse), most-recently-updated first",
+        querystring: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 100, default: 30 },
+            cursor: { type: "string" },
+            state: { type: "string" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              results: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string", format: "uuid" },
+                    text: { type: "string" },
+                    claim_type: { type: "string" },
+                    state: { type: "string" },
+                    assessment_status: { type: "string", nullable: true },
+                    assessment_confidence: { type: "number", nullable: true },
+                  },
+                },
+              },
+              next_cursor: { type: "string", nullable: true },
+            },
+          },
+        },
+      },
+      handler: async (request, reply) => {
+        const limit = Math.min(Number(request.query.limit) || 30, 100);
+        const cursor = request.query.cursor || undefined;
+        const state = request.query.state || undefined;
+        const { results, next_cursor } = await listClaims({ limit, cursor, state });
+        return reply.send({ results, next_cursor });
+      },
+    }
+  );
+
   // GET /claims/search/:query
   app.get<{ Params: { query: string }; Querystring: Record<string, string> }>(
     "/search/:query",
