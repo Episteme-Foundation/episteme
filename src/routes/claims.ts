@@ -27,6 +27,19 @@ const claimSchema = {
   },
 } as const;
 
+export const assessmentSchema = {
+  type: "object",
+  nullable: true,
+  properties: {
+    id: { type: "string", format: "uuid" },
+    status: { type: "string" },
+    confidence: { type: "number" },
+    reasoning_trace: { type: "string" },
+    subclaim_summary: { type: "object", additionalProperties: true },
+    assessed_at: { type: "string", format: "date-time" },
+  },
+} as const;
+
 const errorEnvelope = {
   type: "object",
   properties: {
@@ -124,9 +137,9 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
             type: "object",
             properties: {
               claim: claimSchema,
-              assessment: { type: "object", nullable: true },
+              assessment: assessmentSchema,
               subclaim_count: { type: "integer" },
-              tree: { type: "object", nullable: true },
+              tree: { type: "object", nullable: true, additionalProperties: true },
               arguments: { type: "array", nullable: true },
               instances: { type: "array", nullable: true },
             },
@@ -301,7 +314,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     confidence: { type: "number" },
                     reasoning_trace: { type: "string" },
                     is_current: { type: "boolean" },
-                    subclaim_summary: { type: "object" },
+                    subclaim_summary: { type: "object", additionalProperties: true },
                     trigger: { type: "string", nullable: true },
                     trigger_context: { type: "string", nullable: true },
                     assessed_at: { type: "string", format: "date-time" },
