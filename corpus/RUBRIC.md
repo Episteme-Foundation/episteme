@@ -256,10 +256,24 @@ above so it stops being a surprise.
   rather than restating Yudkowsky's claims, and his engagements with Yudkowsky's specific claims were
   deprioritized by EXTRACTION_MAX_CLAIMS=5. The disambiguation test is suppressed by the tight cap — raise it
   to actually exercise cross-doc merging. Stage: extractor cap + matcher.
-- **[open] Weak subclaim reuse.** Structurally near-identical subclaims recur across trees as distinct claims
-  (the embedding-only 0.85 subclaim matcher isn't collapsing them). One near-dup left unmerged at 0.905 —
-  a decomposer subclaim that nearly restates its own parent, which `excludeId` then prevents from matching
-  the parent, yielding a near-duplicate sibling. Stage: decomposer + claim-pipeline matching.
+- **[revised — not a dedup miss] Apparent "duplicate" subclaims are all parent↔child pairs.** On closer
+  analysis every unmerged pair at cosine ≥ 0.82 is an extractor claim and one of its OWN decomposer
+  subclaims, connected by an edge — i.e. principled "related, not the same claim," correctly represented as
+  a relationship rather than merged (and `excludeId` correctly stops a subclaim merging into its own parent).
+  There were NO independent high-similarity pairs left unmerged. The earlier "weak subclaim reuse" read was
+  an artifact of reading truncated tree text; id-level analysis does not support it. **The genuine
+  cross-document dedup question was never exercised** (the cap made the two posts' top claims different), so
+  there is still no evidence either way on whether the matcher misses true cross-doc duplicates — needs the
+  higher-cap run.
+- **[open — decomposition quality] Degenerate (circular) decomposition.** The one ≥ 0.9 pair (0.905) is a
+  subclaim that nearly verbatim restates its parent ("The claim that X does not entail Y" → "The proposition
+  X does not logically entail Y"), linked `requires`. The decomposer echoed the parent instead of breaking it
+  into something more basic. Stage: decomposer.
+- **[open — argument layer] Arguments mostly grouped, but some empty and some blur into claims.** 19/24
+  arguments group ≥1 subclaim (21/30 edges carry an argument_id); 5 arguments group nothing (floating
+  labels). Argument *descriptions* are themselves propositions ("Misalignment at existential capability
+  levels produces human extinction"), which blurs the constitution's structural-not-epistemic line for
+  arguments. Stage: decomposer.
 - **[bug] Steward-created claims are orphaned.** The steward created 1 claim via its decomposition-edge tool;
   it's stuck `decomposition_status=pending`, never enqueued for decomposition/assessment. Stage: steward
   tools (no enqueueClaimPipeline on claim creation).
