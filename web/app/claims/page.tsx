@@ -46,11 +46,17 @@ export default async function ClaimsIndex({
             <div className="card-claim">{c.text}</div>
             <div className="card-foot">
               {c.assessment_status && <StatusBadge status={c.assessment_status} />}
-              <span className="tag kind">{CLAIM_TYPE_LABEL[c.claim_type]}</span>
+              <span className="tag kind">{CLAIM_TYPE_LABEL[c.claim_type] ?? c.claim_type?.replace(/_/g, " ")}</span>
               {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
-              <span className="conf-num" style={{ marginLeft: "auto" }} title="search relevance">
-                {c.similarity_score.toFixed(2)}
-              </span>
+              {typeof c.assessment_confidence === "number" ? (
+                <span className="conf-num" style={{ marginLeft: "auto" }} title="assessment confidence">
+                  {c.assessment_confidence.toFixed(2)}
+                </span>
+              ) : typeof c.similarity_score === "number" ? (
+                <span className="conf-num" style={{ marginLeft: "auto" }} title="search relevance">
+                  {c.similarity_score.toFixed(2)}
+                </span>
+              ) : null}
             </div>
           </Link>
         ))}
