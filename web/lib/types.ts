@@ -104,7 +104,7 @@ export interface SearchResultItem {
   text: string;
   claim_type: ClaimType;
   state: ClaimState;
-  similarity_score: number;
+  similarity_score?: number; // search results only; absent in the browse feed
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
 }
