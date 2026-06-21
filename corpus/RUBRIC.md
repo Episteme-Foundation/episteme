@@ -280,3 +280,15 @@ above so it stops being a surprise.
 - **[watch] Steward reassessed nothing.** 8 steward invocations, 0 assessment changes (all still
   `pipeline_assessment`). Could be correct self-limiting propagation (§22) or an under-active steward —
   distinguish on a run where a subclaim genuinely flips. Stage: steward.
+- **[MAJOR — over-elaborated canonical forms defeat cross-document matching].** Two posts in direct dialogue
+  (Christiano responding to Yudkowsky) produced **two fully disconnected islands**: 0 edges between them, and
+  the closest cross-post claim pair is only 0.672 cosine — below the 0.8 retrieval threshold, so the matcher
+  never even evaluated a link. The two "first critical try" claims (Christiano explicitly rebutting
+  Yudkowsky) sit at 0.567. Root cause: canonical forms average **36 words (max 61)**; each bakes in one
+  author's full framing, so two authors discussing the SAME underlying claim produce divergent paragraph-long
+  propositions that embed far apart. The §16 "make all parameters explicit" guidance, taken to the extreme by
+  the extractor, is destroying the matchability that canonicalization exists to provide. This is the
+  dominant, fixable cause of the zero cross-doc overlap (alongside the cap and the fact that some of
+  Christiano's claims are genuinely distinct meta-claims that should be *linked*, not merged). Likely fix:
+  tighten canonical-form generation (concise + explicit parameters, not run-on) and surface the shared
+  underlying claim, not just each author's framing. Stage: extractor prompt / canonical-form guidance.
