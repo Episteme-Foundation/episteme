@@ -1,7 +1,20 @@
 import { z } from "zod";
+import { MODELS, isAnthropicModelId } from "./llm/models.js";
 
 const DEFAULT_DB_URL =
   "postgresql://episteme:episteme_dev@localhost:5432/episteme";
+
+// A model-ID field: defaults to an Anthropic API ID and rejects Bedrock-style
+// "us.anthropic.*" overrides, which 404 against the Anthropic API (issue #11).
+const modelId = (defaultId: string) =>
+  z
+    .string()
+    .refine(isAnthropicModelId, {
+      message:
+        'must be an Anthropic API model ID like "claude-sonnet-4-6", not a ' +
+        'Bedrock "us.anthropic.*" ID',
+    })
+    .default(defaultId);
 
 const configSchema = z.object({
   env: z
@@ -56,11 +69,10 @@ const configSchema = z.object({
   extractionMaxClaims: z.coerce.number().default(0),
   maxSubclaimsPerClaim: z.coerce.number().default(0),
 
-  // Governance
-  // Anthropic API model IDs (not Bedrock "us.anthropic.*" — those 404 here).
-  governanceModel: z.string().default("claude-sonnet-4-6"),
-  arbitrationModel: z.string().default("claude-sonnet-4-6"),
-  secondOpinionModel: z.string().default("claude-haiku-4-5-20251001"),
+  // Governance — Anthropic API model IDs (see src/llm/models.ts).
+  governanceModel: modelId(MODELS.sonnet),
+  arbitrationModel: modelId(MODELS.sonnet),
+  secondOpinionModel: modelId(MODELS.haiku),
   enableContributions: z
     .string()
     .transform((s) => s === "true")
