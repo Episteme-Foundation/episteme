@@ -1,0 +1,98 @@
+[
+  {
+    "key": "extractor",
+    "name": "Extractor",
+    "stage": 1,
+    "group": "processing",
+    "tagline": "Pulls atomic claims out of a source document, in canonical form.",
+    "invokedWhen": "A URL or document is submitted for ingestion.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 2549,
+    "fullChars": 22688
+  },
+  {
+    "key": "matcher",
+    "name": "Matcher",
+    "stage": 2,
+    "group": "processing",
+    "tagline": "Decides whether an extracted claim already exists, or is new — two claims match iff they decompose alike.",
+    "invokedWhen": "After extraction, for each candidate claim, against vector-search neighbours.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 2506,
+    "fullChars": 22645
+  },
+  {
+    "key": "decomposer",
+    "name": "Decomposer",
+    "stage": 3,
+    "group": "processing",
+    "tagline": "Breaks a claim into subclaims and arguments, revealing its logical structure.",
+    "invokedWhen": "For each new claim in the pipeline, recursively to a depth bound.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 4317,
+    "fullChars": 24456
+  },
+  {
+    "key": "assessor",
+    "name": "Assessor",
+    "stage": 4,
+    "group": "processing",
+    "tagline": "Weighs the evidence and decomposition into one of six honest verdicts.",
+    "invokedWhen": "For atomic claims directly, and for compound claims once their subclaims are assessed.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 5382,
+    "fullChars": 25521
+  },
+  {
+    "key": "contribution-reviewer",
+    "name": "Contribution Reviewer",
+    "stage": 5,
+    "group": "governance",
+    "tagline": "Evaluates incoming contributions against policy — accept, reject, or escalate.",
+    "invokedWhen": "A contributor submits a challenge, support, merge, edit, instance, or argument.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 8284,
+    "fullChars": 28423
+  },
+  {
+    "key": "claim-steward",
+    "name": "Claim Steward",
+    "stage": 6,
+    "group": "governance",
+    "tagline": "The ongoing maintainer of a claim — canonical form, decomposition, and assessment over time.",
+    "invokedWhen": "A subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 6292,
+    "fullChars": 26431
+  },
+  {
+    "key": "dispute-arbitrator",
+    "name": "Dispute Arbitrator",
+    "stage": 7,
+    "group": "governance",
+    "tagline": "Resolves escalations and appeals, optionally via multi-model consensus.",
+    "invokedWhen": "A review is escalated, an appeal is filed, or a claim is persistently contested.",
+    "model": "Claude Sonnet 4.6 (second opinion: Haiku 4.5)",
+    "hasConstitution": true,
+    "roleChars": 7679,
+    "fullChars": 27818
+  },
+  {
+    "key": "audit-agent",
+    "name": "Audit Agent",
+    "stage": 8,
+    "group": "governance",
+    "tagline": "Quality control over the governance system itself — flags issues, adjusts reputation, suspends bad actors.",
+    "invokedWhen": "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
+    "model": "Claude Sonnet 4.6",
+    "hasConstitution": true,
+    "roleChars": 7395,
+    "fullChars": 27534
+  }
+]
