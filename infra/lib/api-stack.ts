@@ -61,6 +61,12 @@ export class ApiStack extends cdk.Stack {
         SQS_CLAIM_PIPELINE_QUEUE: props.claimPipelineQueue.queueUrl,
         LLM_HOURLY_CALL_LIMIT: "500",
         LLM_DAILY_CALL_LIMIT: "5000",
+        // Fan-out caps (0 = unlimited). Bound graph size and LLM spend per
+        // document — without these, one long post explodes into hundreds of
+        // claims and blows the daily call budget. Tune up later for thoroughness.
+        EXTRACTION_MAX_CLAIMS: "8",
+        MAX_DECOMPOSITION_DEPTH: "2",
+        MAX_SUBCLAIMS_PER_CLAIM: "4",
       },
       secrets: {
         DB_USERNAME: ecs.Secret.fromSecretsManager(props.dbSecret, "username"),
