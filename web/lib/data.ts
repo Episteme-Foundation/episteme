@@ -1,4 +1,4 @@
-import { apiConfigured, fetchClaimDetail, fetchSearch } from "./api";
+import { apiConfigured, fetchClaimDetail, fetchSearch, fetchList } from "./api";
 import { getClaim, listClaims } from "./fixtures";
 import type { ClaimDetail, SearchResultItem } from "./types";
 
@@ -23,12 +23,13 @@ export async function loadClaim(
 export async function loadClaims(
   query?: string,
 ): Promise<{ results: SearchResultItem[]; source: DataSource }> {
-  // No "list all" endpoint exists; live browse requires a query.
-  if (!apiConfigured() || !query) return { results: listClaims(), source: "fixture" };
+  if (!apiConfigured()) return { results: listClaims(), source: "fixture" };
   try {
-    return { results: await fetchSearch(query), source: "live" };
+    // With a query, search by meaning; without one, browse the most recent.
+    const results = query ? await fetchSearch(query) : await fetchList();
+    return { results, source: "live" };
   } catch (err) {
-    console.error("[episteme] live search failed, using fixture:", err);
+    console.error("[episteme] live claim list failed, using fixture:", err);
     return { results: listClaims(), source: "fixture" };
   }
 }
