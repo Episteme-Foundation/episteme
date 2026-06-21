@@ -146,6 +146,8 @@ This project is in early development. See the [implementation plan](/.claude/pla
 
 Episteme is designed to be open to contributions, both to its codebase and (eventually) to its knowledge graph. Guidelines for contribution will be published as the project matures.
 
+Hitting a local dev snag (e.g. Docker won't start)? See [docs/troubleshooting.md](docs/troubleshooting.md).
+
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
