@@ -1,0 +1,11 @@
+{
+  "cluster": "lethalities",
+  "_comment": "Deliberately minimal. For the early iterations the standard is qualitative judgment against corpus/RUBRIC.md, not assertions about specific claims. 'notes' just orients whoever reads a run report. If we later want anchored checks, add shouldMerge / shouldStayDistinct arrays here and teach report.ts to score them — but only once the qualitative read has surfaced stable, repeatable failure modes worth pinning.",
+  "notes": [
+    "This cluster centers on one disagreement: how likely is AGI to cause human extinction / permanent disempowerment, and how hard is alignment. Expect heavy overlap on existential-risk claims, alignment-difficulty claims, and the 'sharp left turn' / capabilities-generalization claims.",
+    "The posts are explicitly in dialogue (Christiano/Pope/Krakovna respond to Yudkowsky; Jenner responds to Grace; Krakovna's 'Refining' responds to Soares). Watch whether opposing claims about the same proposition end up related/contested rather than as disconnected islands.",
+    "Watch over-merging hardest: 'AGI will kill everyone' vs 'AGI poses serious but survivable risk' are different claims and merging them erases the entire disagreement this corpus exists to test."
+  ],
+  "shouldMerge": [],
+  "shouldStayDistinct": []
+}

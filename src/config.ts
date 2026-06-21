@@ -51,11 +51,16 @@ const configSchema = z.object({
   maxDecompositionDepth: z.coerce.number().default(5),
   matchingSimilarityThreshold: z.coerce.number().default(0.85),
   matchingTopK: z.coerce.number().default(20),
+  // Quantity caps to bound graph fan-out (0 = unlimited). The dominant cost
+  // driver is extraction count, since each extracted claim seeds a tree.
+  extractionMaxClaims: z.coerce.number().default(0),
+  maxSubclaimsPerClaim: z.coerce.number().default(0),
 
   // Governance
-  governanceModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
-  arbitrationModel: z.string().default("us.anthropic.claude-sonnet-4-20250514"),
-  secondOpinionModel: z.string().default("us.anthropic.claude-haiku-4-5-20251001"),
+  // Anthropic API model IDs (not Bedrock "us.anthropic.*" — those 404 here).
+  governanceModel: z.string().default("claude-sonnet-4-6"),
+  arbitrationModel: z.string().default("claude-sonnet-4-6"),
+  secondOpinionModel: z.string().default("claude-haiku-4-5-20251001"),
   enableContributions: z
     .string()
     .transform((s) => s === "true")
@@ -108,6 +113,8 @@ export function loadConfig(): Config {
     maxDecompositionDepth: process.env.MAX_DECOMPOSITION_DEPTH,
     matchingSimilarityThreshold: process.env.MATCHING_SIMILARITY_THRESHOLD,
     matchingTopK: process.env.MATCHING_TOP_K,
+    extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
+    maxSubclaimsPerClaim: process.env.MAX_SUBCLAIMS_PER_CLAIM,
     governanceModel: process.env.GOVERNANCE_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
     secondOpinionModel: process.env.SECOND_OPINION_MODEL,

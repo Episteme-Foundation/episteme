@@ -74,7 +74,13 @@ export async function handleClaimPipeline(
     const result = await decomposeClaim({
       claimText: claim.text,
       claimType: claim.claimType,
+      maxSubclaims: config.maxSubclaimsPerClaim,
     });
+
+    // Hard cap as a safety net in case the model exceeds the requested limit.
+    if (config.maxSubclaimsPerClaim > 0) {
+      result.subclaims = result.subclaims.slice(0, config.maxSubclaimsPerClaim);
+    }
 
     if (result.is_atomic || result.subclaims.length === 0) {
       // Atomic claim - assess directly
@@ -233,7 +239,9 @@ async function createRelationship(
     await db.insert(claimRelationships).values({
       parentClaimId: parentId,
       childClaimId: childId,
-      relationType,
+      // Normalize case so "REQUIRES" and "requires" don't fragment the taxonomy
+      // (also keeps the (parent, child, relation_type) unique index meaningful).
+      relationType: relationType.toLowerCase(),
       reasoning,
       confidence,
       argumentId: argumentId ?? null,

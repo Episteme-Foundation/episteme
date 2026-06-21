@@ -73,9 +73,13 @@ export function getExtractorSystemPrompt(): string {
 
 export function getExtractionPrompt(
   sourceType = "document",
-  additionalContext?: string
+  additionalContext?: string,
+  maxClaims = 0
 ): string {
-  let prompt = `Please extract all claims from the following ${sourceType}.
+  const limited = maxClaims > 0;
+  let prompt = `Please extract ${
+    limited ? `the ${maxClaims} most central claims` : "all claims"
+  } from the following ${sourceType}.
 
 For each claim you identify:
 1. Quote the original text exactly
@@ -84,13 +88,25 @@ For each claim you identify:
 4. Classify the claim type
 5. Rate your confidence
 
-Be thorough - extract ALL substantive claims, including:
+`;
+
+  if (limited) {
+    prompt += `IMPORTANT: Extract AT MOST ${maxClaims} claims — the most central and \
+load-bearing to the ${sourceType}'s argument. Prioritize the main theses and the \
+key contested claims; omit incidental background and minor supporting details. \
+Do not exceed ${maxClaims} claims.
+`;
+  } else {
+    prompt += `Be thorough - extract ALL substantive claims, including:
 - Main arguments and assertions
 - Supporting evidence claims
 - Background factual claims
 - Implicit assumptions being asserted
 - Evaluative and normative claims
+`;
+  }
 
+  prompt += `
 Do NOT extract:
 - Questions or commands
 - Meta-text about the document structure

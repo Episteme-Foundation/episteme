@@ -31,17 +31,24 @@ export async function extractClaims(input: {
   sourceType?: string;
   additionalContext?: string;
   model?: string;
+  /** Cap the number of claims extracted (0 = unlimited). Bounds graph fan-out. */
+  maxClaims?: number;
 }): Promise<ExtractedClaim[]> {
   const userPrompt =
-    getExtractionPrompt(input.sourceType, input.additionalContext) +
+    getExtractionPrompt(input.sourceType, input.additionalContext, input.maxClaims) +
     input.content;
 
-  return completeStructuredList<ExtractedClaim>({
+  const claims = await completeStructuredList<ExtractedClaim>({
     messages: [{ role: "user", content: userPrompt }],
     itemSchema: EXTRACTED_CLAIM_SCHEMA,
     schemaName: "ExtractedClaim",
     system: getExtractorSystemPrompt(),
     model: input.model,
-    maxTokens: 8192,
+    maxTokens: 16384,
   });
+
+  // Hard cap as a safety net in case the model exceeds the requested limit.
+  return input.maxClaims && input.maxClaims > 0
+    ? claims.slice(0, input.maxClaims)
+    : claims;
 }

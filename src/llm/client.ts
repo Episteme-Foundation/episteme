@@ -217,6 +217,17 @@ export async function completeStructuredList<T>(options: {
     temperature: options.temperature,
   });
 
+  if (!Array.isArray(result?.items)) {
+    // Almost always means the tool call was truncated at max_tokens, leaving an
+    // incomplete/empty input object. Fail with an actionable message instead of
+    // a downstream "x is not iterable".
+    throw new Error(
+      `Structured list "${options.schemaName}" returned no items array — the ` +
+        `response was likely truncated at max_tokens (${options.maxTokens ?? 4096}). ` +
+        `Increase maxTokens or reduce the input size.`
+    );
+  }
+
   return result.items;
 }
 

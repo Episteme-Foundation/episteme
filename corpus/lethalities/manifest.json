@@ -1,0 +1,19 @@
+{
+  "cluster": "lethalities",
+  "description": "The 2022 'List of Lethalities' AI-risk debate. Yudkowsky's AGI Ruin anchor post plus direct responses, the sharp-left-turn sub-thread, and the basic-x-risk-case sub-thread. Chosen for dense claim overlap and head-to-head disagreement, to stress disambiguation, canonicalization, and contested-claim handling. Posts are ordered so the anchor and foundational posts are ingested before the responses that argue against them.",
+  "source": "lesswrong.com GraphQL API (contents.markdown); IDs are pinned for reproducibility",
+  "fetchedFields": ["contents.markdown", "title", "slug", "pageUrl", "baseScore", "wordCount", "postedAt", "user.displayName"],
+  "posts": [
+    { "id": "uMQ3cqWDPHhjtiesc", "slug": "agi-ruin-a-list-of-lethalities", "title": "AGI Ruin: A List of Lethalities", "author": "Eliezer Yudkowsky", "role": "anchor" },
+    { "id": "CoZhXrhpQxpy9xw9y", "slug": "where-i-agree-and-disagree-with-eliezer", "title": "Where I agree and disagree with Eliezer", "author": "Paul Christiano", "role": "response-to-anchor" },
+    { "id": "wAczufCpMdaamF9fy", "slug": "my-objections-to-we-re-all-gonna-die-with-eliezer-yudkowsky", "title": "My Objections to \"We’re All Gonna Die with Eliezer Yudkowsky\"", "author": "Quintin Pope", "role": "response-to-anchor" },
+    { "id": "qJgz2YapqpFEDTLKn", "slug": "deepmind-alignment-team-opinions-on-agi-ruin-arguments", "title": "DeepMind alignment team opinions on AGI ruin arguments", "author": "Victoria Krakovna et al.", "role": "response-to-anchor" },
+    { "id": "GNhMPAWcfBCASy8e6", "slug": "a-central-ai-alignment-problem-capabilities-generalization-and", "title": "A central AI alignment problem: capabilities generalization, and the sharp left turn", "author": "Nate Soares", "role": "sharp-left-turn-foundational" },
+    { "id": "usKXS5jGDzjwqv3FJ", "slug": "refining-the-sharp-left-turn-threat-model-part-1-claims-and", "title": "Refining the Sharp Left Turn threat model, part 1: claims and mechanisms", "author": "Victoria Krakovna et al.", "role": "response-to-sharp-left-turn" },
+    { "id": "2yLyT6kB7BQvTfEuZ", "slug": "sharp-left-turn-discourse-an-opinionated-review", "title": "“Sharp Left Turn” discourse: An opinionated review", "author": "Steven Byrnes", "role": "review-of-sharp-left-turn" },
+    { "id": "LDRQ5Zfqwi8GjzPYG", "slug": "counterarguments-to-the-basic-ai-x-risk-case", "title": "Counterarguments to the basic AI x-risk case", "author": "Katja Grace", "role": "x-risk-case-foundational" },
+    { "id": "GQat3Nrd9CStHyGaq", "slug": "response-to-katja-grace-s-ai-x-risk-counterarguments", "title": "Response to Katja Grace's AI x-risk counterarguments", "author": "Erik Jenner", "role": "response-to-x-risk-case" },
+    { "id": "pRkFkzwKZ2zfa3R6H", "slug": "without-specific-countermeasures-the-easiest-path-to", "title": "Without specific countermeasures, the easiest path to transformative AI likely leads to AI takeover", "author": "Ajeya Cotra", "role": "takeover-model" },
+    { "id": "keiYkaeoLHoKK4LYA", "slug": "six-dimensions-of-operational-adequacy-in-agi-projects", "title": "Six Dimensions of Operational Adequacy in AGI Projects", "author": "Eliezer Yudkowsky", "role": "adequacy-framework" }
+  ]
+}
