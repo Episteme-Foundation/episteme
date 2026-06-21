@@ -104,7 +104,9 @@ export interface SearchResultItem {
   text: string;
   claim_type: ClaimType;
   state: ClaimState;
-  similarity_score: number;
+  // Present for search results (relevance score); absent for the browse feed,
+  // which is ordered by recency rather than similarity.
+  similarity_score?: number;
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
 }
