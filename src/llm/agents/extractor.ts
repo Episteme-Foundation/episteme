@@ -42,6 +42,6 @@ export async function extractClaims(input: {
     schemaName: "ExtractedClaim",
     system: getExtractorSystemPrompt(),
     model: input.model,
-    maxTokens: 8192,
+    maxTokens: 16384,
   });
 }
