@@ -14,7 +14,7 @@ import {
   claimRelationships,
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
-import { enqueueSteward } from "../../services/queue-service.js";
+import { enqueueSteward, enqueueClaimPipeline } from "../../services/queue-service.js";
 
 export function getStewardToolDefinitions(): Tool[] {
   return [
@@ -277,6 +277,19 @@ export async function executeStewardTool(
         } catch {
           // Unique constraint -- relationship may already exist
         }
+
+        // The new claim must be decomposed and assessed like any other claim;
+        // without this it sits decomposition_status='pending' forever (orphaned).
+        // Steward-originated work isn't tied to an ingestion job, so use a
+        // sentinel jobId — the claim pipeline only threads jobId for downstream
+        // enqueues and never looks it up. Seed ancestorIds with the parent so the
+        // new subclaim's own decomposition can't loop back to it.
+        await enqueueClaimPipeline({
+          claimId: newClaim!.id,
+          jobId: "steward",
+          ancestorIds: [parentId],
+          currentDepth: 0,
+        });
 
         return JSON.stringify({
           success: true,
