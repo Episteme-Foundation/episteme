@@ -1,0 +1,1 @@
+ALTER TABLE "claim_instances" ADD COLUMN "stance" text DEFAULT 'affirms' NOT NULL;
