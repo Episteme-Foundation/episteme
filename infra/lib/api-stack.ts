@@ -5,6 +5,7 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { Construct } from "constructs";
 
 export interface ApiStackProps extends cdk.StackProps {
@@ -103,6 +104,49 @@ export class ApiStack extends cdk.Stack {
     });
 
     listener.addTargets("ApiTarget", {
+      port: 3000,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targets: [service],
+      healthCheck: {
+        path: "/health",
+        interval: cdk.Duration.seconds(30),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 3,
+      },
+    });
+
+    // HTTPS:443 listener fronting api.claimgraph.io (the public hostname the
+    // Vercel app calls server-to-server). The ACM certificate was provisioned
+    // with DNS validation through Cloudflare and is referenced by ARN: the
+    // claimgraph.io zone lives on Cloudflare, not Route 53, so CDK cannot
+    // DNS-validate a certificate itself here.
+    //
+    // RECONCILIATION NOTE: this listener was first created out-of-band via the
+    // AWS CLI to bring api.claimgraph.io online before this code existed, so
+    // CloudFormation does not yet own it. The next `cdk deploy` will fail with
+    // "a listener already exists on this port (443)" until the manual listener
+    // is removed once:
+    //   aws elbv2 describe-listeners --load-balancer-arn <alb-arn> \
+    //     --query "Listeners[?Port==\`443\`].ListenerArn" --output text
+    //   aws elbv2 delete-listener --listener-arn <that-arn>
+    // After that one-time cleanup CDK creates and owns the listener. There is a
+    // brief api.claimgraph.io HTTPS gap between delete and deploy; set Cloudflare
+    // SSL/TLS to Flexible during the window or run it in a low-traffic period.
+    // See docs/infrastructure.md.
+    const apiCertificate = acm.Certificate.fromCertificateArn(
+      this,
+      "ApiCertificate",
+      "arn:aws:acm:us-east-1:702111526219:certificate/49ad38f0-d695-468b-9424-f69bd3c8769b"
+    );
+
+    const httpsListener = alb.addListener("HttpsListener", {
+      port: 443,
+      protocol: elbv2.ApplicationProtocol.HTTPS,
+      certificates: [apiCertificate],
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+    });
+
+    httpsListener.addTargets("ApiTargetHttps", {
       port: 3000,
       protocol: elbv2.ApplicationProtocol.HTTP,
       targets: [service],
