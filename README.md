@@ -133,7 +133,7 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 | API | Fastify |
 | Database | PostgreSQL + pgvector (Drizzle ORM) |
 | Queue | AWS SQS (in-memory for local dev) |
-| LLM | Anthropic Claude via AWS Bedrock |
+| LLM | Anthropic Claude (Anthropic Messages API) |
 | Infrastructure | AWS CDK (ECS Fargate, RDS, SQS) |
 | Frontend | React + TypeScript |
 | Browser Extension | Plasmo |

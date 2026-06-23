@@ -280,30 +280,37 @@ This architecture ensures:
 
 ### Constitution Caching
 
-The admin constitution should be:
-1. Stored as a constant in the prompts module
+The admin constitution is:
+1. Loaded once from `admin_constitution.md` and cached in the prompts module
 2. Prepended to every admin agent's system prompt
 3. Never modified during runtime
 4. Versioned alongside code changes
 
-```python
-# src/episteme/llm/prompts/constitution.py
-from pathlib import Path
+```typescript
+// src/llm/prompts/constitution.ts
+import { readFileSync } from "fs";
 
-ADMIN_CONSTITUTION = Path("admin_constitution.md").read_text()
+let _constitution: string | null = null;
 
-def build_admin_prompt(role_prompt: str) -> str:
-    """Build a complete admin agent prompt with constitution."""
-    return f"""# Admin Constitution
+export function getConstitution(): string {
+  if (_constitution) return _constitution;
+  // falls back to an embedded summary if the file can't be read
+  _constitution = readFileSync("admin_constitution.md", "utf-8");
+  return _constitution;
+}
 
-{ADMIN_CONSTITUTION}
+export function buildAdminPrompt(rolePrompt: string, includeConstitution = true): string {
+  if (!includeConstitution) return rolePrompt;
+  return `# Epistemic Graph Administrator Constitution
+
+${getConstitution()}
 
 ---
 
-# Your Role
+# Your Specific Role
 
-{role_prompt}
-"""
+${rolePrompt}`;
+}
 ```
 
 ### Prompt Versioning
