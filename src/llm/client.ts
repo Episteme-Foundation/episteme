@@ -43,6 +43,49 @@ function getClient(): Anthropic {
   return _client;
 }
 
+// --- Prompt caching --------------------------------------------------------
+// The system prompt (constitution + role, several KB and identical across every
+// call to a given agent) and the tool schemas are a large, stable prefix. We
+// mark them with ephemeral cache_control so repeated calls within the ~5 min
+// window reuse the cached prefix — a big cost/latency win in a full corpus run
+// (one system prompt, hundreds of claims) and in production. See
+// https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+
+/** Print cache hit/miss tokens when LLM_LOG_CACHE is set (verification aid). */
+function logCacheUsage(u: Anthropic.Usage): void {
+  if (!process.env.LLM_LOG_CACHE) return;
+  console.error(
+    `[cache] read=${u.cache_read_input_tokens ?? 0} ` +
+      `created=${u.cache_creation_input_tokens ?? 0} ` +
+      `input=${u.input_tokens} output=${u.output_tokens}`
+  );
+}
+
+/** Turn a string system prompt into a single cached text block. */
+function cachedSystem(
+  system: string | undefined
+): string | Anthropic.TextBlockParam[] | undefined {
+  if (!system) return undefined;
+  return [
+    { type: "text", text: system, cache_control: { type: "ephemeral" } },
+  ];
+}
+
+/**
+ * Mark the tool list as cacheable by putting cache_control on the LAST tool
+ * (the breakpoint caches every preceding tool too). Returns a new array.
+ */
+function cachedTools(tools: ToolUnion[]): ToolUnion[] {
+  if (tools.length === 0) return tools;
+  const out = tools.slice();
+  const last = out[out.length - 1]!;
+  out[out.length - 1] = {
+    ...last,
+    cache_control: { type: "ephemeral" },
+  } as ToolUnion;
+  return out;
+}
+
 // DEFAULT_MODEL (Claude Sonnet 4.6) lives in ./models.ts — the single source of
 // truth for model IDs. Note: the prior Bedrock client used Sonnet 4
 // ("claude-sonnet-4-20250514"); this is a deliberate version bump.
@@ -65,8 +108,8 @@ export async function complete(options: {
     messages: options.messages,
     max_tokens: options.maxTokens ?? 4096,
     temperature: options.temperature ?? 0,
-    ...(options.system ? { system: options.system } : {}),
-    ...(options.tools ? { tools: options.tools } : {}),
+    ...(options.system ? { system: cachedSystem(options.system) } : {}),
+    ...(options.tools ? { tools: cachedTools(options.tools) } : {}),
   });
 
   const usage: TokenUsage = {
@@ -75,6 +118,7 @@ export async function complete(options: {
   };
 
   recordUsage(usage.inputTokens, usage.outputTokens);
+  logCacheUsage(response.usage);
 
   let content = "";
   for (const block of response.content) {
@@ -104,8 +148,8 @@ export async function completeWithTools(options: {
     messages: options.messages,
     max_tokens: options.maxTokens ?? 4096,
     temperature: options.temperature ?? 0,
-    tools: options.tools,
-    ...(options.system ? { system: options.system } : {}),
+    tools: cachedTools(options.tools),
+    ...(options.system ? { system: cachedSystem(options.system) } : {}),
   });
 
   const usage: TokenUsage = {
@@ -114,6 +158,7 @@ export async function completeWithTools(options: {
   };
 
   recordUsage(usage.inputTokens, usage.outputTokens);
+  logCacheUsage(response.usage);
 
   let textContent = "";
   const toolUses: ToolUse[] = [];
