@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Mark } from "./Mark";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="masthead">
           <div className="masthead-inner">
             <Link href="/" className="wordmark plain">
-              <span className="glyph" aria-hidden>◆</span>Episteme
+              <span className="glyph" aria-hidden><Mark size="0.82em" /></span>Episteme
             </Link>
             <nav>
               <Link href="/claims">claims</Link>
