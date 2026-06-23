@@ -111,6 +111,12 @@ describe("BudgetTracker", () => {
 
   it("resets hourly counters on hour boundary", () => {
     vi.useFakeTimers();
+    // Pin a deterministic base time, then re-anchor the counters to it. Without
+    // this the timers freeze at real wall-clock, and advancing one hour can also
+    // cross a UTC day boundary (resetting the daily counter too) — making the
+    // test flake when run in the 23:00–23:59 UTC window.
+    vi.setSystemTime(new Date("2026-01-01T12:00:00.000Z"));
+    resetBudgetCounters();
 
     for (let i = 0; i < 10; i++) {
       checkBudget();
@@ -132,6 +138,10 @@ describe("BudgetTracker", () => {
 
   it("resets daily counters on day boundary", () => {
     vi.useFakeTimers();
+    // Pin a deterministic base time (see hour-boundary test) so the rollover is
+    // independent of when the suite runs.
+    vi.setSystemTime(new Date("2026-01-01T12:00:00.000Z"));
+    resetBudgetCounters();
 
     for (let i = 0; i < 10; i++) {
       checkBudget();
