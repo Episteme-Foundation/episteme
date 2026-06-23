@@ -1,180 +1,289 @@
-# Architecture Plan: Multi-Argument Model and Assessment Reforms
+# Episteme Architecture
 
-This document describes planned changes to the Episteme domain model and agent architecture, based on a review of how the system would handle millions of claims across diverse fields. The constitution and policies have already been updated to reflect these principles; this document specifies the implementation changes needed in the codebase (currently being refactored to TypeScript).
+This document describes the Episteme system **as it is built today**: the domain
+model, the agent pipeline that populates it, and the data layer underneath. It is
+a description of the running architecture, not a roadmap. Where a design decision
+has interesting consequences, the reasoning is given inline.
+
+The companion documents are the [constitution](/about/constitution) — the text
+every administrator agent is bound by — and the operational policies further down
+this page, which translate the constitution into concrete rules for each agent.
 
 ---
 
-## 1. The Argument Entity
+## System Overview
 
-### Problem
-
-The current architecture allows only one decomposition structure per claim. But claims routinely have multiple distinct lines of reasoning bearing on their truth:
-
-- **Philosophy**: "God is real" has the cosmological argument, the teleological argument, the argument from evil, etc.
-- **Policy**: "We should raise the minimum wage" has the poverty-reduction argument (for), the unemployment argument (against), etc.
-- **Science**: "The universe is ~13.8 billion years old" is supported independently by CMB measurements, stellar evolution, and nucleosynthesis.
-- **Causal disputes**: "The 2008 crisis was caused by deregulation" competes with the moral hazard explanation, the monetary policy explanation, etc.
-
-Forcing these into a single flat set of decomposition edges loses the structure of which subclaims belong to which line of reasoning.
-
-### Solution
-
-Introduce an `Argument` entity that groups decomposition edges into coherent, named lines of reasoning.
+Episteme turns documents into a queryable graph of claims. Ingestion is the
+expensive, write-side work: an LLM pipeline reads a source, pulls out atomic
+claims, decides whether each is new, decomposes it into its supporting structure,
+and assesses its validity. Serving is the cheap, read-side work: the graph that
+results is queried directly, with no LLM in the request path.
 
 ```
-Claim  ←──  Argument  ──→  [Decomposition edges to subclaims]
+   SOURCE                 PROCESSING PIPELINE                 GRAPH
+ ┌────────┐   ┌───────────────────────────────────────┐   ┌──────────┐
+ │ URL or │──▶│ Extractor → Matcher → Decomposer →     │──▶│ Postgres │
+ │ document│   │            Assessor                   │   │ +pgvector│
+ └────────┘   └───────────────────────────────────────┘   └────┬─────┘
+                                                                │
+            GOVERNANCE (ongoing)                                │ read
+ ┌─────────────────────────────────────────────┐               ▼
+ │ Claim Steward · Contribution Reviewer ·      │          ┌──────────┐
+ │ Dispute Arbitrator · Audit Agent             │◀────────▶│   API    │──▶ web / extension
+ └─────────────────────────────────────────────┘          └──────────┘
 ```
 
-### Argument Fields
+The work is done once, during ingestion, and reused everywhere a claim recurs —
+the same claim appears across thousands of documents, but is decomposed and
+assessed a single time. The processing agents run as queue-driven background
+workers; the governance agents run continuously as contributions arrive and as
+claims change.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID | Unique identifier |
-| `claim_id` | UUID | The claim this argument bears on |
-| `name` | string (optional) | Human-readable name, e.g., "The Cosmological Argument" |
-| `direction` | enum: `for`, `against`, `neutral` | Whether this argument supports, opposes, or neutrally decomposes the claim |
-| `description` | string (optional) | Brief description of the argument's approach or tradition |
-| `created_at` | datetime | When this argument was created |
-| `created_by` | string | Agent or contributor that created this argument |
-
-### Key Design Decisions
-
-- **Arguments are structural, not epistemic.** An Argument has no assessment status of its own. The question "is this argument sound?" is itself a claim in the graph, not a field on the Argument entity. This keeps all epistemic weight in the claim layer.
-- **Arguments are optional for simple claims.** A claim with one natural decomposition does not need an explicitly named argument. Decomposition edges can belong to a default/unnamed argument, or the argument layer can be transparent.
-- **Decomposition edges gain an `argument_id` field.** Each decomposition edge belongs to exactly one argument. Subclaims can appear in multiple arguments (shared across different lines of reasoning).
-- **Arguments don't need to be exhaustive.** Not every argument a claim could have needs to exist in the graph. Admins create arguments when they're live in the discourse.
-
-### Framework Disputes
-
-When the validity of an argument's framework is itself disputed, the claim "this framework is valid" should be a subclaim within that argument, typically with a PRESUPPOSES relation. This keeps meta-disputes within the claim layer without requiring special machinery. The admin surfaces these meta-claims when they are part of active discourse, not preemptively.
-
-### Impact on Existing Entities
-
-| Entity | Change |
-|--------|--------|
-| `Claim` | No change. Claims remain atomic propositions. |
-| `Decomposition` | Add `argument_id: UUID` field linking to the parent Argument. |
-| `Assessment` | Reasoning traces should reference arguments by name where relevant. No structural change needed. |
-| `Contribution` | Add `PROPOSE_ARGUMENT` contribution type for suggesting new arguments. Challenges can target specific arguments. |
-| `ClaimTree` | Restructure to organize children by argument. |
-
-### Graph Storage
-
-In Neo4j, Arguments can be represented as nodes with `ARGUES_FOR` / `ARGUES_AGAINST` / `ARGUES_ABOUT` relationships to Claims. Decomposition edges (`DECOMPOSES_TO`) gain an `argument_id` property. Tree-building queries group subclaims by argument.
+The stack is TypeScript end to end: a Fastify API, background workers driven by a
+job queue (AWS SQS in production, an in-memory runner locally), PostgreSQL with
+the `pgvector` and full-text extensions as the single store, and Anthropic Claude
+models behind every agent (the client calls the Anthropic Messages API directly;
+model ids are centralized in `src/llm/models.ts`).
 
 ---
 
-## 2. Assessment Status Alignment
+## The Domain Model
 
-### Problem
+Six entities carry the epistemic content; the rest of the schema records
+governance (contributions, reviews, appeals, arbitration, contributors) and
+operations (sources, jobs). The epistemic core:
 
-The constitution defines six assessment statuses (Verified, Supported, Contested, Unsupported, Contradicted, Unknown), but the `AssessmentStatus` enum only implements four (VERIFIED, CONTESTED, UNSUPPORTED, UNKNOWN). The missing statuses — SUPPORTED and CONTRADICTED — represent meaningful distinctions:
-
-- **SUPPORTED**: Evidence favors the claim, but the chain is incomplete or sources are secondary. Distinct from VERIFIED (full primary-source chain) and CONTESTED (credible disagreement).
-- **CONTRADICTED**: Available evidence actively weighs against the claim. Distinct from UNSUPPORTED (no evidence found) and CONTESTED (evidence on both sides).
-
-### Solution
-
-Add `SUPPORTED` and `CONTRADICTED` to the `AssessmentStatus` enum:
+In the sketch below, `──<` reads "has many":
 
 ```
-VERIFIED      — Traces to reliable primary sources through clear evidence chain
-SUPPORTED     — Evidence favors the claim, but chain incomplete or sources secondary
-CONTESTED     — Credible evidence/argument exists on multiple sides
-UNSUPPORTED   — No credible evidence found, though not contradicted
-CONTRADICTED  — Available evidence weighs against the claim
-UNKNOWN       — Insufficient information to assess
+  Source ──< Instance >── Claim ──< Relationship >── Claim
+                            │           (decomposition edge;
+                            │            argument_id groups edges
+                            │            into a line of reasoning)
+                            ├──< Assessment   (verdict history; one is_current)
+                            │
+                            └──< Argument      (a named line of reasoning;
+                                                relationship edges point back
+                                                to it via argument_id)
 ```
 
+### Claims
+
+A **claim** is the atomic unit: a proposition that can be true or false. Empirical,
+definitional, evaluative, causal, and normative claims are all represented the same
+way and all decompose into subclaims. Two formulations are the *same* claim if and
+only if they decompose identically — this is the basis for deduplication.
+
+Each claim carries its canonical `text`, a `claim_type`, a lifecycle `state`
+(active, merged, …), a `decomposition_status`, counters for how many children have
+been assessed, an `embedding` (a 1536-dimension vector) and a generated
+`text_search` column for retrieval. A claim that is merged into another records the
+target in `merged_into` rather than being deleted.
+
+### Arguments
+
+An **argument** groups decomposition edges into a coherent, named line of reasoning.
+A single claim routinely has several:
+
+- **Philosophy** — "God exists" has the cosmological argument, the teleological
+  argument, the argument from evil, and others.
+- **Policy** — "We should raise the minimum wage" has a poverty-reduction argument
+  (for) and an unemployment argument (against).
+- **Science** — "The universe is ~13.8 billion years old" is supported independently
+  by the CMB, stellar evolution, and nucleosynthesis.
+
+Forcing these into one flat set of edges would lose the structure of which subclaim
+belongs to which line of reasoning. An argument has a `stance` (`for`, `against`,
+`neutral`), an optional `name` and `description`, its `content`, any `evidence_urls`,
+and provenance (`created_by`, `created_at`).
+
+Two design decisions follow:
+
+- **Arguments are structural, not epistemic.** An argument has no validity status of
+  its own. "Is this argument sound?" is itself a claim in the graph, not a field on
+  the argument — so all epistemic weight stays in the claim layer.
+- **Arguments are optional and non-exhaustive.** A claim with one natural
+  decomposition needs no explicitly named argument; edges simply carry a null
+  `argument_id`. Admins create arguments when a line of reasoning is live in the
+  discourse, not preemptively.
+
+When the *validity of an argument's framework* is itself disputed, "this framework is
+valid" is added as a subclaim within that argument — typically with a `presupposes`
+relation — keeping meta-disputes inside the claim layer with no special machinery.
+
+### Decomposition edges
+
+Decomposition is recorded as **claim relationships**: directed edges from a parent
+claim to a child claim. Each edge has a `relation_type`, a free-text `reasoning`, a
+`confidence`, and an optional `argument_id` linking it to the argument it belongs to.
+A child can appear under multiple arguments (shared subclaims), and a uniqueness
+constraint prevents duplicate parent/child/relation triples. The relation types are:
+
+| Relation | Meaning |
+|----------|---------|
+| `requires` | The parent's truth depends on the child being true. |
+| `supports` | The child provides evidence for the parent. |
+| `contradicts` | The child weighs against the parent. |
+| `specifies` | The child narrows or makes precise part of the parent. |
+| `defines` | The child fixes the meaning of a term in the parent. |
+| `presupposes` | The parent assumes the child (often a framework claim). |
+
+### Assessments
+
+An **assessment** is a verdict on a claim at a point in time: a `status`, a
+`confidence`, and a `reasoning_trace` that documents how the evidence and
+decomposition were weighed. Assessments are append-only history — exactly one row per
+claim is flagged `is_current`. Each assessment also stores a `subclaim_summary` and
+the `trigger` (and `trigger_context`) that prompted it, so the timeline of *why* a
+claim's status changed is fully recoverable. The six statuses and how they propagate
+are described under [Assessment](#assessment) below.
+
+### Instances and sources
+
+A **source** is a retrieved document (URL, title, content hash, raw content, type). An
+**instance** links a canonical claim to one place it actually appeared: the exact
+`original_text` quote, the surrounding `context`, a brief `summary_context` describing
+the circumstances ("said during a Senate hearing on banking regulation, in response to
+questioning about derivatives oversight"), and a `confidence` that the quote really
+expresses the canonical claim. Instances are how a single canonical claim accumulates
+provenance from many documents.
+
+### Contributions and governance
+
+Anyone can contribute. A **contribution** targets a claim with a type — `challenge`,
+`support`, `propose_merge`, `propose_split`, `propose_edit`, `add_instance`, or
+`propose_argument` — plus content and evidence. Contributions flow through review
+(`contribution_reviews`), can be appealed (`appeals`), and escalated to arbitration
+(`arbitration_results`, which can record multi-model votes). **Contributors** carry a
+reputation score and acceptance history. This is the machinery the governance agents
+operate; the rules they apply live in the operational policies below.
+
 ---
 
-## 3. Judgment-Based Assessment Propagation
+## Assessment
 
-### Problem
+### The six statuses
 
-The current assessor prompt includes mechanical aggregation rules:
+Validity is expressed honestly, never as a binary. The system implements all six
+statuses the constitution defines:
 
-> "If ANY required subclaim is CONTESTED → parent is CONTESTED"
+| Status | Meaning |
+|--------|---------|
+| `verified` | Traces to reliable primary sources through a clear evidence chain. |
+| `supported` | Evidence favors the claim, but the chain is incomplete or sources are secondary. |
+| `contested` | Credible evidence or argument exists on multiple sides. |
+| `unsupported` | No credible evidence found, though the claim is not contradicted. |
+| `contradicted` | Available evidence actively weighs against the claim. |
+| `unknown` | Insufficient information to assess. |
 
-At scale, this makes contestation infectious — virtually every claim would converge to CONTESTED because somewhere deep in its decomposition tree, some subclaim is contested. The status field becomes useless.
+The colour treatment in the UI is deliberately muted and never a traffic light:
+`supported` and `verified` are distinct shades of green, `contested` is amber,
+`contradicted` is a clay red, and the rest are warm neutrals — meaning never depends
+on colour alone.
 
-### Solution
+### Judgment-based propagation
 
-Remove all hard-coded aggregation rules. Assessment is a holistic judgment by the claim's admin, informed by:
+Assessment is a holistic judgment by the claim's admin, **not** a mechanical roll-up
+of child statuses. An earlier design used hard aggregation rules ("if any required
+subclaim is `contested`, the parent is `contested`"). At scale that makes contestation
+infectious — almost every claim eventually inherits a contested subclaim somewhere deep
+in its tree, and the status field becomes useless.
 
-- The status of subclaims across all arguments
-- The materiality of each subclaim to the parent's truth
-- The strength of each argument as a whole
-- The admin's reasoning, documented in the reasoning trace
+Instead, the assessor weighs the status of subclaims across all arguments, the
+*materiality* of each subclaim to the parent's truth, and the strength of each
+argument as a whole, and documents the result in its reasoning trace. The assessor and
+claim-steward prompts give guidance and worked examples rather than rules, and the
+steward prompt is explicit: *do not mechanically propagate status changes — assess
+materiality first.*
 
-**Propagation model:**
-
-1. When a subclaim's assessment changes, the admins of directly dependent claims are notified.
-2. Each notified admin evaluates whether the change materially affects their claim.
-3. If yes, they update their assessment with reasoning. If no, they note the change was considered and explain why no update is needed.
-4. Propagation is self-limiting: most changes are absorbed within one or two levels, because superior claims are not the locus for disputes about their subclaims.
-
-The assessor prompt should provide guidance and examples, not rules. For instance:
-
-- "A claim whose required subclaims are all verified, with no credible challenges, is likely VERIFIED"
-- "A claim with strong arguments both for and against is likely CONTESTED"
-- "A contested subclaim deep in the tree may or may not affect the parent — use your judgment about materiality"
-
----
-
-## 4. Instance Enrichment
-
-### Problem
-
-Instances currently link a canonical claim to a source document, but don't include enough context to understand how the claim appeared in the source.
-
-### Solution
-
-Ensure instances include:
-
-- **`original_text`**: The exact quote where the claim was made (already exists)
-- **`context`**: Surrounding text for disambiguation (already exists, ensure it's populated)
-- **`summary_context`**: Brief summarized context explaining the circumstances (e.g., "Said during a Senate hearing on banking regulation, in response to questioning about derivatives oversight"). This is new.
-
-This is a minor enrichment, not an architectural change. The existing `Instance` model's `context` and `metadata` fields can accommodate this without structural modification.
+Propagation is therefore self-limiting. When a subclaim's assessment changes, the
+admins of directly dependent claims reconsider; most changes are absorbed within a
+level or two, because a superior claim is rarely the right locus for a dispute about
+one of its subclaims.
 
 ---
 
-## 5. Summary of All Changes
+## The Agent Pipeline
 
-### Constitution (`admin_constitution.md`) — DONE
+Each agent is a Claude model with a system prompt assembled from two layers: the full
+constitution, followed by the agent's specific role. The prompts live in
+`src/llm/prompts/` and are vendored verbatim into this site (see the
+[agents](/about/agents) page).
 
-- §2: Added "Multiple Arguments" subsection explaining that claims can have multiple distinct arguments
-- §2: Added "Framework Disputes" subsection on handling meta-disputes as subclaims
-- §4: Extended liberal creation principle to arguments
-- §22: Replaced mechanical propagation with judgment-based propagation
+### Processing agents
 
-### Policies (`docs/policies.md`) — DONE
+These run as queue-driven workers and do the write-side ingestion work, in order:
 
-- Policy 2: Added multiple arguments operational rules
-- Policy 4: Extended to arguments
-- Claim Steward: Added argument management responsibilities and assessment guidance
-- Removed language implying mechanical status propagation
+```
+ Extractor ──▶ Matcher ──▶ Decomposer ──▶ Assessor
+  pull atomic   new claim    break into     weigh into one
+  claims from   or existing?  subclaims      of six statuses
+  a source     (vector + LLM) within args
+```
 
-### Domain Model — TODO (in TypeScript refactor)
+- **Extractor** — pulls atomic claims out of a source in canonical form.
+- **Matcher** — for each candidate, decides whether it already exists or is new, using
+  vector-search neighbours plus an LLM judgment (two claims match iff they decompose
+  alike).
+- **Decomposer** — breaks a claim into subclaims *within arguments*, creating multiple
+  arguments when a claim has several distinct lines of reasoning; recurses to a depth
+  bound.
+- **Assessor** — produces the holistic verdict described above.
 
-- New `Argument` entity
-- `Decomposition` gains `argument_id` field
-- `AssessmentStatus` gains `SUPPORTED` and `CONTRADICTED`
-- `ContributionType` gains `PROPOSE_ARGUMENT`
-- `Instance` gains optional `summary_context` field
+### Governance agents
 
-### Agent Prompts — TODO (in TypeScript refactor)
+These run continuously over the life of a claim:
 
-- Decomposer: Decompose within arguments; create multiple arguments when appropriate
-- Assessor: Remove mechanical aggregation rules; assess holistically across arguments
-- Claim Steward: Manage arguments; exercise judgment on propagation
-- Matcher: Consider argument-level matching when linking instances
-- Contribution Reviewer: Handle `PROPOSE_ARGUMENT` contributions
+- **Claim Steward** — the ongoing maintainer of a claim: its canonical form,
+  decomposition, arguments, and assessment over time.
+- **Contribution Reviewer** — evaluates each incoming contribution against policy
+  (accept, reject, or escalate), including `propose_argument` contributions.
+- **Dispute Arbitrator** — resolves escalations and appeals, optionally via multi-model
+  consensus (a second-opinion model votes alongside the primary).
+- **Audit Agent** — quality control over the governance system itself: samples
+  decisions, adjusts reputation, and can suspend bad actors.
 
-### Graph Storage — TODO (in TypeScript refactor)
+---
 
-- Argument nodes in Neo4j with relationships to Claims
-- `argument_id` property on `DECOMPOSES_TO` edges
-- Tree-building queries restructured to group by argument
-- Propagation queries notify directly dependent claim admins only
+## Persistence
+
+### PostgreSQL, not a graph database
+
+The graph is stored relationally in **PostgreSQL**, accessed through Drizzle ORM — not
+in a dedicated graph database. Claims are rows; decomposition is an adjacency table
+(`claim_relationships`) whose `argument_id` column attaches each edge to its line of
+reasoning; arguments, assessments, instances and sources are their own tables. A
+relational store keyed by foreign keys is more than adequate for the tree-shaped reads
+the product needs, and it lets the same engine carry vector search and full-text search
+without a second system to operate.
+
+Tree-building (`src/services/tree-service.ts`) walks the relationship table and carries
+each edge's `argument_id`, `argument_name`, and `argument_stance` onto the node, so a
+client can group a claim's children by argument for display.
+
+### Schema at a glance
+
+```
+claims ──< claim_relationships >── claims     (parent / child adjacency)
+  │              │
+  │              └── argument_id ─▶ arguments ──▶ claims
+  ├──▶ assessments        (verdict history; one is_current per claim)
+  ├──▶ claim_instances ──▶ sources   (provenance: quote + context)
+  └──▶ contributions ──▶ contribution_reviews ──▶ appeals ──▶ arbitration_results
+                              contributors ─┘
+```
+
+### Search: vectors and full text
+
+Postgres carries both retrieval paths the pipeline needs. Each claim has a 1536-dim
+`embedding` (a `pgvector` column) for semantic neighbour search, and a generated
+`tsvector` column for keyword search. The search service combines them into a hybrid
+score (semantic similarity plus keyword and trigram matching), which is what the
+Matcher uses to find candidate existing claims before making its final LLM judgment.
+
+---
+
+The operational policies that follow turn the constitution's principles into concrete,
+per-agent rules — the acceptance criteria the Contribution Reviewer applies, the
+assessment guidance the Claim Steward follows, and the reasoning-trace format every
+agent emits.

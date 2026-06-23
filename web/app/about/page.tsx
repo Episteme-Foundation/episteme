@@ -1,7 +1,14 @@
 import Link from "next/link";
+import { DocLayout } from "@/components/DocLayout";
+
+const toc = [
+  { depth: 2, text: "The shape of the thing", slug: "the-shape-of-the-thing" },
+  { depth: 2, text: "Read further", slug: "read-further" },
+];
 
 export default function About() {
   return (
+    <DocLayout toc={toc}>
     <div className="doc">
       <p className="sc" style={{ marginBottom: ".5rem" }}>About</p>
       <h1>What is Episteme?</h1>
@@ -29,7 +36,7 @@ export default function About() {
         challenge.
       </p>
 
-      <h2>The shape of the thing</h2>
+      <h2 id="the-shape-of-the-thing">The shape of the thing</h2>
       <ul>
         <li><strong>Claims</strong> — propositions that can be true or false, stored in a canonical form that makes their implicit parameters explicit.</li>
         <li><strong>Arguments</strong> — named, independent lines of reasoning bearing on a claim, each grouping its own subclaims.</li>
@@ -39,12 +46,13 @@ export default function About() {
         <li><strong>Governance</strong> — contributions, reviews, appeals, and arbitration that let humans and agents improve the graph.</li>
       </ul>
 
-      <h2>Read further</h2>
+      <h2 id="read-further">Read further</h2>
       <ul>
         <li><Link href="/about/constitution">The Administrator Constitution</Link> — the 25 principles that govern every agent, in full.</li>
         <li><Link href="/about/architecture">Architecture &amp; policies</Link> — the design of the graph and the operational rules.</li>
         <li><Link href="/about/agents">The agents</Link> — the eight LLM administrators that do the work, each shown with its complete system prompt.</li>
       </ul>
     </div>
+    </DocLayout>
   );
 }

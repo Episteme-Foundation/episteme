@@ -414,3 +414,65 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2.4rem 0; }
 .doc th { background: var(--paper-sunk); font-family: var(--sans); font-size: 0.78rem;
   text-transform: uppercase; letter-spacing: 0.04em; }
 .doc a { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--rule); }
+
+/* anchored headings clear the sticky masthead when jumped to */
+html { scroll-behavior: smooth; }
+.doc :is(h1, h2, h3, h4) { scroll-margin-top: 4.6rem; }
+
+/* ==========================================================================
+   Long-document layout — text column + sticky right rail (table of contents)
+   ========================================================================== */
+
+.doc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, var(--measure)) 1fr;
+  gap: 2.4rem;
+  align-items: start;
+}
+/* rail is first in the DOM (for mobile stacking) but lives in column 2 here */
+.doc-col { grid-column: 1; grid-row: 1; min-width: 0; }
+.doc-rail { grid-column: 2; grid-row: 1; }
+
+.doc-rail {
+  position: sticky;
+  top: 4.6rem;
+  align-self: start;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  font-family: var(--sans);
+}
+
+/* a non-floating sidenote, for use inside the rail */
+.rail-note {
+  font-size: 0.76rem; line-height: 1.45; color: var(--ink-soft);
+  margin-bottom: 1.6rem; padding-bottom: 1.4rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.rail-note .sc { display: block; margin-bottom: 0.25rem; }
+
+/* table of contents */
+.toc { font-size: 0.75rem; line-height: 1.35; }
+.toc-title { margin-bottom: 0.55rem; }
+.toc ul { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--rule); }
+.toc-item a {
+  display: block; color: var(--muted); text-decoration: none;
+  padding: 0.22rem 0 0.22rem 0.85rem;
+  border-left: 2px solid transparent; margin-left: -1px;
+}
+.toc-item a:hover { color: var(--ink); text-decoration: none; }
+.toc-item.d3 a { padding-left: 1.7rem; font-size: 0.95em; }
+.toc-item.active > a {
+  color: var(--ink); font-weight: 600;
+  border-left-color: var(--ink-soft);
+}
+
+@media (max-width: 1000px) {
+  .doc-layout { display: block; }
+  .doc-rail {
+    position: static; max-height: none; overflow: visible;
+    margin-bottom: 2rem; padding-bottom: 1.4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .toc ul { columns: 2; column-gap: 1.4rem; }
+  .toc-item.d3 a { padding-left: 1.4rem; }
+}
