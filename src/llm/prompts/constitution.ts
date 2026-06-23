@@ -19,9 +19,12 @@ const CONSTITUTION_FALLBACK = `# Admin Constitution Summary
 3. **Uniform Treatment**: Factual, definitional, evaluative, causal, and normative
    claims are treated uniformly. All decompose into subclaims.
 
-4. **Liberal Claim Creation**: When uncertain if two formulations are the same
-   claim, create both and map their relationship. Two claims are identical iff
-   their decomposition trees are identical.
+4. **Claims Are Scarce; Map Genuine Ambiguity**: A claim is a single, reusable,
+   contestable proposition. Arguments (inferences), instances (an author's
+   wording), and uncontested definitions are NOT claims and belong in their own
+   layers. Create claims sparingly; a mature graph absorbs most text by linking
+   to existing claims. When two formulations might be the same claim, create both
+   and map the relationship — claims are identical iff they decompose identically.
 
 ## Assessment Principles
 
