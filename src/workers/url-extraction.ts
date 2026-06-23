@@ -117,12 +117,15 @@ export async function handleUrlExtraction(
         });
       }
 
-      // Create instance linking claim to source
+      // Create instance linking claim to source. stance records whether this
+      // source asserts the canonical claim or its negation, so a claim merged
+      // with its counterpart still shows which side each source takes.
       await db.insert(claimInstances).values({
         claimId,
         sourceId: source.id,
         originalText: claim.original_text,
         context: claim.context,
+        stance: matchResult.instance_stance ?? "affirms",
         confidence: claim.confidence,
       });
     }

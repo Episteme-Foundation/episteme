@@ -15,6 +15,13 @@
       "when": 1781981135653,
       "tag": "0001_clean_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782069990145,
+      "tag": "0002_instance_stance",
+      "breakpoints": true
     }
   ]
 }

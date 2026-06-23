@@ -192,6 +192,11 @@ export const claimInstances = pgTable(
     originalText: text("original_text").notNull(),
     context: text("context"),
     summaryContext: text("summary_context"),
+    // Whether this source asserts the canonical claim ("affirms") or its
+    // negation/contrary ("denies"). Lets a claim and its denial share one
+    // canonical node while preserving which side each source takes, so the
+    // disagreement lives on the claim instead of in two mirror-image pages.
+    stance: text("stance").notNull().default("affirms"),
     confidence: real("confidence").notNull().default(1.0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
