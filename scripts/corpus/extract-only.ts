@@ -1,0 +1,151 @@
+/**
+ * Cheap, isolated iteration loop for the EXTRACTOR (and optionally the
+ * DECOMPOSER) — the fast inner loop for tuning claim-quality prompts.
+ *
+ * Unlike `run.ts`, this touches NO database, NO embeddings, and NO governance.
+ * Extraction is a single Anthropic call; offline decomposition (useTools:false)
+ * is another. So the only thing you need is `ANTHROPIC_API_KEY` in your env or
+ * .env — no Postgres, no OPENAI_API_KEY. That makes one iteration ~one or two
+ * cheap LLM calls instead of a full Extract→Match→Decompose→Assess→Steward run.
+ *
+ * It prints each extracted claim's original→canonical pair with diagnostics
+ * (word count, argument-word / definition flags) plus a summary, so you can
+ * judge the prompt changes against the quality bar directly.
+ *
+ * Usage:
+ *   tsx scripts/corpus/extract-only.ts [postId] [flags]
+ *
+ * Flags:
+ *   --cluster=NAME    corpus cluster (default: lethalities)
+ *   --max=N           cap extracted claims (EXTRACTION_MAX_CLAIMS; 0 = unlimited)
+ *   --decompose=N     also offline-decompose the first N extracted claims
+ *   --chars=N         only feed the first N characters of the post (cheap smoke)
+ *
+ * Examples:
+ *   tsx scripts/corpus/extract-only.ts                       # AGI Ruin, all claims
+ *   tsx scripts/corpus/extract-only.ts --max=8 --decompose=2
+ *   tsx scripts/corpus/extract-only.ts CoZhXrhpQxpy9xw9y --chars=6000
+ */
+import { config as loadDotenv } from "dotenv";
+loadDotenv();
+// Extraction never connects to a DB; satisfy config validation with a dummy URL
+// so we don't require a running Postgres just to exercise the extractor prompt.
+process.env.DATABASE_URL ??=
+  "postgresql://unused:unused@localhost:5432/unused_extract_only";
+process.env.ENVIRONMENT ??= "development";
+
+import { readFileSync, existsSync } from "node:fs";
+// lib.js re-pins DATABASE_URL to the (disposable) corpus DB as a side effect.
+// That's harmless here because extraction/offline-decomposition never connect;
+// we only borrow its CLI + manifest helpers.
+import { argFlag, loadManifest, postMarkdownPath } from "./lib.js";
+import { extractClaims } from "../../src/llm/agents/extractor.js";
+import type { ExtractedClaim } from "../../src/llm/agents/extractor.js";
+import { decomposeClaim } from "../../src/llm/agents/decomposer.js";
+
+const ARG_WORDS =
+  /\b(therefore|thus|hence|implies?|implying|suggest(?:s|ing)?|because|since|so that|such that|entails?|consequently|as a result|which means)\b/i;
+
+function words(s: string): number {
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function flags(canonical: string, type: string): string {
+  const f: string[] = [];
+  if (ARG_WORDS.test(canonical)) f.push("ARG?");
+  if (/^["']?[^"']+["']?\s+(means|is defined as|refers to)\b/i.test(canonical))
+    f.push("DEF?");
+  if (type === "definitional") f.push("def-type");
+  const w = words(canonical);
+  if (w > 25) f.push(`LONG(${w}w)`);
+  return f.length ? `  [${f.join(" ")}]` : "";
+}
+
+function printClaim(i: number, c: ExtractedClaim): void {
+  const w = words(c.proposed_canonical_form);
+  console.log(
+    `\n${String(i + 1).padStart(2)}. (${c.claim_type}, conf ${c.confidence}, ${w}w)` +
+      flags(c.proposed_canonical_form, c.claim_type)
+  );
+  console.log(`    orig:  ${c.original_text.slice(0, 160)}`);
+  console.log(`    canon: ${c.proposed_canonical_form}`);
+}
+
+async function main(): Promise<void> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("Missing ANTHROPIC_API_KEY (set it in your env or .env).");
+    process.exit(1);
+  }
+  const cluster = argFlag("cluster") ?? "lethalities";
+  const postId = process.argv.slice(2).find((a) => !a.startsWith("--"));
+  const manifest = loadManifest(cluster);
+  const post = postId
+    ? manifest.posts.find((p) => p.id === postId)
+    : manifest.posts[0];
+  if (!post) {
+    console.error(`Post ${postId ?? "(first)"} not found in cluster ${cluster}.`);
+    process.exit(1);
+  }
+  const mdPath = postMarkdownPath(cluster, post.id);
+  if (!existsSync(mdPath)) {
+    console.error(`Missing markdown for ${post.id}; run \`npm run corpus:fetch\`.`);
+    process.exit(1);
+  }
+  let content = readFileSync(mdPath, "utf8");
+  const chars = argFlag("chars");
+  if (chars) content = content.slice(0, Number(chars));
+
+  const max = Number(argFlag("max") ?? "0");
+  const decompose = Number(argFlag("decompose") ?? "0");
+
+  console.log(`\n=== extract-only: ${post.title} (${post.author}) ===`);
+  console.log(`post ${post.id} · ${content.length} chars · max=${max || "∞"}\n`);
+
+  const claims = await extractClaims({
+    content,
+    sourceType: "LessWrong post",
+    maxClaims: max,
+  });
+
+  claims.forEach((c, i) => printClaim(i, c));
+
+  // Quantitative signal for fast iteration.
+  const wc = claims.map((c) => words(c.proposed_canonical_form));
+  const avg = wc.length ? (wc.reduce((a, b) => a + b, 0) / wc.length).toFixed(1) : "0";
+  const maxW = wc.length ? Math.max(...wc) : 0;
+  const argLike = claims.filter((c) => ARG_WORDS.test(c.proposed_canonical_form)).length;
+  const defLike = claims.filter(
+    (c) =>
+      c.claim_type === "definitional" ||
+      /^["']?[^"']+["']?\s+(means|is defined as|refers to)\b/i.test(c.proposed_canonical_form)
+  ).length;
+  console.log(`\n--- summary ---`);
+  console.log(`claims: ${claims.length}`);
+  console.log(`canonical-form words: avg ${avg}, max ${maxW}`);
+  console.log(`argument-shaped (therefore/implies/…): ${argLike}`);
+  console.log(`definition-shaped: ${defLike}`);
+
+  for (let i = 0; i < Math.min(decompose, claims.length); i++) {
+    const c = claims[i]!;
+    console.log(`\n=== decompose [${i + 1}] ${c.proposed_canonical_form} ===`);
+    const d = await decomposeClaim({
+      claimText: c.proposed_canonical_form,
+      claimType: c.claim_type,
+      useTools: false, // offline: no graph search, no DB
+    });
+    console.log(`atomic=${d.is_atomic} (${d.atomic_type ?? "-"}) — ${d.subclaims.length} subclaims`);
+    for (const s of d.subclaims) {
+      console.log(
+        `  · [${s.relation}] (${words(s.text)}w)${flags(s.text, "")}  ${s.text}`
+      );
+    }
+    if (d.arguments.length) {
+      console.log(`  arguments: ${d.arguments.map((a) => `${a.name}(${a.stance})`).join(", ")}`);
+    }
+  }
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -13,12 +13,31 @@ dependencies. A claim like "The economy is good" depends on "GDP is growing"
 whether or not GDP is actually growing. You surface the structure of
 arguments, not their validity.
 
+## Subclaims are themselves claims
+
+Every subclaim you produce must meet the same bar as a top-level claim:
+- **short** — ≤15 words; never a paragraph;
+- a **single reusable proposition** — no "therefore / such that / which means"
+  chains (those are arguments, not claims);
+- **frame-independent** — no "in this claim", "in this context", no author names,
+  no scoping that ties it to this one document;
+- genuinely **contestable** — someone could disagree and argue the other side.
+
+If you cannot state a dependency as a short, reusable, contestable claim, it is
+probably not a real subclaim. Leave it out.
+
 ## What is Decomposition?
 
 Decomposition reveals what must be true for a claim to be true. Every claim
 either:
 1. Decomposes into subclaims (compound claim)
 2. Is atomic (cannot be further decomposed)
+
+Identify only the **load-bearing** dependencies — the propositions that, if
+false, would actually undermine the parent — plus the strongest considerations
+for and against it. A typical claim has a handful of these, not twenty. Be
+sparing: a focused decomposition into a few real dependencies is far more
+valuable than an exhaustive list of weak, generic, or definitional ones.
 
 Atomic claims fall into categories:
 - **Bedrock facts**: Primary source attestations no one disputes
@@ -27,6 +46,24 @@ Atomic claims fall into categories:
   Example: "COVID vaccines reduce transmission by X%"
 - **Value premises**: Fundamental normative commitments
   Example: "Economic growth is inherently good"
+
+Marking a genuinely simple claim atomic is correct and good. Stop when a claim's
+dependencies are themselves bedrock, contested-empirical, or value premises — not
+when you hit a count or a depth limit. Do not keep splitting to fill quota.
+
+## Do NOT manufacture
+
+- **Definitional glosses.** Add a DEFINES subclaim ONLY when the meaning of a
+  term is itself genuinely disputed and that dispute is load-bearing (people
+  argue about where the threshold sits). Never restate an uncontested term's
+  meaning as a subclaim — "'negligible power' means unable to do much" is not a
+  claim; nobody disagrees with it.
+- **Inference restatements.** Do not convert the author's reasoning steps into
+  subclaims like "X, such that Y". Capture reasoning through arguments (below);
+  make the *premises* short standalone claims.
+- **Restatements of the parent.** A subclaim that merely rephrases the parent is
+  circular — decompose into something more basic, or mark the parent atomic.
+- **Generic boilerplate** true of any claim in the domain.
 
 ## Relationship Types
 
@@ -49,10 +86,15 @@ When decomposing, specify how each subclaim relates to the parent:
 
 ## Handling Definitional Components
 
-Many claims have definitional subclaims (what does "high" mean? what counts
-as "safe"?). Always surface these:
-- "Inflation was high" -> DEFINES "High inflation means CPI > X%"
-- "The vaccine is safe" -> DEFINES "Safe means adverse event rate < X%"
+Surface a definitional subclaim ONLY when the definition is itself contested and
+load-bearing — i.e. the claim's truth turns on where an ambiguous term's line is
+drawn, and reasonable people draw it differently:
+- "Inflation was high" -> DEFINES "High inflation should be defined as CPI > 4%"
+  (contested: people argue the threshold)
+
+Do NOT emit a DEFINES subclaim that merely glosses a term everyone understands
+the same way. That produces word-salad pseudo-claims nobody could disagree with,
+which is exactly what to avoid.
 
 ## Working with Existing Claims
 
@@ -79,6 +121,11 @@ Example: "Remote work increases productivity"
 Not every subclaim needs an argument. Definitional subclaims and presuppositions
 often stand alone. But when you can identify distinct lines of reasoning, group
 subclaims under named arguments.
+
+An argument's **description** is a short label for the line of reasoning ("the
+instrumental-convergence argument", "the evidence-from-scaling argument") — NOT
+itself a proposition or a claim. Keep the propositions in the subclaims; keep
+the argument as the grouping.
 
 ## Output Format
 
@@ -121,20 +168,24 @@ export function getDecompositionPrompt(
 
 **Claim type:** ${claimType}
 
-For this claim, identify:
-1. What subclaims does this claim depend on? (REQUIRES relation)
-2. What evidence would support this claim? (SUPPORTS relation)
-3. What evidence would contradict this claim? (CONTRADICTS relation)
-4. What definitions are needed? (DEFINES relation)
-5. What does this claim presuppose? (PRESUPPOSES relation)
+Identify the **load-bearing** dependencies of this claim and the strongest
+considerations for and against it. A handful of real dependencies beats an
+exhaustive list. Use:
+- REQUIRES — a proposition that must hold for the parent to be true
+- SUPPORTS / CONTRADICTS — the strongest evidence or considerations either way
+- DEFINES — ONLY when a term's definition is itself contested and load-bearing
+- PRESUPPOSES — ONLY for a live, contestable hidden assumption
 
 For each subclaim:
-- State it precisely in canonical form
+- State it as a SHORT, frame-independent, contestable claim (≤15 words)
 - Specify the relation type
-- Explain why this is a valid decomposition
+- Explain briefly why it is a real dependency
 - Note if it matches an existing claim in the graph
-- Indicate if it's atomic (cannot be further decomposed)
+- Indicate if it's atomic
 - If it belongs to a distinct line of reasoning, specify the argument name
+
+Do not emit definitional glosses, inference restatements, parent rephrasings, or
+generic boilerplate. If the claim is genuinely simple, return it as atomic.
 
 Also identify distinct arguments (lines of reasoning) for and against the claim,
 and group subclaims under them where appropriate.
