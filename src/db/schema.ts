@@ -55,6 +55,11 @@ export const claims = pgTable(
       .default("pending"),
     childrenAssessed: integer("children_assessed").notNull().default(0),
     childrenTotal: integer("children_total").notNull().default(0),
+    // How load-bearing the claim is (0..1), a revisable judgment set by the
+    // Steward. Scales proportional effort and orders the Steward work queue so
+    // important claims are processed first under a run budget (§"Claim Importance
+    // and Proportional Effort"). 0.5 = default/medium until judged.
+    importance: real("importance").notNull().default(0.5),
     embedding: vector("embedding"),
     textSearch: tsvector("text_search"),
     createdBy: text("created_by").notNull().default("system"),

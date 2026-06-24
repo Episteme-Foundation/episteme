@@ -1,0 +1,1 @@
+ALTER TABLE "claims" ADD COLUMN "importance" real DEFAULT 0.5 NOT NULL;

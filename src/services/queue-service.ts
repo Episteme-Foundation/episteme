@@ -46,6 +46,13 @@ export interface StewardMessage {
     // and reconcile (re-assess; adopt the suggested edge if apt).
     | "curator_change";
   context: string;
+  /**
+   * How load-bearing the claim is (0..1). The local runner drains higher-
+   * importance Steward messages first, so important claims are processed before
+   * a run budget (stewardMaxRuns) is exhausted. Defaults to the claim's stored
+   * importance at enqueue time.
+   */
+  importance?: number;
 }
 
 export interface AuditMessage {

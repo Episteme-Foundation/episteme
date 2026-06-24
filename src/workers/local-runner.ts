@@ -79,6 +79,29 @@ function pending(): boolean {
 }
 
 /**
+ * Remove and return the next message for a queue. FIFO for most queues, but the
+ * Steward queue is drained **highest-importance first** (#56), so that under a run
+ * budget (stewardMaxRuns) the most load-bearing claims are processed before the
+ * cap is reached. Messages without an importance default to 0.5 (medium).
+ */
+function dequeue(name: LocalQueueName): unknown {
+  const q = getLocalQueue(name) as unknown as Array<{ importance?: number }>;
+  if (name === "steward" && q.length > 1) {
+    let best = 0;
+    let bestImp = q[0]?.importance ?? 0.5;
+    for (let i = 1; i < q.length; i++) {
+      const imp = q[i]?.importance ?? 0.5;
+      if (imp > bestImp) {
+        best = i;
+        bestImp = imp;
+      }
+    }
+    return q.splice(best, 1)[0];
+  }
+  return q.shift();
+}
+
+/**
  * Process every queued message across all local queues until all are empty (or
  * the safety cap is hit). Budget-exceeded errors propagate so the caller can
  * stop; all other handler errors are counted and skipped, mirroring the SQS
@@ -95,7 +118,7 @@ export async function drainLocalQueues(opts: DrainOptions = {}): Promise<DrainSt
     const entry = HANDLERS.find(([name]) => getLocalQueue(name).length > 0);
     if (!entry) return { processed, errors, capped: false };
     const [name, handler] = entry;
-    const message = getLocalQueue(name).shift() as never;
+    const message = dequeue(name) as never;
     const startedAt = now();
     seq++;
     try {
