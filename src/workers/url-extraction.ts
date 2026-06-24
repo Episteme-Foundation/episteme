@@ -5,7 +5,7 @@ import { extractClaims } from "../llm/agents/extractor.js";
 import { matchClaim } from "../llm/agents/matcher.js";
 import { generateEmbedding } from "../services/embedding-service.js";
 import { updateJob } from "../services/job-service.js";
-import { enqueueClaimPipeline } from "../services/queue-service.js";
+import { enqueueClaimPipeline, enqueueCurator } from "../services/queue-service.js";
 import type { UrlExtractionMessage } from "../services/queue-service.js";
 import { loadConfig } from "../config.js";
 
@@ -106,6 +106,22 @@ export async function handleUrlExtraction(
           claimId,
           jobId: message.jobId,
         });
+
+        // Proactively sweep the new claim's neighborhood with the Curator, to
+        // catch duplicates/counterparts the Matcher missed and propose cross-claim
+        // edges (#55). Only for *newly created* top-level claims (matched ones are
+        // already placed); sampled by curatorSweepRate and bounded by curatorMaxRuns.
+        const { curatorSweepRate } = loadConfig();
+        if (curatorSweepRate > 0 && Math.random() < curatorSweepRate) {
+          await enqueueCurator({
+            trigger: "neighborhood_sweep",
+            claimId,
+            context:
+              "A new claim was just ingested. Sweep its neighborhood for duplicates " +
+              "or counterparts the Matcher may have missed, and for related claims " +
+              "that should be linked.",
+          });
+        }
       }
 
       // Create instance linking claim to source. stance records whether this
