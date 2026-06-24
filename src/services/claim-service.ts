@@ -105,6 +105,7 @@ export async function listClaims(opts: {
       text: claims.text,
       claim_type: claims.claimType,
       state: claims.state,
+      importance: claims.importance,
       updated_at: claims.updatedAt,
       assessment_status: assessments.status,
       assessment_confidence: assessments.confidence,

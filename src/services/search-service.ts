@@ -7,6 +7,7 @@ export interface SearchResult {
   claim_type: string;
   state: string;
   similarity_score: number;
+  importance: number;
   assessment_status: string | null;
   assessment_confidence: number | null;
 }
@@ -46,7 +47,7 @@ async function hybridSearchWithEmbedding(
     SearchResult & { text_rank: number; semantic_score: number }
   >(
     `
-    SELECT c.id, c.text, c.claim_type, c.state,
+    SELECT c.id, c.text, c.claim_type, c.state, c.importance,
       ts_rank(c.text_search, websearch_to_tsquery('english', $1)) AS text_rank,
       1 - (c.embedding <=> $2::vector) AS semantic_score,
       a.status AS assessment_status, a.confidence AS assessment_confidence
@@ -68,6 +69,7 @@ async function hybridSearchWithEmbedding(
     claim_type: r.claim_type,
     state: r.state,
     similarity_score: 0.4 * (r.text_rank ?? 0) + 0.6 * (r.semantic_score ?? 0),
+    importance: r.importance,
     assessment_status: r.assessment_status,
     assessment_confidence: r.assessment_confidence,
   }));
@@ -81,7 +83,7 @@ async function keywordSearch(
 ): Promise<{ results: SearchResult[]; total: number }> {
   const rows = await rawQuery<SearchResult & { text_rank: number }>(
     `
-    SELECT c.id, c.text, c.claim_type, c.state,
+    SELECT c.id, c.text, c.claim_type, c.state, c.importance,
       ts_rank(c.text_search, websearch_to_tsquery('english', $1)) AS text_rank,
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
@@ -100,6 +102,7 @@ async function keywordSearch(
     claim_type: r.claim_type,
     state: r.state,
     similarity_score: r.text_rank ?? 0,
+    importance: r.importance,
     assessment_status: r.assessment_status,
     assessment_confidence: r.assessment_confidence,
   }));
@@ -126,7 +129,7 @@ export async function findSimilarClaims(
 
   const rows = await rawQuery<SearchResult & { semantic_score: number }>(
     `
-    SELECT c.id, c.text, c.claim_type, c.state,
+    SELECT c.id, c.text, c.claim_type, c.state, c.importance,
       1 - (c.embedding <=> $1::vector) AS semantic_score,
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
@@ -146,6 +149,7 @@ export async function findSimilarClaims(
     claim_type: r.claim_type,
     state: r.state,
     similarity_score: r.semantic_score,
+    importance: r.importance,
     assessment_status: r.assessment_status,
     assessment_confidence: r.assessment_confidence,
   }));

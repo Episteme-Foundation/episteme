@@ -55,6 +55,9 @@ export interface ClaimCore {
   claim_type: ClaimType;
   state: ClaimState;
   decomposition_status: string;
+  // How load-bearing the claim is (0..1), set by the Steward. Orders the work
+  // queue: important claims are assessed and decomposed first under a budget.
+  importance: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -123,6 +126,7 @@ export interface SearchResultItem {
   claim_type: ClaimType;
   state: ClaimState;
   similarity_score?: number; // search results only; absent in the browse feed
+  importance?: number;
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
 }

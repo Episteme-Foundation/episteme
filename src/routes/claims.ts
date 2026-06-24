@@ -13,7 +13,7 @@ import { getClaimTree, getSubclaimCount, getClaimDependents } from "../services/
 import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
 import { addArgument, getArgumentsForClaim } from "../services/argument-service.js";
 
-const claimSchema = {
+export const claimSchema = {
   type: "object",
   properties: {
     id: { type: "string", format: "uuid" },
@@ -21,6 +21,7 @@ const claimSchema = {
     claim_type: { type: "string" },
     state: { type: "string" },
     decomposition_status: { type: "string" },
+    importance: { type: "number" },
     created_by: { type: "string" },
     created_at: { type: "string", format: "date-time" },
     updated_at: { type: "string", format: "date-time" },
@@ -83,6 +84,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     text: { type: "string" },
                     claim_type: { type: "string" },
                     state: { type: "string" },
+                    importance: { type: "number", nullable: true },
                     assessment_status: { type: "string", nullable: true },
                     assessment_confidence: { type: "number", nullable: true },
                   },
@@ -137,6 +139,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     claim_type: { type: "string" },
                     state: { type: "string" },
                     similarity_score: { type: "number" },
+                    importance: { type: "number", nullable: true },
                     assessment_status: { type: "string", nullable: true },
                     assessment_confidence: { type: "number", nullable: true },
                   },
@@ -568,13 +571,14 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
   });
 }
 
-function formatClaim(claim: { id: string; text: string; claimType: string; state: string; decompositionStatus: string; createdBy: string; createdAt: Date; updatedAt: Date }) {
+function formatClaim(claim: { id: string; text: string; claimType: string; state: string; decompositionStatus: string; importance: number; createdBy: string; createdAt: Date; updatedAt: Date }) {
   return {
     id: claim.id,
     text: claim.text,
     claim_type: claim.claimType,
     state: claim.state,
     decomposition_status: claim.decompositionStatus,
+    importance: claim.importance,
     created_by: claim.createdBy,
     created_at: claim.createdAt.toISOString(),
     updated_at: claim.updatedAt.toISOString(),

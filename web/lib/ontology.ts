@@ -91,6 +91,33 @@ export function isAtomic(status: string): boolean {
   return status === "atomic" || status === "complete";
 }
 
+// Claim importance — how load-bearing a claim is (0..1), a revisable judgment set
+// by the Steward that orders its work queue. We bucket the continuous score into
+// five named bands for display and keep the exact value for the tooltip. Note the
+// default for an unjudged claim is 0.5, so a "medium" reading is not necessarily a
+// deliberate judgment of medium importance.
+export type ImportanceLevel = "foundational" | "high" | "medium" | "low" | "peripheral";
+
+export const IMPORTANCE_ORDER: ImportanceLevel[] = [
+  "peripheral", "low", "medium", "high", "foundational",
+];
+
+export function importanceLevel(v: number): ImportanceLevel {
+  if (v >= 0.85) return "foundational";
+  if (v >= 0.65) return "high";
+  if (v >= 0.45) return "medium";
+  if (v >= 0.25) return "low";
+  return "peripheral";
+}
+
+export const IMPORTANCE: Record<ImportanceLevel, { label: string; pips: number; gloss: string }> = {
+  foundational: { label: "foundational", pips: 5, gloss: "many other claims lean on this one" },
+  high:         { label: "high",         pips: 4, gloss: "a load-bearing claim in the graph" },
+  medium:       { label: "medium",       pips: 3, gloss: "moderately load-bearing (also the default before judging)" },
+  low:          { label: "low",          pips: 2, gloss: "little else depends on this claim" },
+  peripheral:   { label: "peripheral",   pips: 1, gloss: "a leaf detail almost nothing depends on" },
+};
+
 // ---------------------------------------------------------------------------
 // Effect on the parent claim — "what does this subclaim do to the claim above
 // it", as distinct from "how verified is this subclaim". Colouring decomposition

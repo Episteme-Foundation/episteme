@@ -1,6 +1,6 @@
 import type { ClaimDetail } from "@/lib/types";
 import { statusMeta, isStatus, CLAIM_TYPE_LABEL, isAtomic, decompositionState } from "@/lib/ontology";
-import { StatusBadge, Confidence, Swatch } from "./Assessment";
+import { StatusBadge, Confidence, Swatch, Importance } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
 
 function fmtDate(iso: string) {
@@ -26,6 +26,11 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         <span className="sc">Claim</span>
         <span className="tag kind">{claimTypeLabel}</span>
         {claim.state !== "active" && <span className="tag">{claim.state.replace(/_/g, " ")}</span>}
+        {typeof claim.importance === "number" && (
+          <span style={{ marginLeft: "auto" }}>
+            <Importance value={claim.importance} showLabel />
+          </span>
+        )}
       </div>
 
       {/* hero: the canonical claim */}
