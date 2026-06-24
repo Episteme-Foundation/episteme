@@ -18,6 +18,10 @@ import {
   getStewardToolDefinitions,
   executeStewardTool,
 } from "../tools/steward-tools.js";
+import {
+  getMatcherToolDefinition,
+  executeMatcherTool,
+} from "../tools/matcher-tools.js";
 import { loadConfig } from "../../config.js";
 
 export async function runClaimSteward(input: {
@@ -40,6 +44,7 @@ export async function runClaimSteward(input: {
   const tools = [
     ...getGovernanceToolDefinitions(),
     ...getStewardToolDefinitions(),
+    getMatcherToolDefinition(),
     webSearchTool,
   ];
 
@@ -62,7 +67,10 @@ You OWN this claim's assessment. Proceed:
    toward CONTESTED.
 4. Record it with update_claim_assessment (always include reasoning).
 5. If the canonical form needs improving, use update_canonical_form. If you find
-   a missing load-bearing subclaim, use add_decomposition_edge.
+   a missing load-bearing subclaim, FIRST call match_claim to see whether it
+   already exists in the graph (as itself, a rewording, or its negation). If it
+   matches, attach the existing claim with add_relationship_edge; only if it is
+   genuinely novel, create it with add_decomposition_edge. Never mint a duplicate.
 6. Log your decision with log_stewardship_decision.
 7. If you established or changed a material assessment, use
    notify_dependent_stewards so claims that depend on this one are re-judged.`;
@@ -76,6 +84,9 @@ You OWN this claim's assessment. Proceed:
     // A backstop only — judgment, not the iteration count, decides when to stop.
     maxIterations: 12,
     executeTool: async (name, toolInput) => {
+      if (name === "match_claim") {
+        return executeMatcherTool(name, toolInput);
+      }
       const governanceTools = getGovernanceToolDefinitions().map((t) => t.name);
       if (governanceTools.includes(name)) {
         return executeGovernanceTool(name, toolInput);
