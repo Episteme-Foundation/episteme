@@ -1,5 +1,6 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { loadConfig } from "../config.js";
+import { rawQuery } from "../db/client.js";
 
 let _sqsClient: SQSClient | null = null;
 
@@ -75,13 +76,16 @@ export interface CuratorMessage {
   context: string;
 }
 
-// In-memory queue for local development
+// In-memory queue for local development.
+// NOTE: the Steward is intentionally absent — it is no longer a message queue at
+// all. A claim's `steward_state` column IS its queue (see enqueueSteward below),
+// drained highest-importance-first by the DB-backed drain in steward-pipeline.ts.
+// This is the single mechanism in both dev and prod (no SQS/in-memory drift).
 const localQueues = {
   claimPipeline: [] as ClaimPipelineMessage[],
   urlExtraction: [] as UrlExtractionMessage[],
   contribution: [] as ContributionMessage[],
   arbitration: [] as ArbitrationMessage[],
-  steward: [] as StewardMessage[],
   curator: [] as CuratorMessage[],
   audit: [] as AuditMessage[],
 };
@@ -166,20 +170,26 @@ export async function enqueueArbitration(
   );
 }
 
+/**
+ * "Enqueue" a Steward run by marking the claim pending in the DB — the claim row
+ * IS the work queue. Idempotent: re-triggers coalesce into the single pending
+ * slot (latest trigger/context wins), which tames the propagation storm where
+ * one assessment notifies many dependents. Ordering is by the claim's stored
+ * `importance`, so the message's `importance` field is advisory only and unused
+ * here. Works identically in dev and prod — there is no SQS path for the Steward.
+ */
 export async function enqueueSteward(
   message: StewardMessage
 ): Promise<void> {
-  const config = loadConfig();
-  if (!config.sqsStewardQueue) {
-    localQueues.steward.push(message);
-    return;
-  }
-  const client = getSqsClient();
-  await client.send(
-    new SendMessageCommand({
-      QueueUrl: config.sqsStewardQueue,
-      MessageBody: JSON.stringify(message),
-    })
+  await rawQuery(
+    `UPDATE claims
+        SET steward_state = 'pending',
+            steward_trigger = $2,
+            steward_context = $3,
+            updated_at = now()
+      WHERE id = $1
+        AND state = 'active'`,
+    [message.claimId, message.trigger, message.context]
   );
 }
 

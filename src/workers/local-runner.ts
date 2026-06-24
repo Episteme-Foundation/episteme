@@ -1,47 +1,44 @@
 /**
- * Local in-memory queue runner.
+ * In-process queue runner.
  *
- * Production drains work via SQS pollers (poller.ts). Locally there is no SQS,
- * so enqueue* pushes onto the in-memory arrays in queue-service.ts — and without
- * this module nothing consumes them. This is the missing local consumer: it
- * dispatches each queued message to the same worker handlers the SQS pollers
- * use, so the whole agent organization runs end-to-end locally (npm run dev) and
- * in the corpus test harness.
+ * Drives the whole agent organization without external infrastructure. Two kinds
+ * of work are interleaved here:
+ *  - the in-memory queues (claim-pipeline, curator, contribution, arbitration,
+ *    audit, url-extraction) — populated by enqueue* when no SQS queue is set; and
+ *  - the DB-backed Steward queue (claims with steward_state='pending'), drained
+ *    highest-importance-first by steward-pipeline.ts.
  *
- * Two entry points:
- *  - drainLocalQueues(): process every queue to quiescence once (used by the
- *    test harness, which injects inputs then drains to a stable state).
- *  - startLocalRunner(): poll continuously (used by the dev server).
- *
- * Messages are taken in a fixed priority order so decomposition/assessment
- * settle before stewardship propagation, conflict review, escalation, and
- * arbitration fan out — mirroring a system draining toward a stable state.
+ * The Steward queue is NOT in-memory: it lives in the `claims` table, so it is
+ * the SAME mechanism in dev and prod (prod just also runs SQS pollers for the
+ * ingestion queues). `drainLocalQueues()` runs everything to quiescence (used by
+ * the corpus harness); `startLocalRunner()` polls continuously (dev server AND
+ * prod, so the Steward/Curator actually run everywhere — previously they were
+ * enqueued in prod but never drained).
  */
 import { getLocalQueue } from "../services/queue-service.js";
 import { handleClaimPipeline } from "./claim-pipeline.js";
 import { handleUrlExtraction } from "./url-extraction.js";
-import { handleStewardMessage } from "./steward-pipeline.js";
 import { handleCuratorMessage } from "./curator-pipeline.js";
 import { handleContributionMessage } from "./contribution-pipeline.js";
 import { handleArbitrationMessage } from "./arbitration-pipeline.js";
 import { handleAuditMessage } from "./audit-pipeline.js";
+import { processNextStewardTask, pendingStewardCount } from "./steward-pipeline.js";
+import { checkBudget } from "../llm/budget-tracker.js";
 import { LlmBudgetExceededError } from "../llm/errors.js";
+import { loadConfig } from "../config.js";
 
 export type LocalQueueName =
   | "claimPipeline"
-  | "steward"
   | "curator"
   | "contribution"
   | "arbitration"
   | "audit"
   | "urlExtraction";
 
-// Priority order: finish decomposition/assessment before stewardship
-// propagation, then graph-level curation, conflict review, escalation,
-// arbitration, then audit.
+// Priority order for the in-memory queues. The Steward is handled separately
+// (DB-backed, importance-ordered) and drained between in-memory passes.
 const HANDLERS: Array<[LocalQueueName, (m: never) => Promise<void>]> = [
   ["claimPipeline", handleClaimPipeline as (m: never) => Promise<void>],
-  ["steward", handleStewardMessage as (m: never) => Promise<void>],
   ["curator", handleCuratorMessage as (m: never) => Promise<void>],
   ["contribution", handleContributionMessage as (m: never) => Promise<void>],
   ["arbitration", handleArbitrationMessage as (m: never) => Promise<void>],
@@ -52,7 +49,7 @@ const HANDLERS: Array<[LocalQueueName, (m: never) => Promise<void>]> = [
 /** One processed message — the unit of the observability trace. */
 export interface RunnerEvent {
   seq: number;
-  queue: LocalQueueName;
+  queue: LocalQueueName | "steward";
   message: unknown;
   ok: boolean;
   error?: string;
@@ -60,8 +57,8 @@ export interface RunnerEvent {
 }
 
 export interface DrainStats {
-  processed: Partial<Record<LocalQueueName, number>>;
-  errors: Partial<Record<LocalQueueName, number>>;
+  processed: Record<string, number>;
+  errors: Record<string, number>;
   capped: boolean;
 }
 
@@ -72,95 +69,133 @@ export interface DrainOptions {
   onEvent?: (e: RunnerEvent) => void;
   /** Monotonic clock; injectable so callers control timestamps. Defaults to Date.now. */
   now?: () => number;
+  /** Override the Steward model (defaults to config.stewardModel). */
+  stewardModel?: string;
+  /**
+   * Cap on Steward tasks processed in this drain (cost backstop). Defaults to
+   * STEWARD_MAX_RUNS (0 = unlimited). When the cap is reached, remaining pending
+   * claims are left as embedded stubs — the intended under-budget steady state.
+   */
+  maxStewardTasks?: number;
 }
 
-function pending(): boolean {
+function inMemoryPending(): boolean {
   return HANDLERS.some(([name]) => getLocalQueue(name).length > 0);
 }
 
-/**
- * Remove and return the next message for a queue. FIFO for most queues, but the
- * Steward queue is drained **highest-importance first** (#56), so that under a run
- * budget (stewardMaxRuns) the most load-bearing claims are processed before the
- * cap is reached. Messages without an importance default to 0.5 (medium).
- */
+/** Remove and return the next FIFO message for an in-memory queue. */
 function dequeue(name: LocalQueueName): unknown {
-  const q = getLocalQueue(name) as unknown as Array<{ importance?: number }>;
-  if (name === "steward" && q.length > 1) {
-    let best = 0;
-    let bestImp = q[0]?.importance ?? 0.5;
-    for (let i = 1; i < q.length; i++) {
-      const imp = q[i]?.importance ?? 0.5;
-      if (imp > bestImp) {
-        best = i;
-        bestImp = imp;
-      }
-    }
-    return q.splice(best, 1)[0];
-  }
-  return q.shift();
+  return (getLocalQueue(name) as unknown[]).shift();
 }
 
 /**
- * Process every queued message across all local queues until all are empty (or
- * the safety cap is hit). Budget-exceeded errors propagate so the caller can
- * stop; all other handler errors are counted and skipped, mirroring the SQS
- * poller (which logs and moves on rather than aborting the batch).
+ * Process every queued message — in-memory queues AND the DB-backed Steward
+ * queue — until all are quiescent (or the safety cap is hit). Budget-exceeded
+ * errors propagate so the caller can stop; other handler errors are counted and
+ * skipped, mirroring the SQS poller.
+ *
+ * In-memory work is drained first each round; then one Steward task is processed
+ * (it may enqueue Curator work in-memory and mint new pending subclaims), and the
+ * loop repeats — so the two queues settle together.
  */
 export async function drainLocalQueues(opts: DrainOptions = {}): Promise<DrainStats> {
   const cap = opts.maxMessages ?? 20_000;
   const now = opts.now ?? Date.now;
-  const processed: Partial<Record<LocalQueueName, number>> = {};
-  const errors: Partial<Record<LocalQueueName, number>> = {};
+  const { stewardMaxRuns } = loadConfig();
+  const stewardCap =
+    opts.maxStewardTasks ?? (stewardMaxRuns > 0 ? stewardMaxRuns : Number.POSITIVE_INFINITY);
+  const processed: Record<string, number> = {};
+  const errors: Record<string, number> = {};
+  let stewardProcessed = 0;
   let seq = 0;
 
   while (seq < cap) {
+    // 1. Drain a ready in-memory message if any.
     const entry = HANDLERS.find(([name]) => getLocalQueue(name).length > 0);
-    if (!entry) return { processed, errors, capped: false };
-    const [name, handler] = entry;
-    const message = dequeue(name) as never;
-    const startedAt = now();
-    seq++;
-    try {
-      await handler(message);
-      processed[name] = (processed[name] ?? 0) + 1;
-      opts.onEvent?.({ seq, queue: name, message, ok: true, durationMs: now() - startedAt });
-    } catch (err) {
-      if (err instanceof LlmBudgetExceededError) throw err;
-      errors[name] = (errors[name] ?? 0) + 1;
-      opts.onEvent?.({
-        seq,
-        queue: name,
-        message,
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-        durationMs: now() - startedAt,
-      });
+    if (entry) {
+      const [name, handler] = entry;
+      const message = dequeue(name) as never;
+      const startedAt = now();
+      seq++;
+      try {
+        await handler(message);
+        processed[name] = (processed[name] ?? 0) + 1;
+        opts.onEvent?.({ seq, queue: name, message, ok: true, durationMs: now() - startedAt });
+      } catch (err) {
+        if (err instanceof LlmBudgetExceededError) throw err;
+        errors[name] = (errors[name] ?? 0) + 1;
+        opts.onEvent?.({
+          seq,
+          queue: name,
+          message,
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+          durationMs: now() - startedAt,
+        });
+      }
+      continue;
     }
+
+    // 2. No in-memory work — try one Steward task (highest importance pending),
+    //    unless the per-drain Steward budget is spent (leave the rest as stubs).
+    if (stewardProcessed >= stewardCap) {
+      return { processed, errors, capped: (await pendingStewardCount()) > 0 };
+    }
+    const startedAt = now();
+    const r = await processNextStewardTask({ model: opts.stewardModel });
+    if (r.status === "empty") {
+      // Both the in-memory queues and the Steward queue are drained.
+      return { processed, errors, capped: false };
+    }
+    if (r.status === "budget") {
+      // Surface the real budget error so the run stops and reports cleanly.
+      checkBudget();
+      return { processed, errors, capped: false };
+    }
+    seq++;
+    stewardProcessed++;
+    if (r.ok) {
+      processed.steward = (processed.steward ?? 0) + 1;
+    } else {
+      errors.steward = (errors.steward ?? 0) + 1;
+    }
+    opts.onEvent?.({
+      seq,
+      queue: "steward",
+      message: { claimId: r.claimId, trigger: r.trigger },
+      ok: !!r.ok,
+      error: r.error,
+      durationMs: now() - startedAt,
+    });
   }
 
-  return { processed, errors, capped: pending() };
+  return { processed, errors, capped: inMemoryPending() };
 }
 
 /**
- * Continuously drain the local queues on an interval. Used by the dev server in
- * place of the SQS pollers when no SQS queues are configured. Budget errors
- * pause the loop briefly (like the SQS poller) rather than killing it.
+ * Continuously drain the queues on an interval. Used in BOTH dev and prod (in
+ * prod alongside the SQS ingestion pollers) so the Steward and Curator actually
+ * run everywhere. Budget errors pause the loop briefly (like the SQS poller)
+ * rather than killing it.
  */
 export function startLocalRunner(options: {
   intervalMs?: number;
   logger: { info: (...a: unknown[]) => void; error: (...a: unknown[]) => void };
   maxMessages?: number;
+  stewardModel?: string;
 }): { stop: () => void } {
   const interval = options.intervalMs ?? 500;
   let running = true;
   let busy = false;
 
   const tick = async () => {
-    if (!running || busy || !pending()) return;
+    if (!running || busy) return;
     busy = true;
     try {
-      await drainLocalQueues({ maxMessages: options.maxMessages });
+      await drainLocalQueues({
+        maxMessages: options.maxMessages,
+        stewardModel: options.stewardModel,
+      });
     } catch (err) {
       if (err instanceof LlmBudgetExceededError) {
         options.logger.error("Budget exceeded, pausing local runner for 60s:", err.message);
@@ -174,7 +209,7 @@ export function startLocalRunner(options: {
   };
 
   const timer = setInterval(() => void tick(), interval);
-  options.logger.info("Local in-memory queue runner started");
+  options.logger.info("In-process queue runner started (in-memory queues + DB Steward drain)");
 
   return {
     stop: () => {

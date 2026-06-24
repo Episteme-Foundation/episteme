@@ -11,7 +11,6 @@ import { handleClaimPipeline } from "./workers/claim-pipeline.js";
 import { handleUrlExtraction } from "./workers/url-extraction.js";
 import { handleContributionMessage } from "./workers/contribution-pipeline.js";
 import { handleArbitrationMessage } from "./workers/arbitration-pipeline.js";
-import { handleStewardMessage } from "./workers/steward-pipeline.js";
 import { handleCuratorMessage } from "./workers/curator-pipeline.js";
 import { handleAuditMessage } from "./workers/audit-pipeline.js";
 import type {
@@ -19,7 +18,6 @@ import type {
   UrlExtractionMessage,
   ContributionMessage,
   ArbitrationMessage,
-  StewardMessage,
   CuratorMessage,
   AuditMessage,
 } from "./services/queue-service.js";
@@ -78,14 +76,6 @@ async function main() {
     }));
   }
 
-  if (config.sqsStewardQueue) {
-    pollers.push(startPoller<StewardMessage>({
-      queueUrl: config.sqsStewardQueue,
-      handler: handleStewardMessage,
-      logger,
-    }));
-  }
-
   if (config.sqsCuratorQueue) {
     pollers.push(startPoller<CuratorMessage>({
       queueUrl: config.sqsCuratorQueue,
@@ -102,19 +92,13 @@ async function main() {
     }));
   }
 
-  // No SQS configured (local dev): drain the in-memory queues in-process so the
-  // system actually processes work without AWS.
-  const anySqsConfigured =
-    config.sqsUrlExtractionQueue ||
-    config.sqsClaimPipelineQueue ||
-    config.sqsContributionQueue ||
-    config.sqsArbitrationQueue ||
-    config.sqsStewardQueue ||
-    config.sqsCuratorQueue ||
-    config.sqsAuditQueue;
-  if (!anySqsConfigured) {
-    pollers.push(startLocalRunner({ logger }));
-  }
+  // ALWAYS run the in-process drainer. It owns the DB-backed Steward queue
+  // (importance-prioritized, the same in dev and prod) and drains any in-memory
+  // queues that have no SQS poller configured — in prod that's the Curator and
+  // the rest, which were previously enqueued but never drained. Queues that DO
+  // have an SQS poller route through SQS, so their in-memory arrays stay empty
+  // and this is a no-op for them (no double processing).
+  pollers.push(startLocalRunner({ logger }));
 
   // Graceful shutdown
   const shutdown = async () => {

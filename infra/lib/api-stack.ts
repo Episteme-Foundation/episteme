@@ -58,16 +58,27 @@ export class ApiStack extends cdk.Stack {
         DB_HOST: props.dbInstance.dbInstanceEndpointAddress,
         DB_PORT: props.dbInstance.dbInstanceEndpointPort,
         DB_NAME: "episteme",
+        // Only the ingestion queues use SQS. The Steward is a DB-backed,
+        // importance-prioritized drain (claims.steward_state) run in-process by
+        // the local runner, so it needs no queue here — and the Curator + other
+        // in-memory queues are now drained in prod too (see index.ts).
         SQS_URL_EXTRACTION_QUEUE: props.urlExtractionQueue.queueUrl,
         SQS_CLAIM_PIPELINE_QUEUE: props.claimPipelineQueue.queueUrl,
+        // The Steward assesses/decomposes the main claims — use Opus there. The
+        // importance-priority drain means Opus only ever runs on the top of the
+        // queue; the rest stay embedded stubs until budget allows.
+        STEWARD_MODEL: "claude-opus-4-8",
+        // Spend guardrails. Call limits cap request rate; the TOKEN limits are
+        // the real $ governor (they reset hourly/daily, so this is a rate limit:
+        // the drain works the highest-importance claims each window and pauses
+        // when spent). Tune to taste — these counters are per-process, so they
+        // scale with the autoscaled task count.
         LLM_HOURLY_CALL_LIMIT: "500",
         LLM_DAILY_CALL_LIMIT: "5000",
-        // Fan-out caps (0 = unlimited). Bound graph size and LLM spend per
-        // document — without these, one long post explodes into hundreds of
-        // claims and blows the daily call budget. Tune up later for thoroughness.
+        LLM_HOURLY_TOKEN_LIMIT: "400000",
+        LLM_DAILY_TOKEN_LIMIT: "1500000",
+        // Bound fan-out per document (the dominant cost multiplier). 0 = unlimited.
         EXTRACTION_MAX_CLAIMS: "8",
-        MAX_DECOMPOSITION_DEPTH: "2",
-        MAX_SUBCLAIMS_PER_CLAIM: "4",
       },
       secrets: {
         DB_USERNAME: ecs.Secret.fromSecretsManager(props.dbSecret, "username"),
