@@ -31,7 +31,7 @@ export async function runClaimSteward(input: {
   model?: string;
 }): Promise<void> {
   const config = loadConfig();
-  const model = input.model ?? config.governanceModel;
+  const model = input.model ?? config.stewardModel;
 
   // The steward always has web search — it may need fresh external evidence to
   // assess any claim, atomic or compound (#30).

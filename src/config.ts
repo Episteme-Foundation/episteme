@@ -88,6 +88,11 @@ const configSchema = z.object({
   // The Matcher is an agentic search loop; a small model suffices since the
   // judgment is "same proposition?" over candidates it retrieves itself.
   matcherModel: modelId(MODELS.haiku),
+  // The Steward assesses AND decomposes the "main" claims — the load-bearing
+  // epistemic work. Default Sonnet keeps tests cheap; production sets
+  // STEWARD_MODEL=claude-opus-4-8 so the most important claims get Opus. The
+  // importance-priority drain means Opus only ever runs on the top of the queue.
+  stewardModel: modelId(MODELS.sonnet),
   // The Curator adjudicates merges/splits and proposes structure — recognizing
   // duplicates saturates, but a contested split is judgment, so mid-to-strong.
   curatorModel: modelId(MODELS.sonnet),
@@ -151,6 +156,7 @@ export function loadConfig(): Config {
     curatorMaxRuns: process.env.CURATOR_MAX_RUNS,
     curatorSweepRate: process.env.CURATOR_SWEEP_RATE,
     matcherModel: process.env.MATCHER_MODEL,
+    stewardModel: process.env.STEWARD_MODEL,
     curatorModel: process.env.CURATOR_MODEL,
     governanceModel: process.env.GOVERNANCE_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,

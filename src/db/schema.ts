@@ -60,6 +60,18 @@ export const claims = pgTable(
     // important claims are processed first under a run budget (§"Claim Importance
     // and Proportional Effort"). 0.5 = default/medium until judged.
     importance: real("importance").notNull().default(0.5),
+    // --- Steward work-queue state: the claim row IS the queue ---
+    // A claim with steward_state='pending' is awaiting (re)processing by its
+    // Steward; the drain always picks the highest-`importance` pending claim, so
+    // under a budget the most load-bearing claims are stewarded and the rest stay
+    // "embedded stubs". Re-triggers (a changed subclaim, a Curator action) just
+    // set this back to 'pending', coalescing a propagation storm into one slot.
+    // Lifecycle: pending → running → done | error (→ pending again on re-trigger).
+    stewardState: text("steward_state").notNull().default("pending"),
+    stewardTrigger: text("steward_trigger"),
+    stewardContext: text("steward_context"),
+    stewardError: text("steward_error"),
+    stewardedAt: timestamp("stewarded_at", { withTimezone: true }),
     embedding: vector("embedding"),
     textSearch: tsvector("text_search"),
     createdBy: text("created_by").notNull().default("system"),
@@ -73,6 +85,11 @@ export const claims = pgTable(
   (table) => [
     index("idx_claims_state").on(table.state),
     index("idx_claims_updated").on(table.updatedAt),
+    // Drain ordering: among pending claims, highest importance first. The partial
+    // index keeps it small (only the live work queue) and fast as the graph grows.
+    index("idx_claims_steward_queue")
+      .on(table.importance.desc(), table.updatedAt)
+      .where(sql`steward_state = 'pending'`),
   ]
 );
 
