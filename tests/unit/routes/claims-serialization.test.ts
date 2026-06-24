@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fastJson from "fast-json-stringify";
-import { assessmentSchema } from "../../../src/routes/claims.js";
+import { assessmentSchema, claimSchema } from "../../../src/routes/claims.js";
 
 /**
  * Regression test for issue #16: the claim detail endpoint returned
@@ -37,6 +37,26 @@ describe("claim detail response serialization", () => {
     expect(out.assessed_at).toBe(sampleAssessment.assessed_at);
     // subclaim_summary is an arbitrary object and must pass through intact.
     expect(out.subclaim_summary).toEqual({ supported: 2, contested: 0 });
+  });
+
+  it("preserves importance on the claim (same stripping class as #16)", () => {
+    const stringify = fastJson(claimSchema as never);
+    const out = JSON.parse(
+      stringify({
+        id: "ecd9425f-8cf0-4057-9b9d-39371ee2ce77",
+        text: "a claim",
+        claim_type: "empirical_derived",
+        state: "active",
+        decomposition_status: "pending",
+        importance: 0.82,
+        created_by: "extractor",
+        created_at: "2026-06-21T04:18:43.337Z",
+        updated_at: "2026-06-21T04:18:43.337Z",
+      }),
+    );
+    // The frontend surfaces this; if fast-json-stringify drops it (issue #16's
+    // failure mode) importance silently disappears from the UI.
+    expect(out.importance).toBe(0.82);
   });
 
   it("serializes a null assessment as null", () => {

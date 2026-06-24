@@ -225,6 +225,20 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 }
 .tag.kind { font-variant: small-caps; text-transform: none; letter-spacing: 0.02em; }
 
+/* importance meter — neutral pips, deliberately NOT status-coloured so it never
+   competes with the assessment verdict. */
+.imp { display: inline-flex; align-items: center; gap: 0.4rem; }
+.imp-pips { display: inline-flex; gap: 0.16rem; align-items: center; }
+.imp-pip {
+  width: 0.3rem; height: 0.3rem; border-radius: 50%;
+  border: 1px solid var(--faint); background: transparent;
+}
+.imp-pip.on { background: var(--muted); border-color: var(--muted); }
+.imp-label {
+  font-family: var(--sans); font-size: 0.66rem; color: var(--muted);
+  font-variant: small-caps; letter-spacing: 0.02em;
+}
+
 /* relation label on a decomposition edge */
 .relation {
   font-family: var(--sans); font-size: 0.62rem; font-weight: 700;

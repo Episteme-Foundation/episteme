@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loadClaims } from "@/lib/data";
 import { CLAIM_TYPE_LABEL } from "@/lib/ontology";
-import { StatusBadge } from "@/components/Assessment";
+import { StatusBadge, Importance } from "@/components/Assessment";
 
 export default async function ClaimsIndex({
   searchParams,
@@ -48,15 +48,18 @@ export default async function ClaimsIndex({
               {c.assessment_status && <StatusBadge status={c.assessment_status} />}
               <span className="tag kind">{CLAIM_TYPE_LABEL[c.claim_type] ?? c.claim_type?.replace(/_/g, " ")}</span>
               {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
-              {typeof c.assessment_confidence === "number" ? (
-                <span className="conf-num" style={{ marginLeft: "auto" }} title="assessment confidence">
-                  {c.assessment_confidence.toFixed(2)}
-                </span>
-              ) : typeof c.similarity_score === "number" ? (
-                <span className="conf-num" style={{ marginLeft: "auto" }} title="search relevance">
-                  {c.similarity_score.toFixed(2)}
-                </span>
-              ) : null}
+              <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>
+                <Importance value={c.importance} />
+                {typeof c.assessment_confidence === "number" ? (
+                  <span className="conf-num" title="assessment confidence">
+                    {c.assessment_confidence.toFixed(2)}
+                  </span>
+                ) : typeof c.similarity_score === "number" ? (
+                  <span className="conf-num" title="search relevance">
+                    {c.similarity_score.toFixed(2)}
+                  </span>
+                ) : null}
+              </span>
             </div>
           </Link>
         ))}
