@@ -70,6 +70,9 @@ const configSchema = z.object({
   maxSubclaimsPerClaim: z.coerce.number().default(0),
 
   // Governance — Anthropic API model IDs (see src/llm/models.ts).
+  // The Matcher is an agentic search loop; a small model suffices since the
+  // judgment is "same proposition?" over candidates it retrieves itself.
+  matcherModel: modelId(MODELS.haiku),
   governanceModel: modelId(MODELS.sonnet),
   arbitrationModel: modelId(MODELS.sonnet),
   secondOpinionModel: modelId(MODELS.haiku),
@@ -127,6 +130,7 @@ export function loadConfig(): Config {
     matchingTopK: process.env.MATCHING_TOP_K,
     extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
     maxSubclaimsPerClaim: process.env.MAX_SUBCLAIMS_PER_CLAIM,
+    matcherModel: process.env.MATCHER_MODEL,
     governanceModel: process.env.GOVERNANCE_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
     secondOpinionModel: process.env.SECOND_OPINION_MODEL,

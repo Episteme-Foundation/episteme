@@ -1,5 +1,10 @@
-import { completeStructured } from "../client.js";
+import type Anthropic from "@anthropic-ai/sdk";
+type Tool = Anthropic.Tool;
+import { toolUseLoop } from "../client.js";
 import { getMatcherSystemPrompt, getMatchingPrompt } from "../prompts/matcher.js";
+import { generateEmbedding } from "../../services/embedding-service.js";
+import { findSimilarClaims } from "../../services/search-service.js";
+import { loadConfig } from "../../config.js";
 
 export interface MatchDecision {
   is_match: boolean;
@@ -32,23 +37,116 @@ const MATCH_DECISION_SCHEMA = {
   required: ["is_match", "confidence", "reasoning", "instance_stance"],
 };
 
+/**
+ * The agentic Matcher is the single decider of claim identity (issue #25).
+ *
+ * It is a tool-use loop armed with `search_similar_claims`. Embedding similarity
+ * is *retrieval*, not decision: the search is NOT gated at a high threshold, and
+ * the matcher is expected to issue multiple queries — the claim, rewordings, and
+ * the negation — before concluding a claim is novel. The final judgment ("same
+ * proposition? counterpart? specification?") is the model's, reported via the
+ * `submit_match_decision` tool.
+ *
+ * Every new claim — top-level and subclaim — flows through this one matcher.
+ */
 export async function matchClaim(input: {
   extractedText: string;
   proposedCanonical: string;
-  candidates: Array<{ id: string; canonical_form: string; score: number }>;
+  /**
+   * A claim id to exclude from search results (e.g. the parent when matching a
+   * subclaim, so a claim can't match itself). Optional.
+   */
+  excludeClaimId?: string;
   model?: string;
 }): Promise<MatchDecision> {
-  const userPrompt = getMatchingPrompt(
-    input.extractedText,
-    input.proposedCanonical,
-    input.candidates
-  );
+  const config = loadConfig();
+  const userPrompt = getMatchingPrompt(input.extractedText, input.proposedCanonical);
 
-  return completeStructured<MatchDecision>({
-    messages: [{ role: "user", content: userPrompt }],
-    schema: MATCH_DECISION_SCHEMA,
-    schemaName: "MatchDecision",
+  const searchTool: Tool = {
+    name: "search_similar_claims",
+    description:
+      "Search existing claims by semantic similarity. Returns the top matches " +
+      "ranked by similarity (NOT thresholded — low-scoring results are still " +
+      "shown for your judgment). Call this multiple times with different framings " +
+      "of the claim — its wording, paraphrases, and especially its NEGATION — " +
+      "before concluding the claim is novel.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "A claim phrasing to search for" },
+      },
+      required: ["query"],
+    },
+  };
+  const submitTool: Tool = {
+    name: "submit_match_decision",
+    description: "Submit the final claim-identity decision once you have searched enough.",
+    input_schema: MATCH_DECISION_SCHEMA as Tool["input_schema"],
+  };
+
+  let finalResult: MatchDecision | null = null;
+
+  await toolUseLoop({
+    initialMessages: [{ role: "user", content: userPrompt }],
+    tools: [searchTool, submitTool],
     system: getMatcherSystemPrompt(),
-    model: input.model,
+    model: input.model ?? config.matcherModel,
+    maxTokens: 4096,
+    maxIterations: 8,
+    executeTool: async (name, toolInput) => {
+      if (name === "submit_match_decision") {
+        finalResult = toolInput as unknown as MatchDecision;
+        return JSON.stringify({ success: true });
+      }
+      if (name === "search_similar_claims") {
+        const query = String(toolInput.query ?? "");
+        let results: Array<{ id: string; text: string; similarity_score: number }> = [];
+        try {
+          const embedding = await generateEmbedding(query);
+          results = await findSimilarClaims(embedding, {
+            limit: config.matchingTopK,
+            // Retrieval, not decision: keep a low floor so counterparts and
+            // alternate framings that embed far apart still surface (#25).
+            minSimilarity: 0.4,
+            excludeId: input.excludeClaimId,
+          });
+        } catch (err) {
+          return `Error searching: ${err instanceof Error ? err.message : String(err)}`;
+        }
+        return JSON.stringify({
+          query,
+          count: results.length,
+          results: results.map((r) => ({
+            id: r.id,
+            canonical_form: r.text,
+            score: Number(r.similarity_score.toFixed(3)),
+          })),
+        });
+      }
+      return `Error: Unknown tool: ${name}`;
+    },
+    onFinalTool: (name, toolInput) => {
+      if (name === "submit_match_decision") {
+        finalResult = toolInput as unknown as MatchDecision;
+        return finalResult;
+      }
+      return null;
+    },
   });
+
+  if (finalResult) return finalResult;
+
+  // The matcher never submitted a decision (e.g. hit the iteration cap). Treat
+  // the claim as novel so ingestion proceeds; the steward can re-match later.
+  return {
+    is_match: false,
+    matched_claim_id: null,
+    new_canonical_form: input.proposedCanonical,
+    instance_stance: "affirms",
+    confidence: 0.3,
+    reasoning:
+      "Matcher did not submit a decision within the search budget; defaulting to a new claim.",
+    alternative_matches: [],
+    relationship_notes: null,
+  };
 }

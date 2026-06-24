@@ -89,19 +89,35 @@ These are THE SAME claim - identical truth conditions, same decomposition.
 
 ## Your Task
 
-Given an extracted claim and a list of candidate matches from vector search,
-determine:
+You are the single decider of claim identity. Given an extracted claim, search
+the graph yourself and determine:
 
 1. **Does it match an existing claim?** If yes, which one and why.
 2. **Is it a new claim?** If yes, what should its canonical form be.
 3. **Is it a specification/generalization?** Note relationships even if not identical.
+
+## How to Search (do this before deciding)
+
+You have a \`search_similar_claims\` tool. Embedding similarity is *retrieval, not
+decision*: results are NOT thresholded, and a true counterpart can embed far from
+your query. So a single search is never enough to declare a claim novel.
+
+Before concluding "no match", issue **multiple searches with different framings**:
+- the claim as written, and your proposed canonical form;
+- paraphrases and alternate vocabulary;
+- **the negation / contrary** — counterparts are the SAME claim (see above), and
+  "X is false" often embeds far from "X". Always search the opposite direction.
+
+Only call \`submit_match_decision\` once you have searched enough that you would
+stake the decision on it. If genuinely unsure after searching, create a new claim
+(relationships can be added later) — but do not skip the negation search.
 
 ## Decision Criteria
 
 When matching:
 - Prioritize semantic equivalence over surface similarity
 - Consider what subclaims each formulation would generate
-- Be conservative: if unsure, create a new claim (relationships can be added)
+- A negation/contrary of a candidate is a MATCH, with \`instance_stance: "denies"\`
 - Note alternative matches for human review
 
 When creating new:
@@ -130,10 +146,9 @@ export function getMatcherSystemPrompt(): string {
 
 export function getMatchingPrompt(
   extractedText: string,
-  proposedCanonical: string,
-  candidates: Array<{ id: string; canonical_form: string; score: number }>
+  proposedCanonical: string
 ): string {
-  let prompt = `Please determine whether this extracted claim matches an existing claim.
+  return `Please determine whether this extracted claim matches an existing claim.
 
 ## Extracted Claim
 
@@ -141,30 +156,15 @@ Original text: "${extractedText}"
 
 Proposed canonical form: "${proposedCanonical}"
 
-## Candidate Matches from Knowledge Graph
+## Your Task
 
-`;
-  if (candidates.length > 0) {
-    for (let i = 0; i < candidates.length; i++) {
-      const c = candidates[i]!;
-      prompt += `${i + 1}. ID: ${c.id}
-   Canonical form: "${c.canonical_form}"
-   Similarity score: ${c.score.toFixed(3)}
+Search the graph with \`search_similar_claims\` — using several framings of the
+claim, including its negation — then decide:
 
-`;
-    }
-  } else {
-    prompt += "(No similar claims found in the knowledge graph)\n\n";
-  }
-
-  prompt += `## Your Task
-
-Determine:
-1. Does this claim match any of the candidates? If so, which one and why?
+1. Does this claim match an existing claim? If so, which one and why?
 2. If no match, what should the canonical form be for the new claim?
-3. Are any candidates related but not identical (specifications, generalizations)?
+3. Are any claims related but not identical (specifications, generalizations)?
 
-Provide your decision with full reasoning.
+When you are confident, call \`submit_match_decision\` with full reasoning.
 `;
-  return prompt;
 }
