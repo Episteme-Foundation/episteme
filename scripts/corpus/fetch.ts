@@ -58,6 +58,20 @@ async function fetchPost(id: string): Promise<LwPost> {
 async function main(): Promise<void> {
   const cluster = positional(0) ?? "lethalities";
   const manifest = loadManifest(cluster);
+
+  // `web` clusters carry curated, committed markdown from arbitrary public
+  // sources — there's no single API to refetch them, and the committed `.md` is
+  // the pinned source of truth. Skip rather than clobbering curated content.
+  if (manifest.kind === "web") {
+    console.log(
+      `Cluster "${cluster}" is a curated web cluster (kind: "web").\n` +
+        `Its post markdown under corpus/${cluster}/posts/ is committed and pinned; ` +
+        `there is nothing to fetch.\n` +
+        `Edit those files directly to update the corpus.`
+    );
+    return;
+  }
+
   mkdirSync(postsDir(cluster), { recursive: true });
 
   console.log(`Fetching ${manifest.posts.length} posts for cluster "${cluster}"\n`);

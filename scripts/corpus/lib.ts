@@ -78,16 +78,38 @@ export function postSidecarPath(name: string, id: string): string {
 
 export interface ManifestPost {
   id: string;
-  slug: string;
+  /** LessWrong slug — used to build the canonical post URL. Optional for `web`
+   *  clusters, which carry an explicit `url` instead. */
+  slug?: string;
+  /** Explicit source URL. Required for `web` clusters; for `lesswrong` clusters
+   *  it is derived from id + slug when absent. This is the provenance recorded
+   *  on the ingested source. */
+  url?: string;
   title: string;
   author: string;
   role?: string;
 }
 export interface Manifest {
   cluster: string;
+  /**
+   * How the post markdown is sourced:
+   *   "lesswrong" (default) — fetched from the LessWrong GraphQL API by id.
+   *   "web"                 — curated, committed markdown from arbitrary public
+   *                           sources; each post carries its own `url`. There is
+   *                           no programmatic refetch (the committed `.md` is the
+   *                           pinned source of truth), so `corpus:fetch` is a
+   *                           no-op for these clusters.
+   */
+  kind?: "lesswrong" | "web";
   description: string;
   source: string;
   posts: ManifestPost[];
+}
+
+/** Canonical source URL for a post: explicit `url` wins, else the LessWrong form. */
+export function postUrl(p: ManifestPost): string {
+  if (p.url) return p.url;
+  return `https://www.lesswrong.com/posts/${p.id}/${p.slug ?? ""}`;
 }
 
 export function loadManifest(name: string): Manifest {

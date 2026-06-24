@@ -1,0 +1,13 @@
+{
+  "cluster": "blackholes",
+  "_comment": "Deliberately minimal, matching the lethalities cluster. The standard is qualitative judgment against corpus/RUBRIC.md, not an answer key. 'notes' orient whoever reads a run report. Add shouldMerge / shouldStayDistinct arrays here only once a qualitative read surfaces stable, repeatable failure modes worth pinning.",
+  "notes": [
+    "This cluster centers on one question: could the LHC create a black hole (or other exotic object) that endangers the Earth? Unlike the lethalities cluster, the answer is essentially settled ('no'), so this stress-tests how the system handles a near-consensus, deeply-argued case rather than a live disagreement.",
+    "Expect very heavy overlap on a small number of load-bearing claims: (a) the cosmic-ray / astrophysical-survival argument (Earth, Sun, white dwarfs, neutron stars have endured higher-energy collisions for billions of years), (b) micro black holes evaporate via Hawking radiation, (c) even if stable, micro black holes are too small to accrete dangerously. These appear in CERN, Giddings-Mangano, and the Wikipedia overview in different words — the matcher should canonicalize them across sources (watch the dedup ratio and the multi-source claims).",
+    "The genuine cruxes the assessment layer should surface: Hawking radiation has broad theoretical consensus but no direct experimental confirmation; and whether the white-dwarf/neutron-star bound truly closes the metastable-accretion gap Plaga raises. These are the 'weakest or most speculative points' the FLF black-hole prompt asks to probe.",
+    "Plaga (and Rössler, quoted in the overview) are the only dissenting voices, and the dissent is judged unpersuasive (failed peer review / rebutted). Watch whether Plaga's claims end up related/contested against the Giddings-Mangano and CERN claims they contradict, rather than as disconnected islands — and watch that 'the LHC is dangerous' is NOT merged with 'the LHC is safe'.",
+    "Watch over-merging: 'micro black holes evaporate instantly' and 'even if micro black holes are stable, they are harmless' are DIFFERENT claims resting on different arguments (Hawking radiation vs. the astrophysical bound). Merging them erases the structure of the safety case."
+  ],
+  "shouldMerge": [],
+  "shouldStayDistinct": []
+}

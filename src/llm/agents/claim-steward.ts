@@ -64,11 +64,21 @@ export async function runClaimSteward(input: {
    an existing claim with add_relationship_edge or creating a new one with
    add_decomposition_edge. Do not re-decompose from scratch.`;
 
+  const iterationBudget = config.stewardMaxIterations;
+
   const userMessage = `You have been triggered to steward a claim.
 
 Trigger: ${input.trigger}
 Claim ID: ${input.claimId}
 Context: ${input.context}
+
+Budget: you have up to ${iterationBudget} tool-use iterations for this stewardship.
+That is a generous backstop, not a target — use as few or as many as the claim's
+importance warrants. But it IS a hard limit: make sure you have recorded an
+assessment (update_claim_assessment) and logged your decision
+(log_stewardship_decision) before you approach it, so your work is never lost
+mid-task. If you are warned that few iterations remain, stop exploring and record
+your conclusion immediately.
 
 You OWN this claim — its structure (decomposition) and its assessment. Proceed:
 1. Use get_claim_with_context to understand the claim, its subclaims and their
@@ -97,7 +107,15 @@ ${structureStep}
     // A pure runaway backstop — judgment, not the iteration count, decides when
     // to stop. The Steward now decomposes AND assesses in one loop, so this is
     // set high; real spend is bounded by stewardMaxRuns + the LLM budget tracker.
-    maxIterations: config.stewardMaxIterations,
+    maxIterations: iterationBudget,
+    iterationBudgetNotice: {
+      warnWithin: 3,
+      message: (remaining) =>
+        `⚠ Stewardship budget notice: ${remaining} tool-use iteration(s) remain ` +
+        `before you are stopped. Wrap up now — if you have not yet recorded your ` +
+        `assessment with update_claim_assessment and logged it with ` +
+        `log_stewardship_decision, do so on your next turn so your work is saved.`,
+    },
     executeTool: async (name, toolInput) => {
       if (name === "match_claim") {
         return executeMatcherTool(name, toolInput);

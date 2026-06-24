@@ -20,6 +20,7 @@ import {
   recordUsage,
   resetBudgetCounters,
   getBudgetStatus,
+  getSessionUsage,
 } from "../../../src/llm/budget-tracker.js";
 import { LlmBudgetExceededError } from "../../../src/llm/errors.js";
 
@@ -106,6 +107,38 @@ describe("BudgetTracker", () => {
       llmDailyCallLimit: 100,
       llmHourlyTokenLimit: 50000,
       llmDailyTokenLimit: 500000,
+    });
+  });
+
+  it("accumulates session usage including cache tokens", () => {
+    recordUsage(1000, 500, { readTokens: 8000, creationTokens: 200 });
+    recordUsage(2000, 700);
+    const u = getSessionUsage();
+    expect(u.calls).toBe(2);
+    expect(u.inputTokens).toBe(3000);
+    expect(u.outputTokens).toBe(1200);
+    expect(u.cacheReadTokens).toBe(8000);
+    expect(u.cacheCreationTokens).toBe(200);
+  });
+
+  it("excludes cache-read tokens from the limit counters (only uncached input+output)", () => {
+    // A large cache-read prefix must not trip the daily/hourly token limits.
+    recordUsage(100, 50, { readTokens: 1_000_000 });
+    const status = getBudgetStatus();
+    expect(status.dailyTokenCount).toBe(150);
+    expect(status.hourlyTokenCount).toBe(150);
+  });
+
+  it("resets session usage on resetBudgetCounters", () => {
+    recordUsage(100, 50, { readTokens: 10 });
+    resetBudgetCounters();
+    const u = getSessionUsage();
+    expect(u).toEqual({
+      calls: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
     });
   });
 

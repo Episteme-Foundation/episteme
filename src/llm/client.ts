@@ -117,7 +117,10 @@ export async function complete(options: {
     outputTokens: response.usage.output_tokens,
   };
 
-  recordUsage(usage.inputTokens, usage.outputTokens);
+  recordUsage(usage.inputTokens, usage.outputTokens, {
+    readTokens: response.usage.cache_read_input_tokens ?? 0,
+    creationTokens: response.usage.cache_creation_input_tokens ?? 0,
+  });
   logCacheUsage(response.usage);
 
   let content = "";
@@ -157,7 +160,10 @@ export async function completeWithTools(options: {
     outputTokens: response.usage.output_tokens,
   };
 
-  recordUsage(usage.inputTokens, usage.outputTokens);
+  recordUsage(usage.inputTokens, usage.outputTokens, {
+    readTokens: response.usage.cache_read_input_tokens ?? 0,
+    creationTokens: response.usage.cache_creation_input_tokens ?? 0,
+  });
   logCacheUsage(response.usage);
 
   let textContent = "";
@@ -292,6 +298,13 @@ export async function toolUseLoop(options: {
   executeTool: (name: string, input: Record<string, unknown>) => Promise<string>;
   /** Called when the model calls a "final" tool (e.g. submit_decomposition). Return result to stop loop. */
   onFinalTool?: (name: string, input: Record<string, unknown>) => unknown | null;
+  /**
+   * When set, the loop appends a plain-text budget notice to the tool-result
+   * message once only `warnWithin` iterations remain, so the agent can finish
+   * its essential actions (e.g. recording an assessment) instead of being cut
+   * off mid-task at maxIterations. The string is the agent-facing wording.
+   */
+  iterationBudgetNotice?: { warnWithin: number; message: (remaining: number) => string };
 }): Promise<ToolCompletionResult> {
   const messages = [...options.initialMessages];
   const maxIter = options.maxIterations ?? 5;
@@ -334,9 +347,20 @@ export async function toolUseLoop(options: {
       });
     }
 
+    // If the iteration budget is nearly spent, tell the agent so it can wrap up
+    // its essential actions on the next turn rather than being hard-cut.
+    const remaining = maxIter - 1 - i;
+    const notice = options.iterationBudgetNotice;
+    const userContent: Array<ToolResultBlockParam | { type: "text"; text: string }> = [
+      ...toolResults,
+    ];
+    if (notice && remaining > 0 && remaining <= notice.warnWithin) {
+      userContent.push({ type: "text", text: notice.message(remaining) });
+    }
+
     // Append assistant message and tool results
     messages.push({ role: "assistant", content: result.rawContent });
-    messages.push({ role: "user", content: toolResults });
+    messages.push({ role: "user", content: userContent });
   }
 
   return lastResult!;

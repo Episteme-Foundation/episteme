@@ -30,9 +30,29 @@ scripts/corpus/          fetch / reset / run / report (run via tsx)
 runs/                    report.md + graph.json per run (gitignored)
 ```
 
-Current cluster: **`lethalities`** — the 2022 "List of Lethalities" AI-risk
-debate (Yudkowsky's anchor + direct responses + two sub-threads, 11 posts,
-~85k words). Chosen for dense claim overlap and head-to-head disagreement.
+Clusters:
+
+- **`lethalities`** — the 2022 "List of Lethalities" AI-risk debate (Yudkowsky's
+  anchor + direct responses + two sub-threads, 11 posts, ~85k words). Fetched
+  from LessWrong. Chosen for dense claim overlap and head-to-head disagreement.
+- **`blackholes`** — the LHC micro black hole safety case, one of the three FLF
+  Epistack case studies. A `web` cluster (see below): curated, committed markdown
+  from CERN/LSAG, a Giddings–Mangano safety paper, Wikipedia, and a published
+  dissent. A near-settled but deeply-argued question — heavy overlap on a few
+  load-bearing claims plus a couple of genuine cruxes.
+
+The three FLF case studies (lab leak / black holes / eggs) are the intended
+production seed set; `blackholes` is the first one built.
+
+### Cluster kinds
+
+`manifest.json` has a `kind`:
+
+- **`lesswrong`** (default) — posts are fetched from the LessWrong GraphQL API by
+  id (`corpus:fetch`).
+- **`web`** — posts are curated, committed markdown from arbitrary public sources,
+  each carrying its own `url`. The committed `.md` is the pinned source of truth;
+  `corpus:fetch` is a no-op for these clusters (edit the files directly to update).
 
 ## Prerequisites
 
@@ -68,16 +88,30 @@ dump for deeper digging.
 
 ## Cost & nondeterminism
 
-- The full cluster is a real LLM workload (extraction over ~85k words, then
-  recursive decomposition, assessment with web search, and a stewardship pass —
-  each steward invocation is itself a multi-tool agent call). Start with
-  `--limit=2` while iterating on prompts; run the full set less often.
-- **Bound the fan-out for iteration.** Extraction count multiplies everything
-  downstream, so for fast/cheap iteration set these in `.env` (0 = unlimited):
-  `EXTRACTION_MAX_CLAIMS` (most-central claims per doc), `MAX_DECOMPOSITION_DEPTH`
-  (tree depth), `MAX_SUBCLAIMS_PER_CLAIM` (tree width). A good starting point:
-  `EXTRACTION_MAX_CLAIMS=8`, `MAX_DECOMPOSITION_DEPTH=2`, `MAX_SUBCLAIMS_PER_CLAIM=4`.
-  Leave them at 0 for a faithful full run.
+- A run is a real LLM workload: extraction over the document text, then the
+  Steward decomposing AND assessing each claim in a multi-tool agent loop (with
+  web search), plus Curator structure sweeps. The **Steward is the dominant
+  cost** — one invocation is a whole tool-use loop, and decomposition seeds more
+  Steward runs. **Always start cheap** and scale up only once a tiny run looks
+  right.
+- **Every run prints an LLM usage + cost report** at the end (calls, fresh vs
+  cache-read vs cache-write input, output, and a Sonnet-priced **upper-bound**
+  dollar estimate — the Matcher runs on cheaper Haiku, so the real bill is lower).
+  Read it; it's the ground truth for what a run costs.
+- **The cost knobs (set in `.env` or inline; 0 = unlimited):**
+  | knob | bounds | good test value |
+  |---|---|---|
+  | `EXTRACTION_MAX_CLAIMS` | most-central claims extracted per doc (multiplies everything downstream) | `2`–`8` |
+  | `STEWARD_MAX_RUNS` | total Steward invocations for the whole run (the main spend guardrail) | `2`–`10` |
+  | `STEWARD_MAX_ITERATIONS` | tool-use iterations *within* one Steward (a runaway backstop; **keep high in production** — a deep claim wants many calls) | `8`–`15` for tests; `200` default |
+  | `CURATOR_MAX_RUNS` / `CURATOR_SWEEP_RATE` | Curator structure sweeps (`RATE=0` disables the proactive path) | `0` to disable for a first smoke |
+  | `LLM_DAILY_TOKEN_LIMIT` / `LLM_HOURLY_TOKEN_LIMIT` | hard circuit breaker — the run stops cleanly when hit (counts uncached input+output) | a safety ceiling, e.g. `300000` for a smoke |
+- The agents are **told their iteration budget** and warned as it runs low, so a
+  Steward records its assessment before being cut off rather than leaving a claim
+  decomposed-but-unassessed. Lowering `STEWARD_MAX_ITERATIONS` for tests is safe.
+- Recommended escalation: **very small** (`--posts=<one id>`,
+  `EXTRACTION_MAX_CLAIMS=2`, `STEWARD_MAX_RUNS=2`, curator off) → **small**
+  (`--limit=2`/`3`) → **full**. Check the printed cost at each step.
 - LLM output is nondeterministic. Treat a single run as one sample: run 2–3×
   and watch whether the metrics and failure modes are **stable**, not whether
   any one number matches.

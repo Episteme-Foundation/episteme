@@ -30,10 +30,13 @@ import {
   loadManifest,
   positional,
   postMarkdownPath,
+  postUrl,
   RUNS_ROOT,
 } from "./lib.js";
 import type { ManifestPost } from "./lib.js";
 import { closeDb } from "../../src/db/client.js";
+import { getSessionUsage } from "../../src/llm/budget-tracker.js";
+import type { SessionUsage } from "../../src/llm/budget-tracker.js";
 import { getJobById } from "../../src/services/job-service.js";
 import { buildApp } from "../../src/server/app.js";
 import { drainLocalQueues } from "../../src/workers/local-runner.js";
@@ -48,6 +51,38 @@ function formatActivity(stats: DrainStats): string {
   if (errs) s += `, ${errs} handler errors`;
   if (stats.capped) s += " (CAPPED — did not reach quiescence)";
   return s;
+}
+
+// Per-1M-token prices for the cost estimate. We price EVERYTHING at Sonnet
+// rates even though the Matcher/second-opinion run on Haiku (≈3x cheaper), so
+// the printed figure is a deliberate UPPER BOUND — if this stays small, the real
+// bill is smaller. Cache reads are ~0.1x input; cache writes ~1.25x input.
+const PRICE = { input: 3.0, output: 15.0, cacheRead: 0.3, cacheWrite: 3.75 };
+
+function estimateCostUsd(u: SessionUsage): number {
+  return (
+    (u.inputTokens * PRICE.input +
+      u.outputTokens * PRICE.output +
+      u.cacheReadTokens * PRICE.cacheRead +
+      u.cacheCreationTokens * PRICE.cacheWrite) /
+    1_000_000
+  );
+}
+
+function printUsage(label: string): void {
+  const u = getSessionUsage();
+  const k = (n: number) => `${(n / 1000).toFixed(1)}k`;
+  const cacheTotalInput = u.inputTokens + u.cacheReadTokens + u.cacheCreationTokens;
+  const hitRate =
+    cacheTotalInput > 0 ? ((u.cacheReadTokens / cacheTotalInput) * 100).toFixed(0) : "0";
+  console.log(
+    `\n=== LLM usage (${label}) ===\n` +
+      `  calls: ${u.calls}\n` +
+      `  input:  ${k(u.inputTokens)} fresh + ${k(u.cacheReadTokens)} cache-read ` +
+      `+ ${k(u.cacheCreationTokens)} cache-write  (cache hit rate ${hitRate}%)\n` +
+      `  output: ${k(u.outputTokens)}\n` +
+      `  est. cost (Sonnet-priced upper bound): $${estimateCostUsd(u).toFixed(3)}`
+  );
 }
 
 function selectPosts(all: ManifestPost[]): ManifestPost[] {
@@ -118,7 +153,7 @@ async function main(): Promise<void> {
         continue;
       }
       const content = readFileSync(mdPath, "utf8");
-      const url = `https://www.lesswrong.com/posts/${p.id}/${p.slug}`;
+      const url = postUrl(p);
 
       process.stdout.write(`  ${tag} ${p.title.slice(0, 50).padEnd(50)} submit…`);
       const started = Date.now();
@@ -173,11 +208,19 @@ async function main(): Promise<void> {
   console.log(`Trace:  ${join(runDir, "trace.jsonl")} (${trace.length} agent messages)`);
   console.log("Read the report alongside corpus/RUBRIC.md.");
 
+  printUsage("this run");
+
   await closeDb();
 }
 
 main().catch(async (err) => {
   console.error(err);
+  // Still report what the run cost before it failed — a crash shouldn't hide spend.
+  try {
+    printUsage("partial — run errored");
+  } catch {
+    /* usage reporting is best-effort */
+  }
   await closeDb().catch(() => {});
   process.exit(1);
 });
