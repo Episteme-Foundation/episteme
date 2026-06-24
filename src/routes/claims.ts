@@ -9,7 +9,7 @@ import {
 import { claimSearchParams, claimGetParams, claimProposeBody, claimPatchBody, assessmentHistoryParams } from "../schemas/claim.js";
 import { getAssessmentHistory, getAssessmentTrajectory } from "../services/assessment-service.js";
 import { hybridSearch } from "../services/search-service.js";
-import { getClaimTree, getSubclaimCount } from "../services/tree-service.js";
+import { getClaimTree, getSubclaimCount, getClaimDependents } from "../services/tree-service.js";
 import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
 import { addArgument, getArgumentsForClaim } from "../services/argument-service.js";
 
@@ -190,6 +190,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
               tree: { type: "object", nullable: true, additionalProperties: true },
               arguments: { type: "array", nullable: true },
               instances: { type: "array", nullable: true },
+              dependents: { type: "array", nullable: true },
             },
           },
           404: errorEnvelope,
@@ -263,6 +264,9 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
             .where(eq(claimInstances.claimId, claim_id));
 
           response.instances = instances;
+
+          // Reverse decomposition edges: the claims that depend on this one.
+          response.dependents = await getClaimDependents(claim_id);
         }
 
         return reply.send(response);

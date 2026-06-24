@@ -1,5 +1,5 @@
 import type { ClaimDetail } from "@/lib/types";
-import { statusMeta, isStatus, CLAIM_TYPE_LABEL } from "@/lib/ontology";
+import { statusMeta, isStatus, CLAIM_TYPE_LABEL, isAtomic, decompositionState } from "@/lib/ontology";
 import { StatusBadge, Confidence, Swatch } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
 
@@ -105,9 +105,11 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
           </>
         ) : (
           <p style={{ color: "var(--muted)", fontStyle: "italic" }}>
-            {claim.decomposition_status === "complete"
+            {isAtomic(claim.decomposition_status)
               ? "This claim is atomic — it bottoms out in a bedrock fact, a contested empirical question, or a value premise, and does not decompose further."
-              : "This claim has not been decomposed yet."}
+              : decompositionState(claim.decomposition_status) === "processing"
+                ? "This claim is being decomposed — its subclaims are still being worked out."
+                : "This claim has not been decomposed yet."}
           </p>
         )}
       </section>

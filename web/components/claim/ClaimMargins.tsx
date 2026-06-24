@@ -1,0 +1,45 @@
+import Link from "next/link";
+import type { ClaimDetail } from "@/lib/types";
+import type { DataSource } from "@/lib/data";
+import { ClaimView } from "@/components/ClaimView";
+import { DecompositionCompass } from "./DecompositionCompass";
+import { DependentsRail } from "./DependentsRail";
+import { HistoryRail } from "./HistoryRail";
+import styles from "./margins.module.css";
+
+// The claim page in its full three-column form (issue #42): the decomposition
+// compass in the left margin, the dependents and assessment history in the
+// right, and ClaimView's reading column in the centre. On narrow screens the
+// rails fold inline above and below the reading column.
+export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: DataSource }) {
+  return (
+    <div className={styles.bleed}>
+      <div className={styles.grid}>
+        {/* LEFT — decomposition compass */}
+        <div className={styles.leftRail}>
+          {detail.tree && <DecompositionCompass tree={detail.tree} />}
+        </div>
+
+        {/* CENTRE — the reading column */}
+        <div className={styles.center}>
+          <p className="sc" style={{ marginBottom: "1.2rem", display: "flex", gap: ".7rem", alignItems: "center" }}>
+            <Link href="/claims">← claims</Link>
+            {source === "fixture" && (
+              <span className="tag" title="The API is not connected; showing a design fixture.">
+                fixture data
+              </span>
+            )}
+          </p>
+          <ClaimView detail={detail} />
+        </div>
+
+        {/* RIGHT — dependents on top, assessment history below; both expand in
+            normal flow so nothing overlaps */}
+        <div className={styles.rightRail}>
+          <DependentsRail dependents={detail.dependents ?? []} />
+          {detail.trajectory && <HistoryRail trajectory={detail.trajectory} />}
+        </div>
+      </div>
+    </div>
+  );
+}

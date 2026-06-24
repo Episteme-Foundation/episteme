@@ -18,6 +18,11 @@ export type RelationType =
   | "requires" | "supports" | "contradicts"
   | "specifies" | "defines" | "presupposes";
 
+// Mirrors the backend sourceTypeEnum (src/schemas/common.ts).
+export type SourceType =
+  | "primary_data" | "peer_reviewed" | "government" | "news_original"
+  | "news_secondary" | "opinion" | "social_media" | "unknown";
+
 export interface TreeNode {
   id: string;
   text: string;
@@ -73,7 +78,7 @@ export interface Instance {
   confidence: number;
   source_title: string;
   source_url: string | null;
-  source_type?: string;
+  source_type?: SourceType;
 }
 
 export interface TrajectoryPoint {
@@ -84,6 +89,18 @@ export interface TrajectoryPoint {
   trigger: string | null;
 }
 
+// A claim that depends on THIS claim — a reverse decomposition edge. `relation_type`
+// describes how the dependent uses this claim (e.g. it `requires` it as a premise).
+// This is the data that fills the right margin on a claim page.
+export interface DependentClaim {
+  id: string;
+  text: string;
+  claim_type: ClaimType;
+  relation_type: RelationType;
+  assessment_status: AssessmentStatus | null;
+  assessment_confidence: number | null;
+}
+
 export interface ClaimDetail {
   claim: ClaimCore;
   assessment: Assessment | null;
@@ -91,6 +108,7 @@ export interface ClaimDetail {
   tree?: TreeNode;
   arguments?: ArgumentItem[];
   instances?: Instance[];
+  dependents?: DependentClaim[];
   trajectory?: {
     current: TrajectoryPoint | null;
     history: TrajectoryPoint[];
