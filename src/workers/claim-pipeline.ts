@@ -1,14 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "../db/client.js";
-import {
-  claims,
-  claimRelationships,
-  claimInstances,
-  sources,
-  assessments,
-} from "../db/schema.js";
+import { claims, claimRelationships } from "../db/schema.js";
 import { decomposeClaim } from "../llm/agents/decomposer.js";
-import { assessAtomicClaim, assessClaim } from "../llm/agents/assessor.js";
 import { generateEmbedding } from "../services/embedding-service.js";
 import { findSimilarClaims } from "../services/search-service.js";
 import { addArgument } from "../services/argument-service.js";
@@ -19,14 +12,21 @@ import type { ClaimPipelineMessage } from "../services/queue-service.js";
 /**
  * Handle a claim pipeline message. Each message = one LLM call + DB writes + enqueue follow-ups.
  *
+ * The pipeline is purely *structural*: it decomposes a claim and wires up its
+ * subclaims. It does NOT assess — assessment is open-ended judgment owned by the
+ * Claim Steward (constitution Part VII, issue #30). Every claim, atomic or
+ * compound, is handed to the Steward for assessment once its structure exists.
+ *
  * Flow:
  * 1. Decompose the claim into subclaims (one LLM call)
  * 2. For each subclaim:
  *    a. Match against existing claims (pgvector cosine search)
  *    b. If match: create relationship, done
  *    c. If new: create claim, generate embedding, enqueue to claim-pipeline
- * 3. If atomic: enqueue for assessment
- * 4. When all children assessed: enqueue parent for assessment
+ * 3. Enqueue this claim to the Steward to be assessed. Bottom-up ordering is a
+ *    *re-trigger* concern, not a gate: a parent is assessed provisionally and
+ *    re-judged when a child steward notifies it that the child's assessment
+ *    changed.
  */
 export async function handleClaimPipeline(
   message: ClaimPipelineMessage
@@ -59,14 +59,16 @@ export async function handleClaimPipeline(
   try {
     // Depth limit check
     if (message.currentDepth >= config.maxDecompositionDepth) {
-      // Mark as atomic and assess
+      // Mark as atomic and hand to the steward for assessment
       await db
         .update(claims)
         .set({ decompositionStatus: "atomic", updatedAt: new Date() })
         .where(eq(claims.id, message.claimId));
 
-      await assessAndStore(message.claimId, claim.text, claim.claimType, true);
-      await checkParentCompletion(message.claimId, message.jobId);
+      await enqueueAssessment(
+        message.claimId,
+        "Reached maximum decomposition depth; treated as atomic."
+      );
       return;
     }
 
@@ -83,20 +85,16 @@ export async function handleClaimPipeline(
     }
 
     if (result.is_atomic || result.subclaims.length === 0) {
-      // Atomic claim - assess directly
+      // Atomic claim - hand to the steward for assessment
       await db
         .update(claims)
         .set({ decompositionStatus: "atomic", updatedAt: new Date() })
         .where(eq(claims.id, message.claimId));
 
-      await assessAndStore(
+      await enqueueAssessment(
         message.claimId,
-        claim.text,
-        claim.claimType,
-        true,
-        result.atomic_type
+        "Atomic claim (no decomposition); assess from instances and evidence."
       );
-      await checkParentCompletion(message.claimId, message.jobId);
       return;
     }
 
@@ -201,7 +199,8 @@ export async function handleClaimPipeline(
       }
     }
 
-    // Update parent with children count
+    // Update parent with children count (informational; assessment no longer
+    // gates on it — see #30).
     await db
       .update(claims)
       .set({
@@ -211,11 +210,15 @@ export async function handleClaimPipeline(
       })
       .where(eq(claims.id, message.claimId));
 
-    // If no children need processing, assess now
-    if (childrenTotal === 0) {
-      await assessAndStore(message.claimId, claim.text, claim.claimType, true);
-      await checkParentCompletion(message.claimId, message.jobId);
-    }
+    // Hand the (now structured) claim to the steward to assess. It assesses
+    // provisionally even before its children are assessed; each child steward
+    // notifies it when the child's assessment changes, prompting a re-judgement.
+    await enqueueAssessment(
+      message.claimId,
+      childrenTotal === 0
+        ? "Decomposition produced no new children; assess from instances and evidence."
+        : `Decomposed into ${childrenTotal} subclaim(s); assess holistically.`
+    );
   } catch (err) {
     // Mark as pending so it can be retried
     await db
@@ -251,157 +254,16 @@ async function createRelationship(
   }
 }
 
-async function assessAndStore(
-  claimId: string,
-  claimText: string,
-  claimType: string,
-  isAtomic: boolean,
-  atomicType?: string | null
-): Promise<void> {
-  const db = getDb();
-
-  try {
-    let result;
-
-    if (isAtomic) {
-      // Fetch instances for this claim
-      const claimInstanceRows = await db
-        .select({
-          source_title: sources.title,
-          source_type: sources.sourceType,
-          original_text: claimInstances.originalText,
-          confidence: claimInstances.confidence,
-        })
-        .from(claimInstances)
-        .innerJoin(sources, eq(claimInstances.sourceId, sources.id))
-        .where(eq(claimInstances.claimId, claimId))
-        .limit(10);
-
-      result = await assessAtomicClaim({
-        claimText,
-        claimType,
-        atomicType: atomicType ?? null,
-        instances: claimInstanceRows.map((r) => ({
-          source_title: r.source_title,
-          source_type: r.source_type,
-          original_text: r.original_text,
-          confidence: Number(r.confidence),
-        })),
-      });
-    } else {
-      // Get subclaim assessments
-      const subclaims = await getSubclaimAssessments(claimId);
-      result = await assessClaim({
-        claimText,
-        claimType,
-        subclaims,
-      });
-    }
-
-    // Mark previous assessment as non-current
-    await db
-      .update(assessments)
-      .set({ isCurrent: false })
-      .where(eq(assessments.claimId, claimId));
-
-    // Store new assessment
-    await db.insert(assessments).values({
-      claimId,
-      status: result.status,
-      confidence: result.confidence,
-      reasoningTrace: result.reasoning_trace,
-      subclaimSummary: result.subclaim_summary,
-      trigger: "pipeline_assessment",
-      triggerContext: isAtomic ? "atomic_claim_assessment" : "subclaim_aggregation",
-    });
-  } catch {
-    // Assessment failed - claim will stay without assessment
-  }
-}
-
-async function getSubclaimAssessments(claimId: string): Promise<
-  Array<{
-    canonical_form: string;
-    relation: string;
-    status: string;
-    confidence: number;
-    reasoning: string;
-  }>
-> {
-  const db = getDb();
-
-  const rows = await db
-    .select({
-      text: claims.text,
-      claimType: claims.claimType,
-      relationType: claimRelationships.relationType,
-      status: assessments.status,
-      confidence: assessments.confidence,
-      reasoningTrace: assessments.reasoningTrace,
-    })
-    .from(claimRelationships)
-    .innerJoin(claims, eq(claims.id, claimRelationships.childClaimId))
-    .leftJoin(
-      assessments,
-      sql`${assessments.claimId} = ${claimRelationships.childClaimId} AND ${assessments.isCurrent} = true`
-    )
-    .where(eq(claimRelationships.parentClaimId, claimId));
-
-  return rows.map((r) => ({
-    canonical_form: r.text,
-    relation: r.relationType,
-    status: r.status ?? "unknown",
-    confidence: r.confidence ?? 0,
-    reasoning: r.reasoningTrace ?? "Not yet assessed",
-  }));
-}
-
 /**
- * When a child is assessed, check if all siblings are done.
- * If so, enqueue the parent for assessment.
+ * Hand a structured claim to the Claim Steward for assessment. The steward owns
+ * the claim's judgment over time (#30): it traverses subclaims/related claims,
+ * always has web_search, consumes instance stance, and re-judges as evidence and
+ * depended-on claims change.
  */
-async function checkParentCompletion(
-  childClaimId: string,
-  jobId: string
-): Promise<void> {
-  const db = getDb();
-
-  // Find all parents
-  const parents = await db
-    .select({ parentClaimId: claimRelationships.parentClaimId })
-    .from(claimRelationships)
-    .where(eq(claimRelationships.childClaimId, childClaimId));
-
-  for (const parent of parents) {
-    // Atomically increment children_assessed
-    const [updated] = await db
-      .update(claims)
-      .set({
-        childrenAssessed: sql`${claims.childrenAssessed} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq(claims.id, parent.parentClaimId))
-      .returning();
-
-    if (updated && updated.childrenAssessed >= updated.childrenTotal && updated.childrenTotal > 0) {
-      // All children assessed - assess the parent
-      await assessAndStore(
-        updated.id,
-        updated.text,
-        updated.claimType,
-        false
-      );
-
-      // Enqueue steward to evaluate whether the assessment change
-      // is material enough to propagate to dependents
-      await enqueueSteward({
-        claimId: updated.id,
-        trigger: "subclaim_change",
-        context: `All ${updated.childrenTotal} subclaims assessed. Parent claim reassessed.`,
-      });
-
-      // Propagate upward
-      await checkParentCompletion(updated.id, jobId);
-    }
-  }
+async function enqueueAssessment(claimId: string, context: string): Promise<void> {
+  await enqueueSteward({
+    claimId,
+    trigger: "initial_assessment",
+    context,
+  });
 }

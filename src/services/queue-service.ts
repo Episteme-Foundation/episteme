@@ -35,7 +35,11 @@ export interface ArbitrationMessage {
 
 export interface StewardMessage {
   claimId: string;
-  trigger: "subclaim_change" | "contribution_accepted" | "staleness_check";
+  trigger:
+    | "initial_assessment"
+    | "subclaim_change"
+    | "contribution_accepted"
+    | "staleness_check";
   context: string;
 }
 
