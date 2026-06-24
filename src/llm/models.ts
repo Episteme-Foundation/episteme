@@ -23,3 +23,14 @@ export const DEFAULT_MODEL = MODELS.sonnet;
 export function isAnthropicModelId(id: string): boolean {
   return /^claude-/.test(id);
 }
+
+/**
+ * Whether a model accepts the `temperature` request parameter. Opus 4.8
+ * **deprecated** it — sending `temperature` to it returns
+ * `400 invalid_request_error: "temperature is deprecated for this model."`,
+ * which silently fails every Steward run when STEWARD_MODEL is Opus. Omit the
+ * parameter for such models. (Sonnet/Haiku still accept it.)
+ */
+export function modelAcceptsTemperature(id: string): boolean {
+  return !/^claude-opus-4-8/.test(id);
+}

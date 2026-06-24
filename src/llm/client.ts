@@ -9,7 +9,13 @@ type ToolUnion = Anthropic.Messages.ToolUnion;
 type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 import { loadConfig } from "../config.js";
 import { checkBudget, recordUsage } from "./budget-tracker.js";
-import { DEFAULT_MODEL } from "./models.js";
+import { DEFAULT_MODEL, modelAcceptsTemperature } from "./models.js";
+
+/** Build the optional `temperature` field, omitting it for models that reject it. */
+function temperatureParam(model: string, temperature?: number): { temperature?: number } {
+  if (!modelAcceptsTemperature(model)) return {};
+  return { temperature: temperature ?? 0 };
+}
 
 export interface TokenUsage {
   inputTokens: number;
@@ -121,7 +127,7 @@ export async function complete(options: {
     model,
     messages: options.messages,
     max_tokens: options.maxTokens ?? 4096,
-    temperature: options.temperature ?? 0,
+    ...temperatureParam(model, options.temperature),
     ...(options.system ? { system: cachedSystem(options.system) } : {}),
     ...(options.tools ? { tools: cachedTools(options.tools) } : {}),
     ...(options.container ? { container: options.container } : {}),
@@ -172,7 +178,7 @@ export async function completeWithTools(options: {
     model,
     messages: options.messages,
     max_tokens: options.maxTokens ?? 4096,
-    temperature: options.temperature ?? 0,
+    ...temperatureParam(model, options.temperature),
     tools: cachedTools(options.tools),
     ...(options.system ? { system: cachedSystem(options.system) } : {}),
     ...(options.container ? { container: options.container } : {}),
