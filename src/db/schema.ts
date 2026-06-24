@@ -358,6 +358,28 @@ export const arbitrationResults = pgTable("arbitration_results", {
   arbitratedBy: text("arbitrated_by").notNull().default("dispute_arbitrator"),
 });
 
+// ---------------------------------------------------------------------------
+// reconciliation_events
+//
+// An append-only audit log of the Curator's re-individuation surgery (§18):
+// every merge and split primitive records what it changed, in enough detail to
+// be reversed. `reversed` flags an event that has been undone.
+// ---------------------------------------------------------------------------
+export const reconciliationEvents = pgTable("reconciliation_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // 'merge' | 'create_claim' | 'add_edge' | 'remove_edge' | 'reassign_instance'
+  operation: text("operation").notNull(),
+  reasoning: text("reasoning").notNull().default(""),
+  // Operation-specific snapshot sufficient to reverse the change (moved ids,
+  // pre-flip stances, deleted edge rows, previous state, …).
+  payload: jsonb("payload").notNull().default({}),
+  reversed: boolean("reversed").notNull().default(false),
+  createdBy: text("created_by").notNull().default("curator"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Type exports
 export type Claim = typeof claims.$inferSelect;
 export type NewClaim = typeof claims.$inferInsert;
