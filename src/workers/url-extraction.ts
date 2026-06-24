@@ -4,7 +4,6 @@ import { sources, claims, claimInstances } from "../db/schema.js";
 import { extractClaims } from "../llm/agents/extractor.js";
 import { matchClaim } from "../llm/agents/matcher.js";
 import { generateEmbedding } from "../services/embedding-service.js";
-import { findSimilarClaims } from "../services/search-service.js";
 import { updateJob } from "../services/job-service.js";
 import { enqueueClaimPipeline } from "../services/queue-service.js";
 import type { UrlExtractionMessage } from "../services/queue-service.js";
@@ -63,26 +62,12 @@ export async function handleUrlExtraction(
     let claimsMatched = 0;
 
     for (const claim of extracted) {
-      // Generate embedding for the canonical form
-      const embedding = await generateEmbedding(
-        claim.proposed_canonical_form
-      );
-
-      // Find similar existing claims
-      const similar = await findSimilarClaims(embedding, {
-        limit: 10,
-        minSimilarity: 0.8,
-      });
-
-      // Match against candidates
+      // The agentic Matcher is the single decider of claim identity: it does
+      // its own (multi-framing, ungated) search, so we no longer pre-fetch
+      // candidates here (#25).
       const matchResult = await matchClaim({
         extractedText: claim.original_text,
         proposedCanonical: claim.proposed_canonical_form,
-        candidates: similar.map((s) => ({
-          id: s.id,
-          canonical_form: s.text,
-          score: s.similarity_score,
-        })),
       });
 
       let claimId: string;
@@ -92,13 +77,21 @@ export async function handleUrlExtraction(
         claimId = matchResult.matched_claim_id;
         claimsMatched++;
       } else {
-        // Create new claim
+        // Create new claim. Embed the final canonical form (which the matcher
+        // may have reworded) so the stored vector matches the stored text.
+        const canonicalText =
+          matchResult.new_canonical_form ?? claim.proposed_canonical_form;
+        let embedding: number[] | undefined;
+        try {
+          embedding = await generateEmbedding(canonicalText);
+        } catch {
+          // Continue without embedding
+        }
+
         const [newClaim] = await db
           .insert(claims)
           .values({
-            text:
-              matchResult.new_canonical_form ??
-              claim.proposed_canonical_form,
+            text: canonicalText,
             claimType: claim.claim_type,
             embedding,
             createdBy: "extractor",
