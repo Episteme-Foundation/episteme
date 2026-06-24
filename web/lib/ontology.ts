@@ -151,12 +151,12 @@ export const IMPORTANCE: Record<ImportanceLevel, { label: string; pips: number; 
 // Kept in lockstep with importanceLevel()'s cut points above.
 export type ImportanceFloor = "any" | "low" | "medium" | "high" | "foundational";
 
-export const IMPORTANCE_FLOORS: { value: ImportanceFloor; label: string; min: number }[] = [
-  { value: "any",          label: "Any importance", min: 0 },
-  { value: "low",          label: "Low & up",       min: 0.25 },
-  { value: "medium",       label: "Medium & up",    min: 0.45 },
-  { value: "high",         label: "High & up",       min: 0.65 },
-  { value: "foundational", label: "Foundational",   min: 0.85 },
+export const IMPORTANCE_FLOORS: { value: ImportanceFloor; label: string; short: string; min: number }[] = [
+  { value: "any",          label: "Any importance", short: "Any",          min: 0 },
+  { value: "low",          label: "Low & up",       short: "Low",          min: 0.25 },
+  { value: "medium",       label: "Medium & up",    short: "Medium",       min: 0.45 },
+  { value: "high",         label: "High & up",      short: "High",         min: 0.65 },
+  { value: "foundational", label: "Foundational",   short: "Foundational", min: 0.85 },
 ];
 
 // URL band value → numeric floor passed to the API (0 = no constraint).

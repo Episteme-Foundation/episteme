@@ -3,13 +3,8 @@ import { loadClaims } from "@/lib/data";
 import { CLAIM_TYPE_LABEL, IMPORTANCE_FLOORS, importanceFloorMin } from "@/lib/ontology";
 import type { ImportanceFloor } from "@/lib/ontology";
 import { StatusBadge, Unassessed, Importance } from "@/components/Assessment";
+import { ClaimsControls } from "@/components/ClaimsControls";
 import type { AssessedFilter } from "@/lib/types";
-
-const ASSESSED_OPTIONS: { value: AssessedFilter; label: string }[] = [
-  { value: "all", label: "Any status" },
-  { value: "assessed", label: "Assessed only" },
-  { value: "unassessed", label: "Unassessed only" },
-];
 
 export default async function ClaimsIndex({
   searchParams,
@@ -18,21 +13,16 @@ export default async function ClaimsIndex({
 }) {
   const { q, assessed: assessedRaw, imp: impRaw } = await searchParams;
 
-  // Normalise the URL params back into known values (and the selected options).
+  // The browse feed defaults to assessed-only (the unassessed long tail is mostly
+  // queued stubs). "all" and "unassessed" are opt-in; anything else is the default.
   const assessed: AssessedFilter =
-    assessedRaw === "assessed" || assessedRaw === "unassessed" ? assessedRaw : "all";
-  const impFloor: ImportanceFloor = (IMPORTANCE_FLOORS.find((f) => f.value === impRaw)?.value ??
-    "any") as ImportanceFloor;
+    assessedRaw === "all" || assessedRaw === "unassessed" ? assessedRaw : "assessed";
+  const impFloor: ImportanceFloor =
+    IMPORTANCE_FLOORS.find((f) => f.value === impRaw)?.value ?? "any";
   const minImportance = importanceFloorMin(impFloor);
-  const filtersActive = assessed !== "all" || minImportance > 0;
+  const filtersActive = assessed !== "assessed" || minImportance > 0;
 
   const { results: claims, source } = await loadClaims(q, { assessed, minImportance });
-
-  const inputStyle = {
-    font: "inherit", fontSize: ".92rem", padding: ".4rem .6rem",
-    border: "1px solid var(--rule)", borderRadius: "4px",
-    background: "var(--paper-card)", color: "var(--ink)",
-  } as const;
 
   return (
     <div className="col-wide">
@@ -43,43 +33,10 @@ export default async function ClaimsIndex({
         see its decomposition, provenance, and the reasoning behind the assessment.
       </p>
 
-      <form action="/claims" style={{ margin: "1.4rem 0 2rem", maxWidth: "40rem" }}>
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search claims — e.g. “was inflation high in 2022?”"
-          style={{
-            width: "100%", font: "inherit", fontSize: "1rem", padding: ".6rem .8rem",
-            border: "1px solid var(--rule)", borderRadius: "4px", background: "var(--paper-card)",
-            color: "var(--ink)",
-          }}
-        />
-        <div className="claim-filters">
-          <label className="claim-filter">
-            <span className="sc">Assessment</span>
-            <select name="assessed" defaultValue={assessed} style={inputStyle}>
-              {ASSESSED_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="claim-filter">
-            <span className="sc">Importance</span>
-            <select name="imp" defaultValue={impFloor} style={inputStyle}>
-              {IMPORTANCE_FLOORS.map((f) => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="claim-filter-apply" style={inputStyle}>Apply</button>
-          {(filtersActive || q) && (
-            <Link href="/claims" className="claim-filter-clear">Clear</Link>
-          )}
-        </div>
-      </form>
+      <ClaimsControls q={q ?? ""} assessed={assessed} imp={impFloor} resultCount={claims.length} />
 
       {source === "fixture" && (
-        <p style={{ marginTop: "-1rem", marginBottom: "1.4rem" }}>
+        <p style={{ marginTop: "-0.6rem", marginBottom: "1.4rem" }}>
           <span className="tag" title="The API is not connected; showing design fixtures.">
             fixture data
           </span>
@@ -92,7 +49,7 @@ export default async function ClaimsIndex({
             ? "No claims match these filters. Try widening the importance band or the assessment filter."
             : q
               ? "No claims match that search."
-              : "No claims yet."}
+              : "No assessed claims yet."}
         </p>
       ) : (
         <div className="cards">

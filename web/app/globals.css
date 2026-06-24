@@ -406,19 +406,47 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2.4rem 0; }
 .stage .stage-name { font-weight: 600; font-size: 0.92rem; }
 .stage .stage-desc { font-family: var(--sans); font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
 
-/* browse/search filter bar */
-.claim-filters {
-  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.8rem;
-  margin-top: 0.7rem;
+/* browse/search controls: search box + segmented filters */
+.claims-controls { max-width: 40rem; margin: 1.4rem 0 1.8rem; }
+.claims-search {
+  width: 100%; font: inherit; font-size: 1rem; padding: 0.6rem 0.8rem;
+  border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--paper-card); color: var(--ink);
 }
-.claim-filter { display: flex; flex-direction: column; gap: 0.25rem; }
-.claim-filter .sc { color: var(--faint); }
-.claim-filter select { cursor: pointer; }
-.claim-filter-apply { cursor: pointer; font-weight: 600; }
-.claim-filter-apply:hover { border-color: var(--faint); }
-.claim-filter-clear {
-  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
-  align-self: center; padding-bottom: 0.45rem;
+.claims-search:focus-visible { outline: none; border-color: var(--faint); }
+
+.filter-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0.6rem 1.4rem; margin-top: 0.9rem;
+}
+.filter-group { display: inline-flex; align-items: center; gap: 0.5rem; }
+.filter-group > .sc { color: var(--faint); }
+
+/* segmented control — a row of pills sharing one border; the active pill fills. */
+.segmented {
+  display: inline-flex; border: 1px solid var(--rule); border-radius: 4px;
+  overflow: hidden; background: var(--paper-card);
+}
+.segmented button {
+  font-family: var(--sans); font-size: 0.74rem; letter-spacing: 0.01em;
+  padding: 0.24rem 0.62rem; border: none; border-left: 1px solid var(--rule);
+  background: transparent; color: var(--muted); cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.segmented button:first-child { border-left: none; }
+.segmented button:hover { color: var(--ink); background: var(--paper-sunk); }
+.segmented button[aria-pressed="true"] {
+  background: var(--ink); color: var(--paper); font-weight: 600;
+}
+
+.filter-meta {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 0.7rem;
+  font-family: var(--sans); font-size: 0.76rem; color: var(--faint);
+}
+.filter-reset {
+  font-family: var(--sans); font-size: 0.76rem; color: var(--link);
+  background: none; border: none; padding: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
 }
 
 /* card grid for index pages */
