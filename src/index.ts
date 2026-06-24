@@ -12,6 +12,7 @@ import { handleUrlExtraction } from "./workers/url-extraction.js";
 import { handleContributionMessage } from "./workers/contribution-pipeline.js";
 import { handleArbitrationMessage } from "./workers/arbitration-pipeline.js";
 import { handleStewardMessage } from "./workers/steward-pipeline.js";
+import { handleCuratorMessage } from "./workers/curator-pipeline.js";
 import { handleAuditMessage } from "./workers/audit-pipeline.js";
 import type {
   ClaimPipelineMessage,
@@ -19,6 +20,7 @@ import type {
   ContributionMessage,
   ArbitrationMessage,
   StewardMessage,
+  CuratorMessage,
   AuditMessage,
 } from "./services/queue-service.js";
 
@@ -84,6 +86,14 @@ async function main() {
     }));
   }
 
+  if (config.sqsCuratorQueue) {
+    pollers.push(startPoller<CuratorMessage>({
+      queueUrl: config.sqsCuratorQueue,
+      handler: handleCuratorMessage,
+      logger,
+    }));
+  }
+
   if (config.sqsAuditQueue) {
     pollers.push(startPoller<AuditMessage>({
       queueUrl: config.sqsAuditQueue,
@@ -100,6 +110,7 @@ async function main() {
     config.sqsContributionQueue ||
     config.sqsArbitrationQueue ||
     config.sqsStewardQueue ||
+    config.sqsCuratorQueue ||
     config.sqsAuditQueue;
   if (!anySqsConfigured) {
     pollers.push(startLocalRunner({ logger }));

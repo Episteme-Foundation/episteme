@@ -76,11 +76,17 @@ const configSchema = z.object({
   // still works and the claim count can converge; importance-prioritized
   // processing is a follow-up.
   stewardMaxRuns: z.coerce.number().default(0),
+  // Cap the total number of Curator invocations per process (0 = unlimited),
+  // mirroring stewardMaxRuns for predictable test/deploy spend.
+  curatorMaxRuns: z.coerce.number().default(0),
 
   // Governance — Anthropic API model IDs (see src/llm/models.ts).
   // The Matcher is an agentic search loop; a small model suffices since the
   // judgment is "same proposition?" over candidates it retrieves itself.
   matcherModel: modelId(MODELS.haiku),
+  // The Curator adjudicates merges/splits and proposes structure — recognizing
+  // duplicates saturates, but a contested split is judgment, so mid-to-strong.
+  curatorModel: modelId(MODELS.sonnet),
   governanceModel: modelId(MODELS.sonnet),
   arbitrationModel: modelId(MODELS.sonnet),
   secondOpinionModel: modelId(MODELS.haiku),
@@ -99,6 +105,7 @@ const configSchema = z.object({
   sqsContributionQueue: z.string().default(""),
   sqsArbitrationQueue: z.string().default(""),
   sqsStewardQueue: z.string().default(""),
+  sqsCuratorQueue: z.string().default(""),
   sqsAuditQueue: z.string().default(""),
 });
 
@@ -137,7 +144,9 @@ export function loadConfig(): Config {
     extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
     stewardMaxIterations: process.env.STEWARD_MAX_ITERATIONS,
     stewardMaxRuns: process.env.STEWARD_MAX_RUNS,
+    curatorMaxRuns: process.env.CURATOR_MAX_RUNS,
     matcherModel: process.env.MATCHER_MODEL,
+    curatorModel: process.env.CURATOR_MODEL,
     governanceModel: process.env.GOVERNANCE_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
     secondOpinionModel: process.env.SECOND_OPINION_MODEL,
@@ -148,6 +157,7 @@ export function loadConfig(): Config {
     sqsContributionQueue: process.env.SQS_CONTRIBUTION_QUEUE,
     sqsArbitrationQueue: process.env.SQS_ARBITRATION_QUEUE,
     sqsStewardQueue: process.env.SQS_STEWARD_QUEUE,
+    sqsCuratorQueue: process.env.SQS_CURATOR_QUEUE,
     sqsAuditQueue: process.env.SQS_AUDIT_QUEUE,
   });
 
