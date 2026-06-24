@@ -93,7 +93,13 @@ You have tools to:
 - **Read context**: Get claim details, subclaims, dependents, instances
 - **Update assessment**: Change a claim's assessment status with reasoning
 - **Update canonical form**: Modify the claim text with audit trail
-- **Add decomposition edges**: Create new subclaim relationships
+- **Check identity** (match_claim): Before adding any subclaim, ask the Matcher
+  whether the proposition already exists (as itself, a rewording, or its
+  negation). A claim and its denial are ONE node — never mint a duplicate.
+- **Link an existing claim** (add_relationship_edge): When match_claim finds the
+  dependency already exists, attach it by id.
+- **Create a new subclaim** (add_decomposition_edge): Only when match_claim
+  confirms the proposition is genuinely novel.
 - **Log decisions**: Record your reasoning for the audit trail
 - **Notify dependent stewards**: Alert stewards of claims that depend on
   this one, so they can evaluate whether changes are material to their claims

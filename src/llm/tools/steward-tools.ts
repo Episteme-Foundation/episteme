@@ -79,10 +79,49 @@ export function getStewardToolDefinitions(): Tool[] {
       },
     },
     {
+      name: "add_relationship_edge",
+      description:
+        "Attach an EXISTING claim as a subclaim, by id. Use this when match_claim " +
+        "found that the dependency you want already exists (as itself, a rewording, " +
+        "or its negation) — link it instead of minting a duplicate. Edges to your " +
+        "claim's decomposition are yours to own.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          parent_id: {
+            type: "string",
+            description: "The UUID of the parent claim (the claim you steward)",
+          },
+          child_id: {
+            type: "string",
+            description: "The UUID of the existing claim to attach as a subclaim",
+          },
+          relation: {
+            type: "string",
+            enum: [
+              "requires",
+              "supports",
+              "contradicts",
+              "specifies",
+              "defines",
+              "presupposes",
+            ],
+            description: "Relationship type",
+          },
+          reasoning: {
+            type: "string",
+            description: "Why this dependency holds",
+          },
+        },
+        required: ["parent_id", "child_id", "relation", "reasoning"],
+      },
+    },
+    {
       name: "add_decomposition_edge",
       description:
-        "Add a new subclaim to a claim's decomposition. Creates the subclaim " +
-        "if it doesn't exist and establishes the relationship.",
+        "Create a NEW subclaim and attach it to a claim's decomposition. Use only " +
+        "after match_claim confirms the proposition does NOT already exist — " +
+        "otherwise use add_relationship_edge to link the existing claim.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -235,6 +274,43 @@ export async function executeStewardTool(
         return JSON.stringify({
           success: true,
           message: `Canonical form updated for claim ${claimId}`,
+        });
+      }
+
+      case "add_relationship_edge": {
+        const parentId = input.parent_id as string;
+        const childId = input.child_id as string;
+        const relation = input.relation as string;
+        const reasoning = input.reasoning as string;
+
+        if (parentId === childId) {
+          return JSON.stringify({
+            success: false,
+            message: "A claim cannot be its own subclaim (parent_id === child_id).",
+          });
+        }
+
+        const db = getDb();
+
+        // Link an already-existing claim; it has (or will have) its own steward
+        // processing, so no enqueue here — just the edge.
+        try {
+          await db.insert(claimRelationships).values({
+            parentClaimId: parentId,
+            childClaimId: childId,
+            relationType: relation.toLowerCase(),
+            reasoning,
+            confidence: 1.0,
+            createdBy: "claim_steward",
+          });
+        } catch {
+          // Unique constraint -- this edge already exists; idempotent, ignore.
+        }
+
+        return JSON.stringify({
+          success: true,
+          message: `Linked existing claim ${childId} as a subclaim of ${parentId} (${relation}).`,
+          child_claim_id: childId,
         });
       }
 
