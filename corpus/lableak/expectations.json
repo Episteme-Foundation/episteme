@@ -1,0 +1,14 @@
+{
+  "cluster": "lableak",
+  "_comment": "Deliberately minimal, matching the other clusters. Qualitative judgment against corpus/RUBRIC.md, not an answer key. Add shouldMerge / shouldStayDistinct only once a qualitative read surfaces stable failure modes.",
+  "notes": [
+    "This is the hardest cluster: a live, high-stakes dispute (zoonosis vs. lab leak) where the expert lean is ~77/21 toward zoonosis but the question is genuinely open and politically charged. The zoonosis and lab-leak documents are deliberately opposed steelmen; the overview is neutral. The whole point is that the graph must HOLD the disagreement.",
+    "Expect the central opposed pair: 'SARS-CoV-2 arose by natural zoonotic spillover at the Huanan market' vs. 'SARS-CoV-2 arose from a research-related (lab) accident'. These must be related/contested, NOT merged, and NOT silently resolved to one side. Over-merging here is the worst failure mode in the whole corpus.",
+    "The cruxes appear in multiple documents and should canonicalize across them: (a) market epidemiology — true spillover site vs. super-spreader amplification + ascertainment bias; (b) the furin cleavage site — fingerprint of engineering vs. natural recombination + suboptimal design; (c) WIV capability/access and the DEFUSE proposal; (d) the lineage A/B two-spillover argument; (e) the missing intermediate host. Each crux is a sub-question both sides address with opposite conclusions — watch whether matching links the affirm/deny instances to the same claim rather than making islands.",
+    "Watch the affirm/deny stance handling: the zoonosis and lab-leak documents make directly contradictory claims about the SAME propositions (e.g., 'the furin cleavage site indicates engineering'). The steward should read credible instances that both affirm and deny as a strong signal toward CONTESTED, not pick a winner.",
+    "Watch that the assessment respects the evidential asymmetry WITHOUT erasing the minority: zoonosis has the weight of expert opinion and the published market analyses, but the lab-leak case is not pseudoscience here (it is the steelman, not the bioweapon conspiracy). A good result represents zoonosis as better-supported while keeping the lab-leak claims live and contested.",
+    "The overview's meta-observation — six Bayesian analyses spanning 23 orders of magnitude — is itself a claim about the difficulty of the question and a candidate for an assessment/uncertainty note."
+  ],
+  "shouldMerge": [],
+  "shouldStayDistinct": []
+}

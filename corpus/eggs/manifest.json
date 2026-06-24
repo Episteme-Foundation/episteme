@@ -1,0 +1,29 @@
+{
+  "cluster": "eggs",
+  "kind": "web",
+  "description": "The health effects of eggs — one of the three FLF Epistack case studies (flf.org/epistack-competition). A deliberately mundane, open-ended question ('Are eggs good or bad to eat? For whom? How would we know?') that is really a question about ways of knowing: dietary cholesterol vs blood cholesterol, observational cohorts vs randomized trials, confounding and reverse causation, whole-diet context, and subgroup effects (notably diabetics). Chosen to stress how the system handles genuinely unresolved, methodology-driven disagreement where the cruxes are about evidence quality rather than a single fact. Sources span the mainstream-nuanced view, the conflicting meta-analytic evidence, and the guideline/epistemics angle.",
+  "source": "Curated, committed markdown assembled from public sources: the Harvard T.H. Chan School of Public Health 'Nutrition Source' page on eggs; Wikipedia's 'Egg as food' health/nutrition sections (CC BY-SA 4.0); and a synthesis of the dietary-cholesterol guideline history and study-design debate. Each post's `url` records its provenance. This is a `web` cluster: the markdown is the pinned source of truth and is not refetched.",
+  "posts": [
+    {
+      "id": "harvard-nutrition-source",
+      "url": "https://nutritionsource.hsph.harvard.edu/food-features/eggs/",
+      "title": "Eggs — The Nutrition Source",
+      "author": "Harvard T.H. Chan School of Public Health",
+      "role": "mainstream-nuanced-view"
+    },
+    {
+      "id": "wikipedia-egg-health",
+      "url": "https://en.wikipedia.org/wiki/Egg_as_food",
+      "title": "Egg as food — nutrition and health effects",
+      "author": "Wikipedia contributors (CC BY-SA 4.0)",
+      "role": "conflicting-evidence-overview"
+    },
+    {
+      "id": "dietary-cholesterol-debate",
+      "url": "https://en.wikipedia.org/wiki/Dietary_cholesterol",
+      "title": "Dietary cholesterol, guidelines, and the limits of the evidence",
+      "author": "Synthesis of US Dietary Guidelines history and the observational-vs-trial debate",
+      "role": "epistemics-and-guidelines"
+    }
+  ]
+}
