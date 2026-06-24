@@ -72,6 +72,62 @@ describe("search-service", () => {
     });
   });
 
+  describe("filters", () => {
+    const embedding = () => new Array(1536).fill(0.1);
+
+    it("adds an unassessed predicate without shifting the LIMIT placeholder", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(embedding());
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q", { assessed: "unassessed" });
+      const [sql, params] = mockRawQuery.mock.calls[0]!;
+      expect(sql).toContain("a.status IS NULL");
+      // query, embedding, minSimilarity, limit — the predicate binds no param.
+      expect(params).toHaveLength(4);
+      expect(sql).toContain("LIMIT $4");
+    });
+
+    it("adds an assessed predicate", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(embedding());
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q", { assessed: "assessed" });
+      expect(mockRawQuery.mock.calls[0]![0]).toContain("a.status IS NOT NULL");
+    });
+
+    it("binds min_importance and shifts the LIMIT placeholder", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(embedding());
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q", { minImportance: 0.65 });
+      const [sql, params] = mockRawQuery.mock.calls[0]!;
+      expect(sql).toContain("c.importance >= $4");
+      expect(sql).toContain("LIMIT $5");
+      // query, embedding, minSimilarity, minImportance, limit
+      expect(params).toHaveLength(5);
+      expect(params![3]).toBe(0.65);
+    });
+
+    it("adds no filter clauses by default", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(embedding());
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q");
+      const [sql, params] = mockRawQuery.mock.calls[0]!;
+      expect(sql).not.toContain("a.status IS");
+      expect(sql).not.toContain("c.importance >=");
+      expect(params).toHaveLength(4);
+    });
+
+    it("applies filters on the keyword fallback with the right param indices", async () => {
+      mockGenerateEmbedding.mockRejectedValueOnce(new Error("no embedding"));
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q", { assessed: "unassessed", minImportance: 0.45 });
+      const [sql, params] = mockRawQuery.mock.calls[0]!;
+      expect(sql).toContain("a.status IS NULL");
+      expect(sql).toContain("c.importance >= $2");
+      expect(sql).toContain("LIMIT $3");
+      // query, minImportance, limit
+      expect(params).toHaveLength(3);
+    });
+  });
+
   describe("findSimilarClaims", () => {
     it("finds similar claims by embedding", async () => {
       const embedding = new Array(1536).fill(0.1);

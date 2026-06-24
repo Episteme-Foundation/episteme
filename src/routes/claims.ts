@@ -6,7 +6,7 @@ import {
   claimInstances,
   sources,
 } from "../db/schema.js";
-import { claimSearchParams, claimGetParams, claimProposeBody, claimPatchBody, assessmentHistoryParams } from "../schemas/claim.js";
+import { claimSearchParams, claimListParams, claimGetParams, claimProposeBody, claimPatchBody, assessmentHistoryParams } from "../schemas/claim.js";
 import { getAssessmentHistory, getAssessmentTrajectory } from "../services/assessment-service.js";
 import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount, getClaimDependents } from "../services/tree-service.js";
@@ -70,6 +70,8 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
             limit: { type: "integer", minimum: 1, maximum: 100, default: 30 },
             cursor: { type: "string" },
             state: { type: "string" },
+            assessed: { type: "string", enum: ["all", "assessed", "unassessed"], default: "all" },
+            min_importance: { type: "number", minimum: 0, maximum: 1, default: 0 },
           },
         },
         response: {
@@ -97,10 +99,14 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
         },
       },
       handler: async (request, reply) => {
-        const limit = Math.min(Number(request.query.limit) || 30, 100);
-        const cursor = request.query.cursor || undefined;
-        const state = request.query.state || undefined;
-        const { results, next_cursor } = await listClaims({ limit, cursor, state });
+        const params = claimListParams.parse(request.query);
+        const { results, next_cursor } = await listClaims({
+          limit: params.limit,
+          cursor: params.cursor,
+          state: params.state,
+          assessed: params.assessed,
+          minImportance: params.min_importance,
+        });
         return reply.send({ results, next_cursor });
       },
     }
@@ -124,6 +130,8 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
             min_similarity: { type: "number", minimum: 0, maximum: 1, default: 0.3 },
+            assessed: { type: "string", enum: ["all", "assessed", "unassessed"], default: "all" },
+            min_importance: { type: "number", minimum: 0, maximum: 1, default: 0 },
           },
         },
         response: {
@@ -158,6 +166,8 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
         const { results, total } = await hybridSearch(query, {
           limit: params.limit,
           minSimilarity: params.min_similarity,
+          assessed: params.assessed,
+          minImportance: params.min_importance,
         });
 
         return reply.send({ results, total });

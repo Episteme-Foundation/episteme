@@ -10,9 +10,22 @@ import {
 
 // ---- Request schemas ----
 
+export const assessedFilterEnum = z.enum(["all", "assessed", "unassessed"]);
+
 export const claimSearchParams = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   min_similarity: z.coerce.number().min(0).max(1).default(0.3),
+  assessed: assessedFilterEnum.default("all"),
+  min_importance: z.coerce.number().min(0).max(1).default(0),
+});
+
+// Browse-feed filters share the assessment/importance levers with search.
+export const claimListParams = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  cursor: z.string().optional(),
+  state: z.string().optional(),
+  assessed: assessedFilterEnum.default("all"),
+  min_importance: z.coerce.number().min(0).max(1).default(0),
 });
 
 export const claimGetParams = z.object({

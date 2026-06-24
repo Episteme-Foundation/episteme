@@ -146,6 +146,33 @@ export const IMPORTANCE: Record<ImportanceLevel, { label: string; pips: number; 
   peripheral:   { label: "peripheral",   pips: 1, gloss: "a leaf detail almost nothing depends on" },
 };
 
+// Minimum-importance bands for the browse/search filter. Each `min` is the lower
+// bound of an importanceLevel() band, so e.g. "high" means "high or foundational".
+// Kept in lockstep with importanceLevel()'s cut points above.
+export type ImportanceFloor = "any" | "low" | "medium" | "high" | "foundational";
+
+export const IMPORTANCE_FLOORS: { value: ImportanceFloor; label: string; short: string; min: number }[] = [
+  { value: "any",          label: "Any importance", short: "Any",          min: 0 },
+  { value: "low",          label: "Low & up",       short: "Low",          min: 0.25 },
+  { value: "medium",       label: "Medium & up",    short: "Medium",       min: 0.45 },
+  { value: "high",         label: "High & up",      short: "High",         min: 0.65 },
+  { value: "foundational", label: "Foundational",   short: "Foundational", min: 0.85 },
+];
+
+// URL band value → numeric floor passed to the API (0 = no constraint).
+export function importanceFloorMin(value: string | undefined): number {
+  return IMPORTANCE_FLOORS.find((f) => f.value === value)?.min ?? 0;
+}
+
+// Numeric floor → the band value, so a shared link round-trips back into the
+// dropdown's selected option.
+export function importanceFloorValue(min: number | undefined): ImportanceFloor {
+  if (!min) return "any";
+  let match: ImportanceFloor = "any";
+  for (const f of IMPORTANCE_FLOORS) if (min >= f.min) match = f.value;
+  return match;
+}
+
 // ---------------------------------------------------------------------------
 // Effect on the parent claim — "what does this subclaim do to the claim above
 // it", as distinct from "how verified is this subclaim". Colouring decomposition

@@ -12,15 +12,40 @@ export interface SearchResult {
   assessment_confidence: number | null;
 }
 
+// Filter on whether a claim carries a current assessment. "unassessed" matches
+// the rule the UI badges use: a NULL current status (no row, or a mid-pipeline
+// row whose status hasn't landed yet) reads as unassessed, not as a verdict.
+export type AssessedFilter = "all" | "assessed" | "unassessed";
+
+export interface SearchFilters {
+  assessed?: AssessedFilter;
+  minImportance?: number;
+}
+
+// Build the extra WHERE clauses for the assessment/importance filters, appending
+// any bound params to `params` and referencing them by position. The assessment
+// predicate keys off `a.status` (NULL ⇒ unassessed) so it agrees with the badges.
+function filterClauses(filters: SearchFilters, params: unknown[]): string {
+  let sql = "";
+  if (filters.assessed === "assessed") sql += "\n      AND a.status IS NOT NULL";
+  else if (filters.assessed === "unassessed") sql += "\n      AND a.status IS NULL";
+  if (filters.minImportance && filters.minImportance > 0) {
+    params.push(filters.minImportance);
+    sql += `\n      AND c.importance >= $${params.length}`;
+  }
+  return sql;
+}
+
 /**
  * Hybrid search combining keyword (tsvector + pg_trgm) and semantic (pgvector) scores.
  * Falls back to keyword-only if no embedding is available.
  */
 export async function hybridSearch(
   query: string,
-  options: { limit?: number; minSimilarity?: number } = {}
+  options: { limit?: number; minSimilarity?: number } & SearchFilters = {}
 ): Promise<{ results: SearchResult[]; total: number }> {
-  const { limit = 20, minSimilarity = 0.3 } = options;
+  const { limit = 20, minSimilarity = 0.3, assessed = "all", minImportance = 0 } = options;
+  const filters: SearchFilters = { assessed, minImportance };
 
   let embedding: number[] | null = null;
   try {
@@ -30,18 +55,24 @@ export async function hybridSearch(
   }
 
   if (embedding) {
-    return hybridSearchWithEmbedding(query, embedding, limit, minSimilarity);
+    return hybridSearchWithEmbedding(query, embedding, limit, minSimilarity, filters);
   }
-  return keywordSearch(query, limit);
+  return keywordSearch(query, limit, filters);
 }
 
 async function hybridSearchWithEmbedding(
   query: string,
   embedding: number[],
   limit: number,
-  minSimilarity: number
+  minSimilarity: number,
+  filters: SearchFilters
 ): Promise<{ results: SearchResult[]; total: number }> {
   const embeddingStr = `[${embedding.join(",")}]`;
+
+  const params: unknown[] = [query, embeddingStr, minSimilarity];
+  const filterSql = filterClauses(filters, params);
+  params.push(limit);
+  const limitIdx = params.length;
 
   const rows = await rawQuery<
     SearchResult & { text_rank: number; semantic_score: number }
@@ -55,12 +86,12 @@ async function hybridSearchWithEmbedding(
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
     WHERE c.state != 'deprecated' AND c.merged_into IS NULL
       AND (c.text_search @@ websearch_to_tsquery('english', $1)
-           OR 1 - (c.embedding <=> $2::vector) > $3)
+           OR 1 - (c.embedding <=> $2::vector) > $3)${filterSql}
     ORDER BY (0.4 * ts_rank(c.text_search, websearch_to_tsquery('english', $1))
             + 0.6 * (1 - (c.embedding <=> $2::vector))) DESC
-    LIMIT $4
+    LIMIT $${limitIdx}
     `,
-    [query, embeddingStr, minSimilarity, limit]
+    params
   );
 
   const results = rows.map((r) => ({
@@ -79,8 +110,14 @@ async function hybridSearchWithEmbedding(
 
 async function keywordSearch(
   query: string,
-  limit: number
+  limit: number,
+  filters: SearchFilters
 ): Promise<{ results: SearchResult[]; total: number }> {
+  const params: unknown[] = [query];
+  const filterSql = filterClauses(filters, params);
+  params.push(limit);
+  const limitIdx = params.length;
+
   const rows = await rawQuery<SearchResult & { text_rank: number }>(
     `
     SELECT c.id, c.text, c.claim_type, c.state, c.importance,
@@ -89,11 +126,11 @@ async function keywordSearch(
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
     WHERE c.state != 'deprecated' AND c.merged_into IS NULL
-      AND c.text_search @@ websearch_to_tsquery('english', $1)
+      AND c.text_search @@ websearch_to_tsquery('english', $1)${filterSql}
     ORDER BY text_rank DESC
-    LIMIT $2
+    LIMIT $${limitIdx}
     `,
-    [query, limit]
+    params
   );
 
   const results = rows.map((r) => ({
