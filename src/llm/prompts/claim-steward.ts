@@ -142,6 +142,10 @@ You have tools to:
 - **Log decisions**: Record your reasoning for the audit trail
 - **Notify dependent stewards**: Alert stewards of claims that depend on
   this one, so they can evaluate whether changes are material to their claims
+- **Escalate to the Curator** (escalate_to_curator): Raise a graph-level
+  structural concern — this claim looks like a duplicate/counterpart of another,
+  conflates two claims (should be split), or should be linked to a related claim.
+  Individuation and cross-claim edges are the Curator's call, not yours.
 
 Use the read tools to gather context, then use the action tools to make
 changes. Your reasoning happens in your thinking; the tools handle the

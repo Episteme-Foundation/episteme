@@ -15,7 +15,11 @@ import {
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
 import { addArgument } from "../../services/argument-service.js";
-import { enqueueSteward, enqueueClaimPipeline } from "../../services/queue-service.js";
+import {
+  enqueueSteward,
+  enqueueClaimPipeline,
+  enqueueCurator,
+} from "../../services/queue-service.js";
 
 export function getStewardToolDefinitions(): Tool[] {
   return [
@@ -241,6 +245,30 @@ export function getStewardToolDefinitions(): Tool[] {
           },
         },
         required: ["claim_id", "change_summary"],
+      },
+    },
+    {
+      name: "escalate_to_curator",
+      description:
+        "Flag a graph-level structural concern for the Curator — e.g. this claim " +
+        "looks like a duplicate/counterpart of another, conflates two distinct " +
+        "claims (should be split), or should be linked to a related claim. " +
+        "Individuation (merge/split) and cross-claim edges are the Curator's domain, " +
+        "not yours; raise it and let the Curator adjudicate.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          claim_id: {
+            type: "string",
+            description: "The UUID of the claim with the structural concern",
+          },
+          concern: {
+            type: "string",
+            description:
+              "What you noticed (e.g. 'likely duplicate of <id>', 'conflates X and Y')",
+          },
+        },
+        required: ["claim_id", "concern"],
       },
     },
   ];
@@ -490,6 +518,22 @@ export async function executeStewardTool(
           success: true,
           message: `Notified ${parents.length} dependent claim stewards`,
           parent_claim_ids: parents.map((p) => p.parent_id),
+        });
+      }
+
+      case "escalate_to_curator": {
+        const claimId = input.claim_id as string;
+        const concern = input.concern as string;
+
+        await enqueueCurator({
+          trigger: "steward_escalation",
+          claimId,
+          context: concern,
+        });
+
+        return JSON.stringify({
+          success: true,
+          message: `Escalated a structural concern about ${claimId} to the Curator.`,
         });
       }
 

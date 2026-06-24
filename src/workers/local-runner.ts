@@ -21,6 +21,7 @@ import { getLocalQueue } from "../services/queue-service.js";
 import { handleClaimPipeline } from "./claim-pipeline.js";
 import { handleUrlExtraction } from "./url-extraction.js";
 import { handleStewardMessage } from "./steward-pipeline.js";
+import { handleCuratorMessage } from "./curator-pipeline.js";
 import { handleContributionMessage } from "./contribution-pipeline.js";
 import { handleArbitrationMessage } from "./arbitration-pipeline.js";
 import { handleAuditMessage } from "./audit-pipeline.js";
@@ -29,16 +30,19 @@ import { LlmBudgetExceededError } from "../llm/errors.js";
 export type LocalQueueName =
   | "claimPipeline"
   | "steward"
+  | "curator"
   | "contribution"
   | "arbitration"
   | "audit"
   | "urlExtraction";
 
 // Priority order: finish decomposition/assessment before stewardship
-// propagation, conflict review, escalation, arbitration, then audit.
+// propagation, then graph-level curation, conflict review, escalation,
+// arbitration, then audit.
 const HANDLERS: Array<[LocalQueueName, (m: never) => Promise<void>]> = [
   ["claimPipeline", handleClaimPipeline as (m: never) => Promise<void>],
   ["steward", handleStewardMessage as (m: never) => Promise<void>],
+  ["curator", handleCuratorMessage as (m: never) => Promise<void>],
   ["contribution", handleContributionMessage as (m: never) => Promise<void>],
   ["arbitration", handleArbitrationMessage as (m: never) => Promise<void>],
   ["audit", handleAuditMessage as (m: never) => Promise<void>],

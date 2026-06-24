@@ -52,7 +52,7 @@ async function hybridSearchWithEmbedding(
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
-    WHERE c.state != 'deprecated'
+    WHERE c.state != 'deprecated' AND c.merged_into IS NULL
       AND (c.text_search @@ websearch_to_tsquery('english', $1)
            OR 1 - (c.embedding <=> $2::vector) > $3)
     ORDER BY (0.4 * ts_rank(c.text_search, websearch_to_tsquery('english', $1))
@@ -86,7 +86,7 @@ async function keywordSearch(
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
-    WHERE c.state != 'deprecated'
+    WHERE c.state != 'deprecated' AND c.merged_into IS NULL
       AND c.text_search @@ websearch_to_tsquery('english', $1)
     ORDER BY text_rank DESC
     LIMIT $2
@@ -131,7 +131,7 @@ export async function findSimilarClaims(
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
-    WHERE c.state != 'deprecated'
+    WHERE c.state != 'deprecated' AND c.merged_into IS NULL
       AND 1 - (c.embedding <=> $1::vector) > $2
       ${excludeClause}
     ORDER BY semantic_score DESC

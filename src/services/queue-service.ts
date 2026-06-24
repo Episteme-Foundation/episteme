@@ -41,7 +41,10 @@ export interface StewardMessage {
     // dependency is found).
     | "subclaim_change"
     | "contribution_accepted"
-    | "staleness_check";
+    | "staleness_check"
+    // The Curator merged/split this claim, or suggests a structural edge — review
+    // and reconcile (re-assess; adopt the suggested edge if apt).
+    | "curator_change";
   context: string;
 }
 
@@ -54,6 +57,17 @@ export interface AuditMessage {
   context: string;
 }
 
+export interface CuratorMessage {
+  trigger:
+    // A Steward flagged something structural (likely duplicate, needs split, …).
+    | "steward_escalation"
+    // Look across a new claim's neighborhood for duplicates / missing edges.
+    | "neighborhood_sweep";
+  // The claim whose neighborhood to reconcile (the escalating/anchor claim).
+  claimId: string;
+  context: string;
+}
+
 // In-memory queue for local development
 const localQueues = {
   claimPipeline: [] as ClaimPipelineMessage[],
@@ -61,6 +75,7 @@ const localQueues = {
   contribution: [] as ContributionMessage[],
   arbitration: [] as ArbitrationMessage[],
   steward: [] as StewardMessage[],
+  curator: [] as CuratorMessage[],
   audit: [] as AuditMessage[],
 };
 
@@ -156,6 +171,23 @@ export async function enqueueSteward(
   await client.send(
     new SendMessageCommand({
       QueueUrl: config.sqsStewardQueue,
+      MessageBody: JSON.stringify(message),
+    })
+  );
+}
+
+export async function enqueueCurator(
+  message: CuratorMessage
+): Promise<void> {
+  const config = loadConfig();
+  if (!config.sqsCuratorQueue) {
+    localQueues.curator.push(message);
+    return;
+  }
+  const client = getSqsClient();
+  await client.send(
+    new SendMessageCommand({
+      QueueUrl: config.sqsCuratorQueue,
       MessageBody: JSON.stringify(message),
     })
   );
