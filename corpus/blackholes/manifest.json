@@ -1,0 +1,36 @@
+{
+  "cluster": "blackholes",
+  "kind": "web",
+  "description": "The LHC micro black hole safety case — one of the three FLF Epistack case studies (flf.org/epistack-competition). A mostly-closed, near-uncontested question ('Will CERN's Large Hadron Collider create a black hole that destroys the Earth?') that nevertheless rests on a large body of interacting physics. Chosen to stress how the system handles a settled-but-deep argument: heavy claim overlap between institutional reassurance, the rigorous safety derivation, and a published dissent, plus a few genuinely contested cruxes (does Hawking radiation exist? are the astrophysical bounds airtight?). Sources are ordered so the institutional and foundational safety arguments are ingested before the dissent that contests them.",
+  "source": "Curated, committed markdown assembled from public sources: CERN's LHC safety pages and the LHC Safety Assessment Group (LSAG) report; Wikipedia's 'Safety of high-energy particle collision experiments' (CC BY-SA 4.0); and two peer-reviewed/arXiv papers (Giddings & Mangano 2008; Plaga 2008). Each post's `url` records its provenance. This is a `web` cluster: the markdown is the pinned source of truth and is not refetched.",
+  "posts": [
+    {
+      "id": "cern-lhc-safety",
+      "url": "https://home.cern/science/accelerators/large-hadron-collider",
+      "title": "The safety of the LHC",
+      "author": "CERN / LHC Safety Assessment Group",
+      "role": "institutional-reassurance"
+    },
+    {
+      "id": "giddings-mangano-2008",
+      "url": "https://arxiv.org/abs/0806.3381",
+      "title": "Astrophysical implications of hypothetical stable TeV-scale black holes",
+      "author": "Steven B. Giddings and Michelangelo L. Mangano",
+      "role": "safety-derivation-foundational"
+    },
+    {
+      "id": "wikipedia-safety-overview",
+      "url": "https://en.wikipedia.org/wiki/Safety_of_high-energy_particle_collision_experiments",
+      "title": "Safety of high-energy particle collision experiments",
+      "author": "Wikipedia contributors (CC BY-SA 4.0)",
+      "role": "overview-of-the-dispute"
+    },
+    {
+      "id": "plaga-2008",
+      "url": "https://arxiv.org/abs/0808.1415",
+      "title": "On the potential catastrophic risk from metastable quantum-black holes produced at particle colliders",
+      "author": "Rainer Plaga",
+      "role": "published-dissent"
+    }
+  ]
+}

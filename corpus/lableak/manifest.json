@@ -1,0 +1,29 @@
+{
+  "cluster": "lableak",
+  "kind": "web",
+  "description": "The origin of SARS-CoV-2 (zoonosis vs. lab leak) — the hardest and most-contested of the three FLF Epistack case studies (flf.org/epistack-competition). A live, high-stakes dispute with a rich public record, anchored by the 2024 $100k Rootclaim debate (Saar Wilf vs. Peter Miller) that two expert judges ruled decisively for zoonosis, and where six independent Bayesian analyses of the same evidence spanned 23 orders of magnitude. Chosen to stress contested-claim handling, head-to-head disagreement, and cruxes at maximum difficulty. Sources are ordered overview → zoonosis case → lab-leak case, and both sides are steelmanned so the graph must hold genuine disagreement rather than collapse to one side.",
+  "source": "Curated, committed markdown assembled from public sources: Scott Alexander's writeup of the Rootclaim COVID-origins debate (the FLF starting material) and the FLF case description for the framing; Wikipedia's coverage of the origin investigations (CC BY-SA 4.0) and the published market-origin analyses (Worobey et al. and Pekar et al., Science 2022) for the zoonosis case; and the documented lab-leak arguments (WIV proximity, the DEFUSE proposal, the furin cleavage site, intelligence assessments) for the lab-leak case. Each post's `url` records its provenance. This is a `web` cluster: the markdown is the pinned source of truth and is not refetched.",
+  "posts": [
+    {
+      "id": "origins-debate-overview",
+      "url": "https://www.astralcodexten.com/p/practically-a-book-review-rootclaim",
+      "title": "The COVID-origins dispute and the Rootclaim debate — an overview",
+      "author": "Overview after Scott Alexander's debate writeup and the FLF case description",
+      "role": "neutral-overview"
+    },
+    {
+      "id": "zoonosis-market-case",
+      "url": "https://www.science.org/doi/10.1126/science.abp8715",
+      "title": "The case for a natural (zoonotic) origin at the Huanan market",
+      "author": "Synthesis of Worobey et al. and Pekar et al. (Science 2022) and the zoonosis arguments",
+      "role": "zoonosis-case"
+    },
+    {
+      "id": "lab-leak-case",
+      "url": "https://en.wikipedia.org/wiki/COVID-19_lab_leak_theory",
+      "title": "The case for a research-related (lab leak) origin",
+      "author": "Synthesis of the documented lab-leak arguments (DEFUSE, furin site, WIV proximity, intelligence assessments)",
+      "role": "lab-leak-case"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "cern-lhc-safety",
+  "title": "The safety of the LHC",
+  "author": "CERN / LHC Safety Assessment Group",
+  "url": "https://home.cern/science/accelerators/large-hadron-collider",
+  "license": "Assembled from CERN public materials and the LSAG report (J. Phys. G 35 (2008) 115004)",
+  "role": "institutional-reassurance",
+  "wordCount": 784,
+  "curatedAt": "2026-06-23"
+}
