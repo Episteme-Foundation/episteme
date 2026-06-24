@@ -101,12 +101,10 @@ export async function handleUrlExtraction(
         claimId = newClaim!.id;
         claimsCreated++;
 
-        // Enqueue for decomposition
+        // Onboard the new claim (the Steward will structure + assess it)
         await enqueueClaimPipeline({
           claimId,
           jobId: message.jobId,
-          ancestorIds: [],
-          currentDepth: 0,
         });
       }
 

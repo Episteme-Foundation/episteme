@@ -14,6 +14,7 @@ import {
   claimRelationships,
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
+import { addArgument } from "../../services/argument-service.js";
 import { enqueueSteward, enqueueClaimPipeline } from "../../services/queue-service.js";
 
 export function getStewardToolDefinitions(): Tool[] {
@@ -79,6 +80,38 @@ export function getStewardToolDefinitions(): Tool[] {
       },
     },
     {
+      name: "add_argument",
+      description:
+        "Create a named argument (a line of reasoning) on a claim — a grouping " +
+        "that subclaims attach to. Use when distinct for/against lines of reasoning " +
+        "exist; pass the returned argument_id to add_relationship_edge / " +
+        "add_decomposition_edge to group subclaims under it. The description is a " +
+        "label for the line of reasoning, not itself a proposition.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          claim_id: {
+            type: "string",
+            description: "The UUID of the claim this argument is about",
+          },
+          name: {
+            type: "string",
+            description: "Short descriptive name for the line of reasoning",
+          },
+          stance: {
+            type: "string",
+            enum: ["for", "against", "neutral"],
+            description: "Whether this argument supports, opposes, or is neutral",
+          },
+          description: {
+            type: "string",
+            description: "Brief label for this line of reasoning (not a proposition)",
+          },
+        },
+        required: ["claim_id", "name", "stance", "description"],
+      },
+    },
+    {
       name: "add_relationship_edge",
       description:
         "Attach an EXISTING claim as a subclaim, by id. Use this when match_claim " +
@@ -111,6 +144,12 @@ export function getStewardToolDefinitions(): Tool[] {
           reasoning: {
             type: "string",
             description: "Why this dependency holds",
+          },
+          argument_id: {
+            type: "string",
+            description:
+              "Optional UUID of an argument (from add_argument) to group this " +
+              "subclaim under",
           },
         },
         required: ["parent_id", "child_id", "relation", "reasoning"],
@@ -148,6 +187,12 @@ export function getStewardToolDefinitions(): Tool[] {
           reasoning: {
             type: "string",
             description: "Why this decomposition is valid",
+          },
+          argument_id: {
+            type: "string",
+            description:
+              "Optional UUID of an argument (from add_argument) to group this " +
+              "subclaim under",
           },
         },
         required: ["parent_id", "child_text", "relation", "reasoning"],
@@ -277,11 +322,34 @@ export async function executeStewardTool(
         });
       }
 
+      case "add_argument": {
+        const claimId = input.claim_id as string;
+        const name = input.name as string;
+        const stance = input.stance as "for" | "against" | "neutral";
+        const description = input.description as string;
+
+        const argument = await addArgument({
+          claimId,
+          stance,
+          content: description,
+          name,
+          description,
+          createdBy: "claim_steward",
+        });
+
+        return JSON.stringify({
+          success: true,
+          message: `Created argument "${name}" (${stance}) on claim ${claimId}.`,
+          argument_id: argument.id,
+        });
+      }
+
       case "add_relationship_edge": {
         const parentId = input.parent_id as string;
         const childId = input.child_id as string;
         const relation = input.relation as string;
         const reasoning = input.reasoning as string;
+        const argumentId = (input.argument_id as string) ?? null;
 
         if (parentId === childId) {
           return JSON.stringify({
@@ -301,6 +369,7 @@ export async function executeStewardTool(
             relationType: relation.toLowerCase(),
             reasoning,
             confidence: 1.0,
+            argumentId,
             createdBy: "claim_steward",
           });
         } catch {
@@ -319,6 +388,7 @@ export async function executeStewardTool(
         const childText = input.child_text as string;
         const relation = input.relation as string;
         const reasoning = input.reasoning as string;
+        const argumentId = (input.argument_id as string) ?? null;
 
         const db = getDb();
 
@@ -345,26 +415,26 @@ export async function executeStewardTool(
           await db.insert(claimRelationships).values({
             parentClaimId: parentId,
             childClaimId: newClaim!.id,
-            relationType: relation,
+            relationType: relation.toLowerCase(),
             reasoning,
             confidence: 1.0,
+            argumentId,
             createdBy: "claim_steward",
           });
         } catch {
           // Unique constraint -- relationship may already exist
         }
 
-        // The new claim must be decomposed and assessed like any other claim;
-        // without this it sits decomposition_status='pending' forever (orphaned).
-        // Steward-originated work isn't tied to an ingestion job, so use a
-        // sentinel jobId — the claim pipeline only threads jobId for downstream
-        // enqueues and never looks it up. Seed ancestorIds with the parent so the
-        // new subclaim's own decomposition can't loop back to it.
+        // The new claim is created already embedded (above), so it is a valid,
+        // dedup-able stub even if it is never processed. Onboard it so its own
+        // Steward structures + assesses it, like any other claim. Steward work
+        // isn't tied to an ingestion job, so use a sentinel jobId (the pipeline
+        // only threads jobId; it never looks it up). No ancestor/depth threading:
+        // the child's Steward calls match_claim before creating anything, so it
+        // links this parent (and any other ancestor) rather than looping into it.
         await enqueueClaimPipeline({
           claimId: newClaim!.id,
           jobId: "steward",
-          ancestorIds: [parentId],
-          currentDepth: 0,
         });
 
         return JSON.stringify({

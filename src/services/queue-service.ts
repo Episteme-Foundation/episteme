@@ -13,8 +13,6 @@ function getSqsClient(): SQSClient {
 export interface ClaimPipelineMessage {
   claimId: string;
   jobId: string;
-  ancestorIds: string[];
-  currentDepth: number;
 }
 
 export interface UrlExtractionMessage {
@@ -36,7 +34,11 @@ export interface ArbitrationMessage {
 export interface StewardMessage {
   claimId: string;
   trigger:
-    | "initial_assessment"
+    // First pass for a newly onboarded claim: STRUCTURE it (decompose, matching
+    // each dependency) and ASSESS it.
+    | "structure_and_assess"
+    // Re-triggers: re-assess (and adjust structure only if a genuinely missing
+    // dependency is found).
     | "subclaim_change"
     | "contribution_accepted"
     | "staleness_check";
