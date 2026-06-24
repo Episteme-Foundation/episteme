@@ -1,0 +1,332 @@
+/* ==========================================================================
+   Claim-page margins (issue #42) — "ambient / progressive" treatment.
+   Reading-first: the rails whisper a status distribution and a count until you
+   engage them, then unfold the detail in place. Left margin = decomposition
+   compass; right margin = dependents, then assessment history below it.
+   ========================================================================== */
+
+/* full-bleed escape from the 62rem .frame, then re-center our own grid */
+.bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.grid {
+  --rail: 15rem;
+  --reading: 40rem;
+  max-width: calc(var(--rail) * 2 + var(--reading) + 7rem);
+  margin: 0 auto;
+  padding: 0 1.6rem;
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, var(--reading)) var(--rail);
+  column-gap: 3.5rem;
+  align-items: start;
+}
+
+.center {
+  min-width: 0;
+}
+
+/* ClaimView's "assessment history" is a Tufte sidenote that floats out into the
+   right margin (margin-right: -17rem) — which is exactly where our rails live.
+   The centre should be about the assessment itself, so we hide ClaimView's own
+   copy and re-home the history as a HistoryRail in the right column, below the
+   dependents, where it expands in normal flow without colliding. */
+.center :global(.sidenote) {
+  display: none;
+}
+
+/* the rails stick alongside the reading flow */
+.leftRail,
+.rightRail {
+  position: sticky;
+  top: 4.6rem;
+  align-self: start;
+  font-family: var(--sans);
+}
+
+/* ----- shared rail chrome ------------------------------------------------ */
+.rail {
+  display: block;
+  margin-bottom: 2rem;
+}
+
+.railHead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0 0 0.55rem;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid var(--rule);
+}
+.railHead:hover .railCount { color: var(--ink); }
+
+.railCount {
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.railCountUnit {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ----- left: status-distribution bar + legend (the compass) -------------- */
+.distBar {
+  display: flex;
+  height: 0.38rem;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0.85rem 0 0.7rem;
+  background: var(--paper-sunk);
+}
+.distBar > span {
+  background: currentColor;
+  display: block;
+  height: 100%;
+}
+
+.legend {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+.legend li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.74rem;
+}
+.legendN {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  min-width: 0.9rem;
+}
+.legendLbl { color: var(--muted); }
+
+/* footnote under the compass clarifying what the colours mean */
+.compassNote {
+  font-size: 0.62rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--faint);
+  margin: 0.15rem 0 0;
+}
+
+/* resting state for atomic claims / zero dependents */
+.emptyNote {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0.85rem 0 0;
+}
+
+/* ----- right: ambient dot row -------------------------------------------- */
+.dotRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.85rem 0 0.6rem;
+}
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: currentColor;
+  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
+  flex: none;
+}
+
+/* ----- right: assessment-history rail (below dependents) -----------------
+   Reproduces the original Tufte sidenote voice (globals.css .sidenote): quiet
+   sans at sidenote scale, small-caps header on its own line. It just no longer
+   floats — it sits in the rail flow so it drops below the dependents. */
+.histNote {
+  font-family: var(--sans);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.histNote :global(.sc) {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* ----- the "expand on demand" toggle ------------------------------------- */
+.railToggle {
+  background: none;
+  border: none;
+  padding: 0.1rem 0;
+  margin: 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.railToggle:hover { color: var(--link); }
+
+/* ----- left: revealed mini-outline --------------------------------------- */
+.outline {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  border-left: 1px solid var(--rule-soft);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* ----- left: argument groups (optional primitive) ------------------------ */
+.argList {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  max-height: 64vh;
+  overflow-y: auto;
+}
+.argGroup { margin-bottom: 0.5rem; }
+.argHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.3rem 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--rule);
+}
+.argCaret { color: var(--faint); font-size: 0.62rem; flex: none; width: 0.7rem; }
+.argName {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--ink);
+  line-height: 1.25;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.argHead:hover .argName { color: var(--link); }
+.argCount {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--faint);
+  flex: none;
+}
+.argBar {
+  display: flex;
+  height: 0.28rem;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0.4rem 0 0.1rem 0.7rem;
+  background: var(--paper-sunk);
+}
+.argBar > span { background: currentColor; display: block; height: 100%; }
+.argNodes {
+  list-style: none;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  border-left: 1px solid var(--rule-soft);
+  margin-left: 0.7rem;
+}
+.outlineItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.3rem 0 0.3rem 0.6rem;
+  font-size: 0.74rem;
+  line-height: 1.34;
+}
+.outlineText {
+  color: var(--ink-soft);
+  display: block;
+}
+.outlineText:hover { color: var(--link); text-decoration: none; }
+.outlineRel {
+  margin-right: 0.4rem;
+  font-size: 0.56rem;
+}
+
+/* ----- right: revealed dependents list ----------------------------------- */
+.depList {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+}
+/* keep an arbitrarily long dependents list from running off the viewport */
+.scrollList {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+}
+.depItem {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--rule-soft);
+}
+.depItem:first-child { border-top: none; }
+.depEdge {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
+}
+.depConf {
+  font-size: 0.66rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.depText {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  display: block;
+}
+.depText:hover { color: var(--link); text-decoration: none; }
+
+/* ==========================================================================
+   Narrow screens — the rails fold inline above & below the reading column,
+   keeping their ambient-then-expand behaviour intact.
+   ========================================================================== */
+@media (max-width: 1080px) {
+  .grid {
+    display: block;
+    max-width: 42rem;
+  }
+  .leftRail,
+  .rightRail {
+    position: static;
+    max-width: 38rem;
+  }
+  .leftRail { margin-bottom: 1.8rem; }
+  .rightRail {
+    margin-top: 2.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--rule);
+  }
+  /* on narrow screens give the legend/dots a touch more breathing room */
+  .rail { margin-bottom: 0; }
+}

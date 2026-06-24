@@ -1,0 +1,110 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import type { DependentClaim } from "@/lib/types";
+import { RELATION, STATUS_ORDER, statusMeta } from "@/lib/ontology";
+import styles from "./margins.module.css";
+
+// Above this many dependents, a dot-per-claim row stops being legible, so we
+// switch the ambient marker to a status-distribution bar instead.
+const DOT_CAP = 18;
+
+function statusKey(status: string | null): string {
+  return statusMeta(status).cls.replace("st-", "");
+}
+
+// The right-margin rail: claims that depend on this one (reverse decomposition
+// edges). Ambient by default — a count and a marker — expanding to the full list.
+export function DependentsRail({ dependents }: { dependents: DependentClaim[] }) {
+  const [open, setOpen] = useState(false);
+  const n = dependents.length;
+
+  // Nothing builds on this yet — a quiet resting state rather than a blank gap.
+  if (n === 0) {
+    return (
+      <aside className={styles.rail} aria-label="Claims that depend on this one">
+        <div className={styles.railHead} style={{ cursor: "default" }}>
+          <span className="sc">Depended on by</span>
+          <span className={styles.railCount}>
+            0<span className={styles.railCountUnit}>claims</span>
+          </span>
+        </div>
+        <p className={styles.emptyNote}>Nothing in the graph builds on this claim yet.</p>
+      </aside>
+    );
+  }
+
+  const counts: Record<string, number> = {};
+  for (const d of dependents) {
+    const k = statusKey(d.assessment_status);
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
+  const present = STATUS_ORDER.filter((s) => counts[s]);
+
+  return (
+    <aside className={styles.rail} aria-label="Claims that depend on this one">
+      <button type="button" className={styles.railHead} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="sc">Depended on by</span>
+        <span className={styles.railCount}>
+          {n}
+          <span className={styles.railCountUnit}>claim{n === 1 ? "" : "s"}</span>
+        </span>
+      </button>
+
+      {/* ambient marker: one dot per claim while that stays legible, else a bar */}
+      {n <= DOT_CAP ? (
+        <div className={styles.dotRow} aria-hidden>
+          {dependents.map((d) => (
+            <span key={d.id} className={`${styles.dot} st-${statusKey(d.assessment_status)}`} title={d.text} />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className={styles.distBar} title="status of the dependent claims" aria-hidden>
+            {present.map((s) => (
+              <span key={s} className={`st-${s}`} style={{ width: `${(counts[s] / n) * 100}%` }} />
+            ))}
+          </div>
+          <ul className={styles.legend}>
+            {present.map((s) => (
+              <li key={s} className={`st-${s}`}>
+                <span className={`swatch st-${s}`} aria-hidden />
+                <span className={styles.legendN}>{counts[s]}</span>
+                <span className={styles.legendLbl}>{statusMeta(s).label}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <button type="button" className={styles.railToggle} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        {open ? "▾ hide" : "▸ show what builds on this"}
+      </button>
+
+      {open && (
+        <ul className={`${styles.depList} ${n > 8 ? styles.scrollList : ""}`}>
+          {dependents.map((d) => {
+            const rel = RELATION[d.relation_type];
+            const st = statusMeta(d.assessment_status);
+            return (
+              <li key={d.id} className={styles.depItem}>
+                <div className={styles.depEdge}>
+                  <span className={`swatch ${st.cls}`} title={`${st.label} — ${st.def}`} aria-hidden />
+                  {rel && <span className={`relation ${rel.cls}`} title={rel.gloss}>{rel.label}</span>}
+                  <span className={styles.depConf}>
+                    {st.label}
+                    {typeof d.assessment_confidence === "number" && ` · ${d.assessment_confidence.toFixed(2)}`}
+                  </span>
+                </div>
+                <Link href={`/claims/${d.id}`} className={styles.depText}>
+                  {d.text}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </aside>
+  );
+}

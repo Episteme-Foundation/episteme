@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { loadClaim } from "@/lib/data";
-import { ClaimView } from "@/components/ClaimView";
+import { ClaimMargins } from "@/components/claim/ClaimMargins";
 
 export default async function ClaimPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,17 +18,5 @@ export default async function ClaimPage({ params }: { params: Promise<{ id: stri
       </div>
     );
   }
-  return (
-    <div>
-      <p className="sc" style={{ marginBottom: "1.2rem", display: "flex", gap: ".7rem", alignItems: "center" }}>
-        <Link href="/claims">← claims</Link>
-        {source === "fixture" && (
-          <span className="tag" title="The API is not connected; showing a design fixture.">
-            fixture data
-          </span>
-        )}
-      </p>
-      <ClaimView detail={detail} />
-    </div>
-  );
+  return <ClaimMargins detail={detail} source={source} />;
 }

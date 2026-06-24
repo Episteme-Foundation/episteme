@@ -58,6 +58,35 @@ export async function getClaimTree(
   return assembleTree(rows);
 }
 
+export interface DependentClaim {
+  id: string;
+  text: string;
+  claim_type: string;
+  relation_type: string;
+  assessment_status: string | null;
+  assessment_confidence: number | null;
+}
+
+/**
+ * Get the claims that depend on (have as a subclaim) the given claim — the
+ * reverse of the decomposition tree. Each row is a parent claim plus the
+ * relationship edge by which it leans on this claim, and the parent's current
+ * assessment. Mirrors the agents' `get_claim_dependents` graph query.
+ */
+export async function getClaimDependents(claimId: string): Promise<DependentClaim[]> {
+  return rawQuery<DependentClaim>(
+    `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
+            cr.relation_type,
+            a.status AS assessment_status, a.confidence AS assessment_confidence
+     FROM claim_relationships cr
+     JOIN claims c ON c.id = cr.parent_claim_id
+     LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
+     WHERE cr.child_claim_id = $1
+     ORDER BY a.confidence DESC NULLS LAST, c.text`,
+    [claimId]
+  );
+}
+
 /**
  * Get direct subclaim count for a claim.
  */

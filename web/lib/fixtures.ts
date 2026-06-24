@@ -31,8 +31,8 @@ const FLAGSHIP: ClaimDetail = {
     current: { status: "supported", confidence: 0.78, assessed_at: "2026-03-18T09:12:00Z", is_current: true, trigger: "contribution_accepted" },
     history: [
       { status: "supported", confidence: 0.78, assessed_at: "2026-03-18T09:12:00Z", is_current: true, trigger: "contribution_accepted" },
-      { status: "verified", confidence: 0.71, assessed_at: "2025-06-01T00:00:00Z", is_current: false, trigger: "source_added" },
-      { status: "unknown", confidence: 0.40, assessed_at: "2024-11-02T14:20:00Z", is_current: false, trigger: "initial_decomposition" },
+      { status: "verified", confidence: 0.71, assessed_at: "2025-06-01T00:00:00Z", is_current: false, trigger: "subclaim_change" },
+      { status: "unknown", confidence: 0.40, assessed_at: "2024-11-02T14:20:00Z", is_current: false, trigger: "pipeline_assessment" },
     ],
     total_assessments: 3,
     status_transitions: 2,
@@ -47,6 +47,52 @@ const FLAGSHIP: ClaimDetail = {
       evidence_urls: ["https://www.bls.gov/news.release/archives/cpi_01122023.htm"],
       created_by: "decomposer",
       created_at: "2024-11-02T14:25:00Z",
+    },
+  ],
+  // Claims elsewhere in the graph that lean on this one — reverse decomposition
+  // edges. These fill the right margin of the claim page (issue #42). They are
+  // design stubs: the ids resolve to the generic "not in fixture set" page until
+  // the API is wired in.
+  dependents: [
+    {
+      id: "fed-rate-hikes-justified",
+      text: "The Federal Reserve was justified in raising interest rates aggressively through 2022–2023.",
+      claim_type: "evaluative",
+      relation_type: "requires",
+      assessment_status: "supported",
+      assessment_confidence: 0.66,
+    },
+    {
+      id: "real-wages-fell-2022",
+      text: "Real (inflation-adjusted) wages fell for most US workers in 2022.",
+      claim_type: "empirical_derived",
+      relation_type: "requires",
+      assessment_status: "verified",
+      assessment_confidence: 0.9,
+    },
+    {
+      id: "cost-of-living-crisis-2022",
+      text: "2022 was the worst US cost-of-living squeeze in four decades.",
+      claim_type: "evaluative",
+      relation_type: "supports",
+      assessment_status: "contested",
+      assessment_confidence: 0.58,
+    },
+    {
+      id: "tightening-overreaction",
+      text: "The 2022 monetary tightening was a policy overreaction to transitory inflation.",
+      claim_type: "causal",
+      relation_type: "contradicts",
+      assessment_status: "contested",
+      assessment_confidence: 0.47,
+    },
+    {
+      id: "savings-erosion-2022",
+      text: "Inflation in 2022 materially eroded the value of US household cash savings.",
+      claim_type: "empirical_derived",
+      relation_type: "presupposes",
+      assessment_status: "supported",
+      assessment_confidence: 0.72,
     },
   ],
   instances: [
