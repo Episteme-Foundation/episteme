@@ -58,6 +58,10 @@ export interface ClaimCore {
   // How load-bearing the claim is (0..1), set by the Steward. Orders the work
   // queue: important claims are assessed and decomposed first under a budget.
   importance: number;
+  // Steward work-queue lifecycle: pending → running → done | error. A claim that
+  // has never reached "done" (and has no assessment) is an unprocessed stub, not
+  // an irreducible atom.
+  steward_state?: string;
   created_by: string;
   created_at: string;
   updated_at: string;

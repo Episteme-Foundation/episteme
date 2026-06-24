@@ -22,6 +22,7 @@ export const claimSchema = {
     state: { type: "string" },
     decomposition_status: { type: "string" },
     importance: { type: "number" },
+    steward_state: { type: "string" },
     created_by: { type: "string" },
     created_at: { type: "string", format: "date-time" },
     updated_at: { type: "string", format: "date-time" },
@@ -571,7 +572,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
   });
 }
 
-function formatClaim(claim: { id: string; text: string; claimType: string; state: string; decompositionStatus: string; importance: number; createdBy: string; createdAt: Date; updatedAt: Date }) {
+function formatClaim(claim: { id: string; text: string; claimType: string; state: string; decompositionStatus: string; importance: number; stewardState: string; createdBy: string; createdAt: Date; updatedAt: Date }) {
   return {
     id: claim.id,
     text: claim.text,
@@ -579,6 +580,9 @@ function formatClaim(claim: { id: string; text: string; claimType: string; state
     state: claim.state,
     decomposition_status: claim.decompositionStatus,
     importance: claim.importance,
+    // The Steward work-queue lifecycle (pending → running → done | error). Lets the
+    // UI distinguish a not-yet-stewarded stub from a claim found genuinely atomic.
+    steward_state: claim.stewardState,
     created_by: claim.createdBy,
     created_at: claim.createdAt.toISOString(),
     updated_at: claim.updatedAt.toISOString(),

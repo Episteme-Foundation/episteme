@@ -91,6 +91,34 @@ export function isAtomic(status: string): boolean {
   return status === "atomic" || status === "complete";
 }
 
+// Has the Steward actually processed this claim? Only then can "no subclaims"
+// mean "irreducible" rather than "not looked at yet". A claim is processed if it
+// carries a current assessment or its steward queue state has reached "done".
+export function isProcessed(opts: { assessed: boolean; stewardState?: string }): boolean {
+  return opts.assessed || opts.stewardState === "done";
+}
+
+// The decomposition section's caption when there are no rendered subclaims. The
+// correction this encodes: under the Steward's importance budget most low-value
+// claims are left queued, so an unprocessed claim with no children is NOT atomic
+// — it simply hasn't been decomposed yet and very likely still will be. We only
+// call a claim atomic once it has actually been processed and found irreducible.
+export function decompositionNote(opts: {
+  decompositionStatus: string;
+  assessed: boolean;
+  stewardState?: string;
+}): string {
+  if (opts.stewardState === "running") {
+    return "This claim is being decomposed — its subclaims are still being worked out.";
+  }
+  if (isProcessed(opts)) {
+    return isAtomic(opts.decompositionStatus)
+      ? "This claim is atomic — it bottoms out in a bedrock fact, a contested empirical question, or a value premise, and does not decompose further."
+      : "This claim has been assessed but its decomposition is not yet recorded.";
+  }
+  return "This claim has not been assessed yet — the Steward works through claims in order of importance, so lower-importance claims wait their turn. It may well decompose into subclaims once it is processed.";
+}
+
 // Claim importance — how load-bearing a claim is (0..1), a revisable judgment set
 // by the Steward that orders its work queue. We bucket the continuous score into
 // five named bands for display and keep the exact value for the tooltip. Note the
