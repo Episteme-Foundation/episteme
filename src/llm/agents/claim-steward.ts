@@ -48,31 +48,44 @@ export async function runClaimSteward(input: {
     webSearchTool,
   ];
 
+  const isInitial = input.trigger === "structure_and_assess";
+
+  const structureStep = isInitial
+    ? `2. DECOMPOSE the claim (this is its first pass). Identify its load-bearing
+   dependencies and the strongest considerations for and against it — a handful,
+   not an exhaustive list (see the Decomposition guidance). For EACH dependency,
+   FIRST call match_claim to check whether it already exists in the graph (as
+   itself, a rewording, or its negation). If it matches, attach the existing
+   claim with add_relationship_edge; only if genuinely novel, create it with
+   add_decomposition_edge. Never mint a duplicate. If the claim is genuinely
+   simple, leave it atomic — do not invent dependencies.`
+    : `2. RE-ASSESS in light of what changed. Adjust structure only if you discover a
+   genuinely missing load-bearing dependency — and then match_claim FIRST, linking
+   an existing claim with add_relationship_edge or creating a new one with
+   add_decomposition_edge. Do not re-decompose from scratch.`;
+
   const userMessage = `You have been triggered to steward a claim.
 
 Trigger: ${input.trigger}
 Claim ID: ${input.claimId}
 Context: ${input.context}
 
-You OWN this claim's assessment. Proceed:
+You OWN this claim — its structure (decomposition) and its assessment. Proceed:
 1. Use get_claim_with_context to understand the claim, its subclaims and their
    assessments, its source instances (note each instance's affirm/deny stance),
    and its current assessment if any.
-2. Gauge the claim's importance — use get_claim_dependents to see how many claims
+${structureStep}
+3. Gauge the claim's importance — use get_claim_dependents to see how many claims
    rely on it. Scale your effort accordingly: foundational claims warrant deeper
    search and a second, adversarial pass; minor claims warrant a light touch.
-3. Reach a holistic assessment using your judgment (no mechanical aggregation).
+4. Reach a holistic assessment using your judgment (no mechanical aggregation).
    Use web_search for external evidence where it would change the verdict.
    Credible instances that BOTH affirm and deny the claim are a strong signal
    toward CONTESTED.
-4. Record it with update_claim_assessment (always include reasoning).
-5. If the canonical form needs improving, use update_canonical_form. If you find
-   a missing load-bearing subclaim, FIRST call match_claim to see whether it
-   already exists in the graph (as itself, a rewording, or its negation). If it
-   matches, attach the existing claim with add_relationship_edge; only if it is
-   genuinely novel, create it with add_decomposition_edge. Never mint a duplicate.
-6. Log your decision with log_stewardship_decision.
-7. If you established or changed a material assessment, use
+5. Record it with update_claim_assessment (always include reasoning).
+6. If the canonical form needs improving, use update_canonical_form.
+7. Log your decision with log_stewardship_decision.
+8. If you established or changed a material assessment, use
    notify_dependent_stewards so claims that depend on this one are re-judged.`;
 
   await toolUseLoop({
@@ -81,8 +94,10 @@ You OWN this claim's assessment. Proceed:
     system: getClaimStewardSystemPrompt(),
     model,
     maxTokens: 8192,
-    // A backstop only — judgment, not the iteration count, decides when to stop.
-    maxIterations: 12,
+    // A pure runaway backstop — judgment, not the iteration count, decides when
+    // to stop. The Steward now decomposes AND assesses in one loop, so this is
+    // set high; real spend is bounded by stewardMaxRuns + the LLM budget tracker.
+    maxIterations: config.stewardMaxIterations,
     executeTool: async (name, toolInput) => {
       if (name === "match_claim") {
         return executeMatcherTool(name, toolInput);

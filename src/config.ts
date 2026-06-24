@@ -61,13 +61,21 @@ const configSchema = z.object({
   sqsClaimPipelineQueue: z.string().default(""),
 
   // Processing
-  maxDecompositionDepth: z.coerce.number().default(5),
-  matchingSimilarityThreshold: z.coerce.number().default(0.85),
   matchingTopK: z.coerce.number().default(20),
   // Quantity caps to bound graph fan-out (0 = unlimited). The dominant cost
   // driver is extraction count, since each extracted claim seeds a tree.
   extractionMaxClaims: z.coerce.number().default(0),
-  maxSubclaimsPerClaim: z.coerce.number().default(0),
+
+  // The Steward owns decomposition + assessment in one tool-use loop, so its
+  // iteration cap is a pure runaway backstop, NOT a work budget — set it high.
+  // The real spend guardrail is the global LLM budget tracker plus stewardMaxRuns.
+  stewardMaxIterations: z.coerce.number().default(200),
+  // Cap the total number of Steward invocations per process (0 = unlimited).
+  // This is how we bound spend predictably for tests/deploys — far better than a
+  // decomposition-depth limit. Unprocessed claims remain embedded stubs, so dedup
+  // still works and the claim count can converge; importance-prioritized
+  // processing is a follow-up.
+  stewardMaxRuns: z.coerce.number().default(0),
 
   // Governance — Anthropic API model IDs (see src/llm/models.ts).
   // The Matcher is an agentic search loop; a small model suffices since the
@@ -125,11 +133,10 @@ export function loadConfig(): Config {
     llmDailyTokenLimit: process.env.LLM_DAILY_TOKEN_LIMIT,
     sqsUrlExtractionQueue: process.env.SQS_URL_EXTRACTION_QUEUE,
     sqsClaimPipelineQueue: process.env.SQS_CLAIM_PIPELINE_QUEUE,
-    maxDecompositionDepth: process.env.MAX_DECOMPOSITION_DEPTH,
-    matchingSimilarityThreshold: process.env.MATCHING_SIMILARITY_THRESHOLD,
     matchingTopK: process.env.MATCHING_TOP_K,
     extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
-    maxSubclaimsPerClaim: process.env.MAX_SUBCLAIMS_PER_CLAIM,
+    stewardMaxIterations: process.env.STEWARD_MAX_ITERATIONS,
+    stewardMaxRuns: process.env.STEWARD_MAX_RUNS,
     matcherModel: process.env.MATCHER_MODEL,
     governanceModel: process.env.GOVERNANCE_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,

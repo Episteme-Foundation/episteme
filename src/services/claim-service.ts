@@ -47,12 +47,10 @@ export async function proposeClaim(input: {
   // Create tracking job
   const job = await createJob("claim_pipeline", { claimId: claim!.id });
 
-  // Enqueue for async processing (decomposition + assessment)
+  // Onboard the new claim (the Steward will structure + assess it)
   await enqueueClaimPipeline({
     claimId: claim!.id,
     jobId: job.id,
-    ancestorIds: [],
-    currentDepth: 0,
   });
 
   return { claim: claim!, argument: argument!, jobId: job.id };

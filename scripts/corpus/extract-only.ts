@@ -1,12 +1,13 @@
 /**
- * Cheap, isolated iteration loop for the EXTRACTOR (and optionally the
- * DECOMPOSER) — the fast inner loop for tuning claim-quality prompts.
+ * Cheap, isolated iteration loop for the EXTRACTOR — the fast inner loop for
+ * tuning claim-extraction quality.
  *
  * Unlike `run.ts`, this touches NO database, NO embeddings, and NO governance.
- * Extraction is a single Anthropic call; offline decomposition (useTools:false)
- * is another. So the only thing you need is `ANTHROPIC_API_KEY` in your env or
- * .env — no Postgres, no OPENAI_API_KEY. That makes one iteration ~one or two
- * cheap LLM calls instead of a full Extract→Match→Decompose→Assess→Steward run.
+ * Extraction is a single Anthropic call, so the only thing you need is
+ * `ANTHROPIC_API_KEY` in your env or .env — no Postgres, no OPENAI_API_KEY. That
+ * makes one iteration ~one cheap LLM call instead of a full
+ * Extract→onboard→Steward(decompose+assess) run. (Decomposition now lives in the
+ * Claim Steward, which needs the graph, so it isn't exercised offline here.)
  *
  * It prints each extracted claim's original→canonical pair with diagnostics
  * (word count, argument-word / definition flags) plus a summary, so you can
@@ -18,12 +19,11 @@
  * Flags:
  *   --cluster=NAME    corpus cluster (default: lethalities)
  *   --max=N           cap extracted claims (EXTRACTION_MAX_CLAIMS; 0 = unlimited)
- *   --decompose=N     also offline-decompose the first N extracted claims
  *   --chars=N         only feed the first N characters of the post (cheap smoke)
  *
  * Examples:
  *   tsx scripts/corpus/extract-only.ts                       # AGI Ruin, all claims
- *   tsx scripts/corpus/extract-only.ts --max=8 --decompose=2
+ *   tsx scripts/corpus/extract-only.ts --max=8
  *   tsx scripts/corpus/extract-only.ts CoZhXrhpQxpy9xw9y --chars=6000
  */
 import { config as loadDotenv } from "dotenv";
@@ -41,7 +41,6 @@ import { readFileSync, existsSync } from "node:fs";
 import { argFlag, loadManifest, postMarkdownPath } from "./lib.js";
 import { extractClaims } from "../../src/llm/agents/extractor.js";
 import type { ExtractedClaim } from "../../src/llm/agents/extractor.js";
-import { decomposeClaim } from "../../src/llm/agents/decomposer.js";
 
 const ARG_WORDS =
   /\b(therefore|thus|hence|implies?|implying|suggest(?:s|ing)?|because|since|so that|such that|entails?|consequently|as a result|which means)\b/i;
@@ -96,7 +95,6 @@ async function main(): Promise<void> {
   if (chars) content = content.slice(0, Number(chars));
 
   const max = Number(argFlag("max") ?? "0");
-  const decompose = Number(argFlag("decompose") ?? "0");
 
   console.log(`\n=== extract-only: ${post.title} (${post.author}) ===`);
   console.log(`post ${post.id} · ${content.length} chars · max=${max || "∞"}\n`);
@@ -124,25 +122,6 @@ async function main(): Promise<void> {
   console.log(`canonical-form words: avg ${avg}, max ${maxW}`);
   console.log(`argument-shaped (therefore/implies/…): ${argLike}`);
   console.log(`definition-shaped: ${defLike}`);
-
-  for (let i = 0; i < Math.min(decompose, claims.length); i++) {
-    const c = claims[i]!;
-    console.log(`\n=== decompose [${i + 1}] ${c.proposed_canonical_form} ===`);
-    const d = await decomposeClaim({
-      claimText: c.proposed_canonical_form,
-      claimType: c.claim_type,
-      useTools: false, // offline: no graph search, no DB
-    });
-    console.log(`atomic=${d.is_atomic} (${d.atomic_type ?? "-"}) — ${d.subclaims.length} subclaims`);
-    for (const s of d.subclaims) {
-      console.log(
-        `  · [${s.relation}] (${words(s.text)}w)${flags(s.text, "")}  ${s.text}`
-      );
-    }
-    if (d.arguments.length) {
-      console.log(`  arguments: ${d.arguments.map((a) => `${a.name}(${a.stance})`).join(", ")}`);
-    }
-  }
 }
 
 main().catch((err) => {

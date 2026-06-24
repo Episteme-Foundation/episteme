@@ -41,14 +41,16 @@ describe("steward add_decomposition_edge", () => {
 
     expect(JSON.parse(out).success).toBe(true);
 
-    // The regression this guards: the created claim must be enqueued so it gets
-    // decomposed/assessed instead of sitting `pending` forever.
+    // The regression this guards: the created claim must be enqueued (onboarded)
+    // so its Steward structures/assesses it instead of it sitting `pending`
+    // forever. Recursion no longer threads depth/ancestors — the child's Steward
+    // calls match_claim before creating anything, so it links existing ancestors
+    // rather than looping into them.
     expect(enqueueClaimPipeline).toHaveBeenCalledTimes(1);
     expect(enqueueClaimPipeline).toHaveBeenCalledWith(
       expect.objectContaining({
         claimId: NEW_CLAIM_ID,
-        ancestorIds: [parentId], // seeded with parent for cycle safety
-        currentDepth: 0,
+        jobId: "steward",
       })
     );
   });
