@@ -134,3 +134,11 @@ export interface SearchResultItem {
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
 }
+
+export type AssessedFilter = "all" | "assessed" | "unassessed";
+
+// The browse/search filter levers, threaded from the URL through to the API.
+export interface ClaimFilters {
+  assessed?: AssessedFilter;
+  minImportance?: number;
+}

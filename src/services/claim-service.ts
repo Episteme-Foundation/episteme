@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import { claims, assessments, arguments_, type NewClaim } from "../db/schema.js";
 import { generateEmbedding } from "./embedding-service.js";
@@ -83,11 +83,20 @@ export async function listClaims(opts: {
   limit: number;
   cursor?: string;
   state?: string;
+  // "assessed" ⇒ has a current assessment status; "unassessed" ⇒ none yet (matches
+  // the badge rule — a NULL status reads as unassessed, not as a verdict).
+  assessed?: "all" | "assessed" | "unassessed";
+  minImportance?: number;
 }) {
   const db = getDb();
 
   const filters = [isNull(claims.mergedInto)];
   if (opts.state) filters.push(eq(claims.state, opts.state));
+  if (opts.assessed === "assessed") filters.push(isNotNull(assessments.status));
+  else if (opts.assessed === "unassessed") filters.push(isNull(assessments.status));
+  if (opts.minImportance && opts.minImportance > 0) {
+    filters.push(gte(claims.importance, opts.minImportance));
+  }
 
   const cur = opts.cursor ? decodeCursor(opts.cursor) : null;
   if (cur) {

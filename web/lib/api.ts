@@ -1,5 +1,5 @@
 import "server-only";
-import type { ClaimDetail, SearchResultItem, TrajectoryPoint } from "./types";
+import type { ClaimDetail, ClaimFilters, SearchResultItem, TrajectoryPoint } from "./types";
 
 // Server-only client for the Episteme Fastify API. The API key is read from the
 // environment and attached here, on the server — it is never shipped to the
@@ -42,16 +42,36 @@ export async function fetchClaimDetail(id: string): Promise<ClaimDetail> {
   return trajectory ? { ...detail, trajectory } : detail;
 }
 
-export async function fetchSearch(query: string): Promise<SearchResultItem[]> {
+// Serialize the active filters into API query params. Defaults (all / 0) are
+// omitted so the URL stays clean and matches the API's own defaults.
+function filterParams(filters?: ClaimFilters): URLSearchParams {
+  const p = new URLSearchParams();
+  if (filters?.assessed && filters.assessed !== "all") p.set("assessed", filters.assessed);
+  if (filters?.minImportance && filters.minImportance > 0) {
+    p.set("min_importance", String(filters.minImportance));
+  }
+  return p;
+}
+
+export async function fetchSearch(
+  query: string,
+  filters?: ClaimFilters,
+): Promise<SearchResultItem[]> {
+  const qs = filterParams(filters).toString();
   const r = await apiGet<{ results: SearchResultItem[]; total: number }>(
-    `/claims/search/${encodeURIComponent(query)}`,
+    `/claims/search/${encodeURIComponent(query)}${qs ? `?${qs}` : ""}`,
   );
   return r.results;
 }
 
-export async function fetchList(limit = 40): Promise<SearchResultItem[]> {
+export async function fetchList(
+  limit = 40,
+  filters?: ClaimFilters,
+): Promise<SearchResultItem[]> {
+  const p = filterParams(filters);
+  p.set("limit", String(limit));
   const r = await apiGet<{ results: SearchResultItem[]; total: number }>(
-    `/claims?limit=${limit}`,
+    `/claims?${p.toString()}`,
   );
   return r.results;
 }
