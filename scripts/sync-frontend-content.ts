@@ -13,7 +13,6 @@ import { fileURLToPath } from "url";
 import { getExtractorSystemPrompt } from "../src/llm/prompts/extractor.js";
 import { getMatcherSystemPrompt } from "../src/llm/prompts/matcher.js";
 import { getDecomposerSystemPrompt } from "../src/llm/prompts/decomposer.js";
-import { getAssessorSystemPrompt } from "../src/llm/prompts/assessor.js";
 import { getContributionReviewerSystemPrompt } from "../src/llm/prompts/contribution-reviewer.js";
 import { getClaimStewardSystemPrompt } from "../src/llm/prompts/claim-steward.js";
 import { getDisputeArbitratorSystemPrompt } from "../src/llm/prompts/dispute-arbitrator.js";
@@ -67,23 +66,19 @@ const AGENTS: AgentMeta[] = [
     tagline: "Breaks a claim into subclaims and arguments, revealing its logical structure.",
     invokedWhen: "For each new claim in the pipeline, recursively to a depth bound.",
     model: "Claude Sonnet 4.6", fn: getDecomposerSystemPrompt },
-  { key: "assessor", name: "Assessor", stage: 4, group: "processing",
-    tagline: "Weighs the evidence and decomposition into one of six honest verdicts.",
-    invokedWhen: "For atomic claims directly, and for compound claims once their subclaims are assessed.",
-    model: "Claude Sonnet 4.6", fn: getAssessorSystemPrompt },
-  { key: "contribution-reviewer", name: "Contribution Reviewer", stage: 5, group: "governance",
+  { key: "contribution-reviewer", name: "Contribution Reviewer", stage: 4, group: "governance",
     tagline: "Evaluates incoming contributions against policy — accept, reject, or escalate.",
     invokedWhen: "A contributor submits a challenge, support, merge, edit, instance, or argument.",
     model: "Claude Sonnet 4.6", fn: getContributionReviewerSystemPrompt },
-  { key: "claim-steward", name: "Claim Steward", stage: 6, group: "governance",
-    tagline: "The ongoing maintainer of a claim — canonical form, decomposition, and assessment over time.",
-    invokedWhen: "A subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
+  { key: "claim-steward", name: "Claim Steward", stage: 5, group: "governance",
+    tagline: "The owner of a claim — it assesses the claim and maintains its canonical form and decomposition over time. There is no separate Assessor.",
+    invokedWhen: "When a claim is first structured, a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     model: "Claude Sonnet 4.6", fn: getClaimStewardSystemPrompt },
-  { key: "dispute-arbitrator", name: "Dispute Arbitrator", stage: 7, group: "governance",
+  { key: "dispute-arbitrator", name: "Dispute Arbitrator", stage: 6, group: "governance",
     tagline: "Resolves escalations and appeals, optionally via multi-model consensus.",
     invokedWhen: "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     model: "Claude Sonnet 4.6 (second opinion: Haiku 4.5)", fn: getDisputeArbitratorSystemPrompt },
-  { key: "audit-agent", name: "Audit Agent", stage: 8, group: "governance",
+  { key: "audit-agent", name: "Audit Agent", stage: 7, group: "governance",
     tagline: "Quality control over the governance system itself — flags issues, adjusts reputation, suspends bad actors.",
     invokedWhen: "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
     model: "Claude Sonnet 4.6", fn: getAuditAgentSystemPrompt },

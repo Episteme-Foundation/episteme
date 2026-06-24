@@ -211,6 +211,7 @@ async function getClaimWithContext(claimId: string) {
     .select({
       originalText: claimInstances.originalText,
       context: claimInstances.context,
+      stance: claimInstances.stance,
       confidence: claimInstances.confidence,
       sourceTitle: sources.title,
       sourceType: sources.sourceType,
@@ -256,6 +257,9 @@ async function getClaimWithContext(claimId: string) {
     instances: instances.map((inst) => ({
       original_text: inst.originalText,
       context: inst.context,
+      // Whether this source affirms or denies the canonical claim — credible
+      // sources on both sides is a strong CONTESTED signal (#28/#30).
+      stance: inst.stance,
       confidence: inst.confidence,
       source_title: inst.sourceTitle,
       source_type: inst.sourceType,
