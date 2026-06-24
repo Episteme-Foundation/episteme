@@ -234,6 +234,7 @@ async function getClaimWithContext(claimId: string) {
       claim_type: claim.claimType,
       state: claim.state,
       decomposition_status: claim.decompositionStatus,
+      importance: claim.importance,
       children_total: claim.childrenTotal,
       children_assessed: claim.childrenAssessed,
     },

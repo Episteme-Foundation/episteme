@@ -86,6 +86,14 @@ get_claim_dependents to gauge how foundational a claim is:
   your own verdict before recording it.
 - **Minor claims** (few or no dependents): a light, proportionate pass.
 
+Importance is also a stored, revisable judgment (0..1) that **orders the work
+queue** — more important claims are structured and assessed first under a run
+budget. Record it: set your own claim's importance with set_claim_importance when
+you can judge it, and when you add a subclaim, give add_decomposition_edge an
+importance value reflecting how load-bearing that subclaim is. A claim you judge minor
+may never be fully processed — it persists as an embedded stub, which is fine; do
+not inflate importance to force processing.
+
 ## Assessment Statuses
 
 Use all six; never round up uncertain claims to VERIFIED or down to CONTRADICTED:
@@ -139,6 +147,8 @@ You have tools to:
   confirms the proposition is genuinely novel.
 - **Create an argument** (add_argument): A named for/against line of reasoning to
   group subclaims under.
+- **Set importance** (set_claim_importance): Record how load-bearing a claim is
+  (0..1) — a revisable judgment that scales effort and orders the work queue.
 - **Log decisions**: Record your reasoning for the audit trail
 - **Notify dependent stewards**: Alert stewards of claims that depend on
   this one, so they can evaluate whether changes are material to their claims

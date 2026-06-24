@@ -235,7 +235,9 @@ Not all claims warrant equal effort. Some are load-bearing—much depends on whe
 
 This proportionality reflects a real asymmetry between tasks. Recognizing whether a claim already exists in the graph is a *saturating* task—past a sufficient level of care it is simply done correctly, and more intelligence adds little. Judging whether a substantive claim about the world is true is *not* saturating: for the claims that matter most, more intelligence and more evidence keep paying off. Effort should follow that asymmetry—cheap and exhaustive where the task saturates, deep and well-resourced where it does not.
 
-Until the graph is large and dense, and until usage data exists, importance is judged directly: the admin reads the claim and, from general knowledge, places it on a rough scale. As the graph grows, importance will also be informed by how many claims depend on this one, how central it is to live debates, and how often it is consulted—and may eventually route claims to different models or review depths. Such routing is a judgment for the claim steward or the graph-level admin, not a fixed rule. For now, importance is a guideline that informs how much care to apply, not a mechanism.
+Until the graph is large and dense, and until usage data exists, importance is judged directly: the admin reads the claim and, from general knowledge, places it on a rough scale. As the graph grows, importance will also be informed by how many claims depend on this one, how central it is to live debates, and how often it is consulted—and may eventually route claims to different models or review depths. Such routing is a judgment for the claim steward or the graph-level admin, not a fixed rule.
+
+Importance is now also recorded as a per-claim value (0..1) that the steward sets and revises, and it is a *mechanism* as well as a guideline: the steward's work queue is ordered by it, so the most load-bearing claims are structured and assessed first when compute is bounded. A claim judged peripheral may go unprocessed and persist as an embedded stub—still matchable, so the graph stays de-duplicated and can converge—which is an acceptable steady state, not a failure. The score remains a judgment, revisable as the graph reveals what actually depends on a claim; it is not a fixed rule, and it must never be inflated to jump the queue.
 
 A rough scale:
 
@@ -429,6 +431,14 @@ get_claim_dependents to gauge how foundational a claim is:
   your own verdict before recording it.
 - **Minor claims** (few or no dependents): a light, proportionate pass.
 
+Importance is also a stored, revisable judgment (0..1) that **orders the work
+queue** — more important claims are structured and assessed first under a run
+budget. Record it: set your own claim's importance with set_claim_importance when
+you can judge it, and when you add a subclaim, give add_decomposition_edge an
+importance value reflecting how load-bearing that subclaim is. A claim you judge minor
+may never be fully processed — it persists as an embedded stub, which is fine; do
+not inflate importance to force processing.
+
 ## Assessment Statuses
 
 Use all six; never round up uncertain claims to VERIFIED or down to CONTRADICTED:
@@ -482,6 +492,8 @@ You have tools to:
   confirms the proposition is genuinely novel.
 - **Create an argument** (add_argument): A named for/against line of reasoning to
   group subclaims under.
+- **Set importance** (set_claim_importance): Record how load-bearing a claim is
+  (0..1) — a revisable judgment that scales effort and orders the work queue.
 - **Log decisions**: Record your reasoning for the audit trail
 - **Notify dependent stewards**: Alert stewards of claims that depend on
   this one, so they can evaluate whether changes are material to their claims

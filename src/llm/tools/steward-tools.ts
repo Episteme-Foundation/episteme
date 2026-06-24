@@ -21,6 +21,14 @@ import {
   enqueueCurator,
 } from "../../services/queue-service.js";
 
+/** Coerce a tool input to a clamped importance in [0, 1], or undefined if absent/invalid. */
+function clampImportance(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return undefined;
+  return Math.min(1, Math.max(0, n));
+}
+
 export function getStewardToolDefinitions(): Tool[] {
   return [
     {
@@ -198,8 +206,39 @@ export function getStewardToolDefinitions(): Tool[] {
               "Optional UUID of an argument (from add_argument) to group this " +
               "subclaim under",
           },
+          importance: {
+            type: "number",
+            description:
+              "How load-bearing this subclaim is, 0..1 (your judgment): how much " +
+              "the parent's truth rides on it. Sets the subclaim's importance, which " +
+              "orders the work queue so important claims are processed first. " +
+              "Defaults to 0.5 if omitted.",
+          },
         },
         required: ["parent_id", "child_text", "relation", "reasoning"],
+      },
+    },
+    {
+      name: "set_claim_importance",
+      description:
+        "Set how load-bearing a claim is (0..1) — a revisable judgment that scales " +
+        "the effort spent on it and orders the work queue. Set your own claim's " +
+        "importance when you can judge it (e.g. from how many claims depend on it), " +
+        "or refine a subclaim's.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          claim_id: { type: "string", description: "The UUID of the claim" },
+          importance: {
+            type: "number",
+            description: "Importance score, 0 (peripheral) .. 1 (foundational)",
+          },
+          reasoning: {
+            type: "string",
+            description: "Why the claim has this importance",
+          },
+        },
+        required: ["claim_id", "importance", "reasoning"],
       },
     },
     {
@@ -350,6 +389,28 @@ export async function executeStewardTool(
         });
       }
 
+      case "set_claim_importance": {
+        const claimId = input.claim_id as string;
+        const importance = clampImportance(input.importance);
+        if (importance === undefined) {
+          return JSON.stringify({
+            success: false,
+            message: "importance must be a number in [0, 1].",
+          });
+        }
+
+        const db = getDb();
+        await db
+          .update(claims)
+          .set({ importance, updatedAt: new Date() })
+          .where(eq(claims.id, claimId));
+
+        return JSON.stringify({
+          success: true,
+          message: `Importance of claim ${claimId} set to ${importance}.`,
+        });
+      }
+
       case "add_argument": {
         const claimId = input.claim_id as string;
         const name = input.name as string;
@@ -417,6 +478,7 @@ export async function executeStewardTool(
         const relation = input.relation as string;
         const reasoning = input.reasoning as string;
         const argumentId = (input.argument_id as string) ?? null;
+        const importance = clampImportance(input.importance);
 
         const db = getDb();
 
@@ -434,6 +496,7 @@ export async function executeStewardTool(
             text: childText,
             claimType: "empirical_derived",
             embedding: embedding ?? undefined,
+            ...(importance !== undefined ? { importance } : {}),
             createdBy: "claim_steward",
           })
           .returning();
