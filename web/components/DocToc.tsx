@@ -8,6 +8,18 @@ import type { TocItem } from "@/lib/toc";
 // view via an IntersectionObserver scrollspy.
 export function DocToc({ items, title = "On this page" }: { items: TocItem[]; title?: string }) {
   const [active, setActive] = useState<string>("");
+  // The contents are open by default (the desktop rail and the no-JS case), but
+  // on narrow screens they would push the document's own heading below the fold,
+  // so we collapse them there into a tap-to-expand disclosure.
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1000px)");
+    setOpen(!mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setOpen(!e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     const headings = items
@@ -35,17 +47,19 @@ export function DocToc({ items, title = "On this page" }: { items: TocItem[]; ti
 
   return (
     <nav className="toc" aria-label="Table of contents">
-      <p className="sc toc-title">{title}</p>
-      <ul>
-        {items.map((item) => (
-          <li
-            key={item.slug}
-            className={`toc-item d${item.depth}${active === item.slug ? " active" : ""}`}
-          >
-            <a href={`#${item.slug}`}>{item.text}</a>
-          </li>
-        ))}
-      </ul>
+      <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+        <summary className="sc toc-title">{title}</summary>
+        <ul>
+          {items.map((item) => (
+            <li
+              key={item.slug}
+              className={`toc-item d${item.depth}${active === item.slug ? " active" : ""}`}
+            >
+              <a href={`#${item.slug}`}>{item.text}</a>
+            </li>
+          ))}
+        </ul>
+      </details>
     </nav>
   );
 }

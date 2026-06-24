@@ -313,16 +313,20 @@
    ========================================================================== */
 @media (max-width: 1080px) {
   .grid {
-    display: block;
+    display: flex;
+    flex-direction: column;
     max-width: 42rem;
   }
+  /* The decomposition compass is secondary to the claim itself, so on narrow
+     screens it drops below the reading column — landing between the end of the
+     claim and the "depended on by" section — rather than sitting on top. */
+  .center { order: 1; }
+  .leftRail { order: 2; }
+  .rightRail { order: 3; }
   .leftRail,
   .rightRail {
     position: static;
     max-width: 38rem;
-  }
-  .leftRail { margin-bottom: 1.8rem; }
-  .rightRail {
     margin-top: 2.4rem;
     padding-top: 0.4rem;
     border-top: 1px solid var(--rule);

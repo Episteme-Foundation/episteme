@@ -127,6 +127,24 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 }
 .masthead nav a:hover { color: var(--link); text-decoration: none; }
 
+/* on narrow screens the masthead wraps: wordmark on its own line, the nav
+   beneath it spanning the full width and wrapping as needed — never an
+   off-screen horizontal scroll */
+@media (max-width: 640px) {
+  .masthead-inner {
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.45rem 1rem;
+    padding: 0.6rem 1.1rem;
+  }
+  .masthead nav {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.1rem;
+  }
+}
+
 .frame { max-width: var(--frame); margin: 0 auto; padding: 2.6rem 1.6rem 5rem; }
 
 /* text column sits left within the frame; the right gap holds sidenotes */
@@ -453,6 +471,9 @@ html { scroll-behavior: smooth; }
 /* table of contents */
 .toc { font-size: 0.75rem; line-height: 1.35; }
 .toc-title { margin-bottom: 0.55rem; }
+/* on desktop the disclosure is always open and reads as a plain heading */
+.toc summary { list-style: none; }
+.toc summary::-webkit-details-marker { display: none; }
 .toc ul { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--rule); }
 .toc-item a {
   display: block; color: var(--muted); text-decoration: none;
@@ -475,4 +496,18 @@ html { scroll-behavior: smooth; }
   }
   .toc ul { columns: 2; column-gap: 1.4rem; }
   .toc-item.d3 a { padding-left: 1.4rem; }
+
+  /* the contents collapse into a tap-to-expand disclosure so they don't push
+     the document's own heading below the fold */
+  .toc summary {
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.4rem;
+    margin-bottom: 0; padding: 0.2rem 0;
+  }
+  .toc summary::before {
+    content: "▸"; color: var(--faint); font-size: 0.8em;
+    transition: transform 0.15s ease;
+  }
+  .toc details[open] summary { margin-bottom: 0.55rem; }
+  .toc details[open] summary::before { transform: rotate(90deg); }
 }
