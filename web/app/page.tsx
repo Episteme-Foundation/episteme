@@ -77,16 +77,16 @@ export default function Home() {
       <section className="col-wide">
         <h2>How a claim enters the graph</h2>
         <p className="prose" style={{ marginBottom: 0 }}>
-          Claims are processed deliberately by dedicated LLM administrators — extracted,
-          matched against what already exists, decomposed, and assessed — not generated
-          ad-hoc in response to a query.
+          Claims are processed deliberately by dedicated LLM administrators — a source is
+          read for the claims it asserts, each is matched against what already exists, and
+          the claim&apos;s owner then decomposes and assesses it — not generated ad-hoc in
+          response to a query.
         </p>
         <div className="pipeline">
           {[
-            ["01", "Extractor", "pulls claims from a source, in canonical form"],
-            ["02", "Matcher", "same claim, or new? two claims match iff they decompose alike"],
-            ["03", "Decomposer", "breaks the claim into subclaims and arguments"],
-            ["04", "Assessor", "weighs the evidence into one of six verdicts"],
+            ["01", "Extractor", "reads a source for the claims it asserts, in canonical form"],
+            ["02", "Matcher", "same claim, or new? two claims match iff they decompose alike — and a claim and its negation are one"],
+            ["03", "Claim Steward", "owns each claim: decomposes it into subclaims and arguments, then weighs the evidence into one of six verdicts"],
           ].map(([n, name, desc]) => (
             <div className="stage" key={n}>
               <span className="sc">{n}</span>
@@ -96,8 +96,9 @@ export default function Home() {
           ))}
         </div>
         <p className="prose" style={{ fontSize: ".88rem", color: "var(--muted)" }}>
-          A governance layer — contribution reviewer, claim steward, dispute arbitrator,
-          and an auditor — handles challenges and keeps the graph honest over time.
+          A governance layer — the claim steward, a curator that tends the structure
+          between claims, the contribution reviewer, dispute arbitrator, and an auditor —
+          handles challenges and keeps the graph honest over time.
           <Link href="/about/agents"> Meet the agents, with their full system prompts →</Link>
         </p>
       </section>

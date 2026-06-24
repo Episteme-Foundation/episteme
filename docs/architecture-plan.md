@@ -20,17 +20,18 @@ and assesses its validity. Serving is the cheap, read-side work: the graph that
 results is queried directly, with no LLM in the request path.
 
 ```
-   SOURCE                 PROCESSING PIPELINE                 GRAPH
- ┌────────┐   ┌───────────────────────────────────────┐   ┌──────────┐
- │ URL or │──▶│ Extractor → Matcher → Decomposer →     │──▶│ Postgres │
- │ document│   │            Assessor                   │   │ +pgvector│
- └────────┘   └───────────────────────────────────────┘   └────┬─────┘
-                                                                │
-            GOVERNANCE (ongoing)                                │ read
- ┌─────────────────────────────────────────────┐               ▼
- │ Claim Steward · Contribution Reviewer ·      │          ┌──────────┐
- │ Dispute Arbitrator · Audit Agent             │◀────────▶│   API    │──▶ web / extension
- └─────────────────────────────────────────────┘          └──────────┘
+   SOURCE              INGESTION              GRAPH
+ ┌────────┐   ┌──────────────────────────┐   ┌──────────┐
+ │ URL or │──▶│ Extractor → Matcher →     │──▶│ Postgres │
+ │ document│   │ onboard → Claim Steward  │   │ +pgvector│
+ └────────┘   └──────────────────────────┘   └────┬─────┘
+                                                   │
+   GOVERNANCE (ongoing)                            │ read
+ ┌─────────────────────────────────────┐           ▼
+ │ Claim Steward (decompose + assess) · │      ┌──────────┐
+ │ Curator · Contribution Reviewer ·    │◀────▶│   API    │──▶ web / extension
+ │ Dispute Arbitrator · Audit Agent     │      └──────────┘
+ └─────────────────────────────────────┘
 ```
 
 The work is done once, during ingestion, and reused everywhere a claim recurs —
@@ -189,12 +190,11 @@ subclaim is `contested`, the parent is `contested`"). At scale that makes contes
 infectious — almost every claim eventually inherits a contested subclaim somewhere deep
 in its tree, and the status field becomes useless.
 
-Instead, the assessor weighs the status of subclaims across all arguments, the
+Instead, the claim steward weighs the status of subclaims across all arguments, the
 *materiality* of each subclaim to the parent's truth, and the strength of each
-argument as a whole, and documents the result in its reasoning trace. The assessor and
-claim-steward prompts give guidance and worked examples rather than rules, and the
-steward prompt is explicit: *do not mechanically propagate status changes — assess
-materiality first.*
+argument as a whole, and documents the result in its reasoning trace. The claim-steward
+prompt gives guidance and worked examples rather than rules, and is explicit: *do not
+mechanically propagate status changes — assess materiality first.*
 
 Propagation is therefore self-limiting. When a subclaim's assessment changes, the
 admins of directly dependent claims reconsider; most changes are absorbed within a
@@ -210,32 +210,43 @@ constitution, followed by the agent's specific role. The prompts live in
 `src/llm/prompts/` and are vendored verbatim into this site (see the
 [agents](/about/agents) page).
 
-### Processing agents
+### Processing skills
 
-These run as queue-driven workers and do the write-side ingestion work, in order:
+Ingestion uses two stateless skills — called as functions, returning a result the
+caller needs to proceed:
 
 ```
- Extractor ──▶ Matcher ──▶ Decomposer ──▶ Assessor
-  pull atomic   new claim    break into     weigh into one
-  claims from   or existing?  subclaims      of six statuses
-  a source     (vector + LLM) within args
+ Extractor ──▶ Matcher ──▶ onboard ──▶ Claim Steward
+  read a       new claim     create     decompose + assess
+  source for   or existing?   the node   (a governance agent,
+  its claims  (agentic search           below)
+              over the graph)
 ```
 
-- **Extractor** — pulls atomic claims out of a source in canonical form.
-- **Matcher** — for each candidate, decides whether it already exists or is new, using
-  vector-search neighbours plus an LLM judgment (two claims match iff they decompose
-  alike).
-- **Decomposer** — breaks a claim into subclaims *within arguments*, creating multiple
-  arguments when a claim has several distinct lines of reasoning; recurses to a depth
-  bound.
-- **Assessor** — produces the holistic verdict described above.
+- **Extractor** — reads a source for the discrete, reusable claims it asserts, in
+  canonical form.
+- **Matcher** — the single decider of claim identity: for any proposition it searches
+  the graph itself (multiple framings, including the negation — a claim and its denial
+  are one node) and decides match-or-create. It is also a **tool** the Steward and
+  Curator call before creating anything. Two claims match iff they decompose alike.
+
+Decomposition and assessment are **not** separate processing agents: they are the Claim
+Steward's job (a governance agent), because deciding what a claim depends on and whether
+those dependencies hold is one open-ended judgment that belongs to the claim's owner.
 
 ### Governance agents
 
-These run continuously over the life of a claim:
+These are queue-triggered correspondents that act through tools over the life of a
+claim and the graph:
 
-- **Claim Steward** — the ongoing maintainer of a claim: its canonical form,
-  decomposition, arguments, and assessment over time.
+- **Claim Steward** — owns a single claim end to end: it **decomposes** the claim
+  (calling the Matcher to link existing claims rather than duplicate), maintains its
+  canonical form and arguments, and **assesses** it, re-judging as evidence and
+  depended-on claims change. Its effort scales with the claim's importance.
+- **Curator** — the graph-level counterpart: it owns the connective tissue *between*
+  claims — merging duplicates and counterparts the Matcher missed, splitting conflated
+  claims (§18), and suggesting cross-claim edges for the owning Stewards to adopt. It
+  never overrides a Steward's verdict.
 - **Contribution Reviewer** — evaluates each incoming contribution against policy
   (accept, reject, or escalate), including `propose_argument` contributions.
 - **Dispute Arbitrator** — resolves escalations and appeals, optionally via multi-model
