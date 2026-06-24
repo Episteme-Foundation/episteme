@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loadClaims } from "@/lib/data";
 import { CLAIM_TYPE_LABEL } from "@/lib/ontology";
-import { StatusBadge, Importance } from "@/components/Assessment";
+import { StatusBadge, Unassessed, Importance } from "@/components/Assessment";
 
 export default async function ClaimsIndex({
   searchParams,
@@ -45,7 +45,7 @@ export default async function ClaimsIndex({
           <Link href={`/claims/${c.id}`} className="card" key={c.id}>
             <div className="card-claim">{c.text}</div>
             <div className="card-foot">
-              {c.assessment_status && <StatusBadge status={c.assessment_status} />}
+              {c.assessment_status ? <StatusBadge status={c.assessment_status} /> : <Unassessed />}
               <span className="tag kind">{CLAIM_TYPE_LABEL[c.claim_type] ?? c.claim_type?.replace(/_/g, " ")}</span>
               {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
               <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>

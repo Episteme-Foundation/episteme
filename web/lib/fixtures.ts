@@ -14,6 +14,7 @@ const FLAGSHIP: ClaimDetail = {
     state: "active",
     decomposition_status: "complete",
     importance: 0.9,
+    steward_state: "done",
     created_by: "extractor",
     created_at: "2024-11-02T14:20:00Z",
     updated_at: "2026-03-18T09:12:00Z",
@@ -189,6 +190,8 @@ const INDEX: SearchResultItem[] = [
   { id: "min-wage", text: "The federal minimum wage should be raised to $15 per hour.", claim_type: "normative", state: "contested", similarity_score: 0.74, importance: 0.7, assessment_status: "contested", assessment_confidence: 0.62 },
   { id: "universe-age", text: "The universe is approximately 13.8 billion years old.", claim_type: "empirical_derived", state: "active", similarity_score: 0.69, importance: 0.55, assessment_status: "verified", assessment_confidence: 0.94 },
   { id: "mw-employment", text: "Raising the minimum wage to $15 reduces teen employment.", claim_type: "causal", state: "active", similarity_score: 0.66, importance: 0.4, assessment_status: "contested", assessment_confidence: 0.5 },
+  // An unassessed, low-importance leaf — left queued under the Steward's budget.
+  { id: "cpi-basket-weights", text: "The CPI shelter component was reweighted in the 2023 basket revision.", claim_type: "empirical_verifiable", state: "active", similarity_score: 0.61, importance: 0.18, assessment_status: null, assessment_confidence: null },
   { id: "deflation-2009", text: "The United States experienced sustained deflation throughout 2009.", claim_type: "empirical_verifiable", state: "active", similarity_score: 0.58, importance: 0.35, assessment_status: "contradicted", assessment_confidence: 0.88 },
 ];
 

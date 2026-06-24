@@ -18,6 +18,20 @@ export function Swatch({ status }: { status: AssessmentStatus | string | null })
   return <span className={`swatch ${s.cls}`} title={`${s.label} — ${s.def}`} aria-label={s.label} />;
 }
 
+// Shown in place of a StatusBadge when a claim has no current assessment. The
+// dashed, muted treatment signals "still queued" rather than a verdict — many
+// low-importance claims sit unassessed under the Steward's budget by design.
+export function Unassessed() {
+  return (
+    <span
+      className="badge unassessed"
+      title="No current assessment — the Steward prioritises higher-importance claims, so this one is likely still queued."
+    >
+      Unassessed
+    </span>
+  );
+}
+
 // Importance is rendered as a neutral five-pip meter, deliberately NOT coloured
 // by assessment status so it never competes with the verdict. The numeric value
 // and band live in the tooltip; `showLabel` adds the band name inline.

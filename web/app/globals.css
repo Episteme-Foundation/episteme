@@ -225,6 +225,13 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 }
 .tag.kind { font-variant: small-caps; text-transform: none; letter-spacing: 0.02em; }
 
+/* "Unassessed" — a non-verdict: a claim the Steward hasn't reached yet. Dashed
+   and faint so it reads as "pending", not as one of the assessment statuses. */
+.badge.unassessed {
+  color: var(--faint); border-style: dashed; background: transparent;
+  font-weight: 500;
+}
+
 /* importance meter — neutral pips, deliberately NOT status-coloured so it never
    competes with the assessment verdict. */
 .imp { display: inline-flex; align-items: center; gap: 0.4rem; }

@@ -39,7 +39,7 @@ describe("claim detail response serialization", () => {
     expect(out.subclaim_summary).toEqual({ supported: 2, contested: 0 });
   });
 
-  it("preserves importance on the claim (same stripping class as #16)", () => {
+  it("preserves importance and steward_state on the claim (same stripping class as #16)", () => {
     const stringify = fastJson(claimSchema as never);
     const out = JSON.parse(
       stringify({
@@ -49,14 +49,17 @@ describe("claim detail response serialization", () => {
         state: "active",
         decomposition_status: "pending",
         importance: 0.82,
+        steward_state: "pending",
         created_by: "extractor",
         created_at: "2026-06-21T04:18:43.337Z",
         updated_at: "2026-06-21T04:18:43.337Z",
       }),
     );
-    // The frontend surfaces this; if fast-json-stringify drops it (issue #16's
-    // failure mode) importance silently disappears from the UI.
+    // The frontend keys an "unassessed / may still decompose" caption off these;
+    // if fast-json-stringify drops them (issue #16's failure mode) the UI
+    // silently regresses to claiming the unprocessed claim is "atomic".
     expect(out.importance).toBe(0.82);
+    expect(out.steward_state).toBe("pending");
   });
 
   it("serializes a null assessment as null", () => {
