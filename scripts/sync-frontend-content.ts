@@ -14,6 +14,7 @@ import { getExtractorSystemPrompt } from "../src/llm/prompts/extractor.js";
 import { getMatcherSystemPrompt } from "../src/llm/prompts/matcher.js";
 import { getContributionReviewerSystemPrompt } from "../src/llm/prompts/contribution-reviewer.js";
 import { getClaimStewardSystemPrompt } from "../src/llm/prompts/claim-steward.js";
+import { getCuratorSystemPrompt } from "../src/llm/prompts/curator.js";
 import { getDisputeArbitratorSystemPrompt } from "../src/llm/prompts/dispute-arbitrator.js";
 import { getAuditAgentSystemPrompt } from "../src/llm/prompts/audit-agent.js";
 
@@ -69,11 +70,15 @@ const AGENTS: AgentMeta[] = [
     tagline: "The owner of a claim — it decomposes the claim, maintains its canonical form, and assesses it over time. There is no separate Decomposer or Assessor.",
     invokedWhen: "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     model: "Claude Sonnet 4.6", fn: getClaimStewardSystemPrompt },
-  { key: "dispute-arbitrator", name: "Dispute Arbitrator", stage: 5, group: "governance",
+  { key: "curator", name: "Curator", stage: 5, group: "governance",
+    tagline: "The graph-level counterpart to the Steward — it owns the connective tissue between claims: merges duplicates/counterparts, splits conflations, and suggests cross-claim edges for Stewards to adopt.",
+    invokedWhen: "When a Steward escalates a structural concern (and, as a follow-up, on new-claim neighborhood sweeps).",
+    model: "Claude Sonnet 4.6", fn: getCuratorSystemPrompt },
+  { key: "dispute-arbitrator", name: "Dispute Arbitrator", stage: 6, group: "governance",
     tagline: "Resolves escalations and appeals, optionally via multi-model consensus.",
     invokedWhen: "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     model: "Claude Sonnet 4.6 (second opinion: Haiku 4.5)", fn: getDisputeArbitratorSystemPrompt },
-  { key: "audit-agent", name: "Audit Agent", stage: 6, group: "governance",
+  { key: "audit-agent", name: "Audit Agent", stage: 7, group: "governance",
     tagline: "Quality control over the governance system itself — flags issues, adjusts reputation, suspends bad actors.",
     invokedWhen: "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
     model: "Claude Sonnet 4.6", fn: getAuditAgentSystemPrompt },
