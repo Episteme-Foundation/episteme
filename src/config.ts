@@ -79,6 +79,10 @@ const configSchema = z.object({
   // Cap the total number of Curator invocations per process (0 = unlimited),
   // mirroring stewardMaxRuns for predictable test/deploy spend.
   curatorMaxRuns: z.coerce.number().default(0),
+  // Probability (0..1) that a newly *created* top-level claim triggers a proactive
+  // Curator neighborhood sweep. 0 disables the proactive path (escalation-only);
+  // 1 sweeps every new claim. Still bounded by curatorMaxRuns + the LLM budget.
+  curatorSweepRate: z.coerce.number().default(1),
 
   // Governance — Anthropic API model IDs (see src/llm/models.ts).
   // The Matcher is an agentic search loop; a small model suffices since the
@@ -145,6 +149,7 @@ export function loadConfig(): Config {
     stewardMaxIterations: process.env.STEWARD_MAX_ITERATIONS,
     stewardMaxRuns: process.env.STEWARD_MAX_RUNS,
     curatorMaxRuns: process.env.CURATOR_MAX_RUNS,
+    curatorSweepRate: process.env.CURATOR_SWEEP_RATE,
     matcherModel: process.env.MATCHER_MODEL,
     curatorModel: process.env.CURATOR_MODEL,
     governanceModel: process.env.GOVERNANCE_MODEL,
