@@ -155,7 +155,7 @@ Anyone can contribute. A **contribution** targets a claim with a type — `chall
 `support`, `propose_merge`, `propose_split`, `propose_edit`, `add_instance`, or
 `propose_argument` — plus content and evidence. Contributions flow through review
 (`contribution_reviews`), can be appealed (`appeals`), and escalated to arbitration
-(`arbitration_results`, which can record multi-model votes). **Contributors** carry a
+(`arbitration_results`). **Contributors** carry a
 reputation score and acceptance history. This is the machinery the governance agents
 operate; the rules they apply live in the operational policies below.
 
@@ -249,8 +249,8 @@ claim and the graph:
   never overrides a Steward's verdict.
 - **Contribution Reviewer** — evaluates each incoming contribution against policy
   (accept, reject, or escalate), including `propose_argument` contributions.
-- **Dispute Arbitrator** — resolves escalations and appeals, optionally via multi-model
-  consensus (a second-opinion model votes alongside the primary).
+- **Dispute Arbitrator** — resolves escalations and appeals through careful
+  adjudication, the highest-stakes governance call (so it runs on Opus 4.8).
 - **Audit Agent** — quality control over the governance system itself: samples
   decisions, adjusts reputation, and can suspend bad actors.
 

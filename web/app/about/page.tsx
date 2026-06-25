@@ -50,7 +50,7 @@ export default function About() {
       <ul>
         <li><Link href="/about/constitution">The Administrator Constitution</Link> — the 25 principles that govern every agent, in full.</li>
         <li><Link href="/about/architecture">Architecture &amp; policies</Link> — the design of the graph and the operational rules.</li>
-        <li><Link href="/about/agents">The agents</Link> — the eight LLM administrators that do the work, each shown with its complete system prompt.</li>
+        <li><Link href="/about/agents">The agents</Link> — the seven LLM administrators that do the work, each shown with its complete system prompt.</li>
       </ul>
     </div>
     </DocLayout>

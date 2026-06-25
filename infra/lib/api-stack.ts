@@ -68,6 +68,13 @@ export class ApiStack extends cdk.Stack {
         // importance-priority drain means Opus only ever runs on the top of the
         // queue; the rest stay embedded stubs until budget allows.
         STEWARD_MODEL: "claude-opus-4-8",
+        // The other load-bearing governance agents also run on Opus: the Curator
+        // adjudicates merges/splits, the Audit Agent polices the governance
+        // system, and the Dispute Arbitrator resolves escalations and appeals.
+        // The Contribution Reviewer stays on the Sonnet default (governanceModel).
+        CURATOR_MODEL: "claude-opus-4-8",
+        AUDIT_MODEL: "claude-opus-4-8",
+        ARBITRATION_MODEL: "claude-opus-4-8",
         // Spend guardrails. Call limits cap request rate; the TOKEN limits are
         // the real $ governor (they reset hourly/daily, so this is a rate limit:
         // the drain works the highest-importance claims each window and pauses
