@@ -2,8 +2,7 @@
  * Dispute Arbitrator agent.
  *
  * Handles escalated reviews, appeals, and complex disputes that require
- * deeper analysis or multi-model consensus. Acts through tools -- no
- * structured return value.
+ * deeper analysis. Acts through tools -- no structured return value.
  */
 import { toolUseLoop } from "../client.js";
 import { getDisputeArbitratorSystemPrompt } from "../prompts/dispute-arbitrator.js";
@@ -24,7 +23,10 @@ export async function runArbitration(input: {
   model?: string;
 }): Promise<void> {
   const config = loadConfig();
-  const model = input.model ?? config.governanceModel;
+  // Arbitration is the highest-stakes governance call, so it has its own model
+  // knob (ARBITRATION_MODEL) rather than sharing governanceModel with the
+  // reviewer and auditor. Production sets this to Opus 4.8.
+  const model = input.model ?? config.arbitrationModel;
 
   const tools = [
     ...getGovernanceToolDefinitions(),
@@ -48,10 +50,9 @@ Please:
 3. Use get_contributor_profile for the contributor's history.
 4. Use get_recent_decisions to check for precedent in similar cases.
 5. Apply your decision framework: gather context, analyze policies, assess evidence, decide.
-6. For high-stakes decisions, consider using request_second_opinion for multi-model consensus.
-7. Record your decision using record_arbitration_decision.
-8. Use notify_claim_steward if the outcome affects the claim.
-9. Use flag_for_human_review if the situation exceeds automated capacity.`;
+6. Record your decision using record_arbitration_decision.
+7. Use notify_claim_steward if the outcome affects the claim.
+8. Use flag_for_human_review if the situation exceeds automated capacity.`;
 
   await toolUseLoop({
     initialMessages: [{ role: "user", content: userMessage }],

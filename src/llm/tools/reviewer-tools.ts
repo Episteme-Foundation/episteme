@@ -65,7 +65,7 @@ export function getReviewerToolDefinitions(): Tool[] {
       description:
         "Escalate a contribution to the dispute arbitrator for further " +
         "review. Use when uncertain, when stakes are high, or when the " +
-        "situation requires multi-model consensus.",
+        "situation requires deeper adjudication.",
       input_schema: {
         type: "object" as const,
         properties: {

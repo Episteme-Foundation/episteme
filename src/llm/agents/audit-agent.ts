@@ -23,7 +23,7 @@ export async function runAudit(input: {
   model?: string;
 }): Promise<void> {
   const config = loadConfig();
-  const model = input.model ?? config.governanceModel;
+  const model = input.model ?? config.auditModel;
 
   const tools = [
     ...getGovernanceToolDefinitions(),

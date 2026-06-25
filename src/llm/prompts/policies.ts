@@ -177,14 +177,11 @@ export const ARBITRATION_POLICIES = `## Arbitration Policies
 
 These policies govern dispute resolution.
 
-### Consensus Requirements
+### Stakes and Care
 
-**Single-model decisions** (low stakes):
-- Routine contribution acceptance/rejection
-- Clear policy violations
-- Uncontroversial merges
-
-**Multi-model consensus** (high stakes):
+Calibrate the depth of your analysis to the stakes. Routine matters (clear
+policy violations, uncontroversial merges) resolve quickly. High-stakes matters
+warrant fuller context-gathering and reasoning before you decide:
 - Changes to claims with >10 dependents
 - Overturning previous arbitration
 - Suspending contributors
@@ -210,7 +207,7 @@ Appeals that merely restate the original contribution should be denied.
 ### When to Recommend Human Review
 
 Recommend human review when:
-- Multi-model consensus cannot be reached
+- A dispute resists resolution under the policies
 - Potential legal implications (defamation, privacy)
 - Systemic issues (possible coordinated manipulation)
 - Novel edge cases not covered by policies`;

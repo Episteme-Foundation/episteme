@@ -94,16 +94,17 @@ const configSchema = z.object({
   // importance-priority drain means Opus only ever runs on the top of the queue.
   stewardModel: modelId(MODELS.sonnet),
   // The Curator adjudicates merges/splits and proposes structure — recognizing
-  // duplicates saturates, but a contested split is judgment, so mid-to-strong.
+  // duplicates saturates, but a contested split is judgment, so production runs
+  // it on Opus (CURATOR_MODEL).
   curatorModel: modelId(MODELS.sonnet),
+  // Shared by the Contribution Reviewer. The Audit Agent has its own knob
+  // (auditModel) so it can run on Opus without also upgrading the reviewer.
   governanceModel: modelId(MODELS.sonnet),
+  auditModel: modelId(MODELS.sonnet),
+  // Arbitration is the highest-stakes governance call; production sets
+  // ARBITRATION_MODEL=claude-opus-4-8.
   arbitrationModel: modelId(MODELS.sonnet),
-  secondOpinionModel: modelId(MODELS.haiku),
   enableContributions: z
-    .string()
-    .transform((s) => s === "true")
-    .default("false"),
-  enableMultiModelConsensus: z
     .string()
     .transform((s) => s === "true")
     .default("false"),
@@ -159,10 +160,9 @@ export function loadConfig(): Config {
     stewardModel: process.env.STEWARD_MODEL,
     curatorModel: process.env.CURATOR_MODEL,
     governanceModel: process.env.GOVERNANCE_MODEL,
+    auditModel: process.env.AUDIT_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
-    secondOpinionModel: process.env.SECOND_OPINION_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
-    enableMultiModelConsensus: process.env.ENABLE_MULTI_MODEL_CONSENSUS,
     escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
     auditSampleRate: process.env.AUDIT_SAMPLE_RATE,
     sqsContributionQueue: process.env.SQS_CONTRIBUTION_QUEUE,

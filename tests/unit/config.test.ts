@@ -19,7 +19,7 @@ describe("model IDs", () => {
 });
 
 describe("loadConfig model defaults", () => {
-  const MODEL_ENV = ["GOVERNANCE_MODEL", "ARBITRATION_MODEL", "SECOND_OPINION_MODEL"];
+  const MODEL_ENV = ["GOVERNANCE_MODEL", "ARBITRATION_MODEL", "AUDIT_MODEL", "CURATOR_MODEL"];
   const saved: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -42,7 +42,8 @@ describe("loadConfig model defaults", () => {
     const config = loadConfig();
     expect(config.governanceModel).toBe(MODELS.sonnet);
     expect(config.arbitrationModel).toBe(MODELS.sonnet);
-    expect(config.secondOpinionModel).toBe(MODELS.haiku);
+    expect(config.auditModel).toBe(MODELS.sonnet);
+    expect(config.curatorModel).toBe(MODELS.sonnet);
   });
 
   it("rejects a Bedrock-style override", async () => {

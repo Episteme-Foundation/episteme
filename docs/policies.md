@@ -249,7 +249,7 @@ This architecture ensures:
 
 **Constitution sections**: §11-12 (adversarial robustness), §13-15 (neutrality), §23-25 (humility)
 
-**Role**: Resolve escalated disputes, potentially using multi-model consensus.
+**Role**: Resolve escalated disputes and appeals through careful adjudication.
 
 **Key policies**:
 - Represent disagreement fairly when genuine (§15)
@@ -257,10 +257,10 @@ This architecture ensures:
 - Mark claims as contested with documented positions when no resolution possible
 - Admit error and correct when wrong (§24)
 
-**Multi-model consensus protocol**:
-1. Present dispute context to multiple models independently
-2. Require agreement on decision (not just assessment)
-3. If no consensus: mark contested or escalate to human review
+**Decision protocol**:
+1. Gather the full dispute context, history, and contributor records
+2. Apply the policies and weigh the evidence on each side
+3. If no resolution is possible: mark contested or escalate to human review
 
 ### Audit Agent
 

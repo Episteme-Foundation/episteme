@@ -104,15 +104,14 @@ This is valuable whether the claim is "the Earth is 4.5 billion years old" (veri
 
 ### LLM Agents
 
-The system uses specialized LLM agents for different tasks:
+The system uses seven specialized LLM agents for different tasks:
 
 - **Extractor** — Identifies claims in documents
 - **Matcher** — Determines if a claim matches an existing canonical form or is new
-- **Decomposer** — Breaks claims into subclaims recursively
-- **Assessor** — Evaluates claim validity based on its decomposition tree
-- **Claim Steward** — Manages ongoing updates to individual claims
+- **Claim Steward** — Owns each claim: decomposes it, maintains its canonical form, and assesses it over time (there is no separate Decomposer or Assessor)
+- **Curator** — Owns the structure between claims: merges duplicates, splits conflations, and proposes cross-claim edges
 - **Contribution Reviewer** — Evaluates community contributions against policies
-- **Dispute Arbitrator** — Handles escalated disputes with multi-model consensus
+- **Dispute Arbitrator** — Resolves escalated disputes and appeals
 - **Audit Agent** — Reviews system decisions for quality and consistency
 
 ### Governance Model
@@ -122,7 +121,6 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 - **Anyone can contribute** — challenges, evidence, merge proposals
 - **Transparent reasoning** — all agent decisions include full reasoning traces
 - **Policy-based evaluation** — contributions are judged against explicit, documented policies
-- **Multi-model consensus** — important decisions require agreement across multiple LLMs
 - **Human escalation path** — truly contested issues can be flagged for human review
 
 ## Technology Stack
