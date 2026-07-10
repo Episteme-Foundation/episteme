@@ -34,10 +34,27 @@ const configSchema = z.object({
   dbName: z.string().optional(),
   dbPassword: z.string().optional(),
 
-  // API auth
+  // API auth — comma-separated entries of "key" or "key:contributor_external_id".
+  // Binding a key to a contributor lets contribution/appeal endpoints derive the
+  // acting identity from the authenticated key instead of trusting a body field
+  // (issue #10). Unbound keys still authenticate but cannot act as a contributor.
   apiKeys: z
     .string()
-    .transform((s) => s.split(",").map((k) => k.trim()))
+    .transform((s) => s.split(",").map((k) => k.trim().split(":")[0]!))
+    .default(""),
+  apiKeyContributors: z
+    .string()
+    .transform((s) => {
+      const map: Record<string, string> = {};
+      for (const entry of s.split(",")) {
+        const sep = entry.indexOf(":");
+        if (sep === -1) continue;
+        const key = entry.slice(0, sep).trim();
+        const contributor = entry.slice(sep + 1).trim();
+        if (key && contributor) map[key] = contributor;
+      }
+      return map;
+    })
     .default(""),
 
   // CORS
@@ -140,6 +157,7 @@ export function loadConfig(): Config {
     dbName: process.env.DB_NAME,
     dbPassword: process.env.DB_PASSWORD,
     apiKeys: process.env.API_KEYS,
+    apiKeyContributors: process.env.API_KEYS,
     corsOrigins: process.env.CORS_ORIGINS,
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,

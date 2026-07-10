@@ -21,16 +21,9 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
       summary: "Submit a contribution for review",
       body: {
         type: "object",
-        required: [
-          "claim_id",
-          "contributor_external_id",
-          "contributor_display_name",
-          "contribution_type",
-          "content",
-        ],
+        required: ["claim_id", "contribution_type", "content"],
         properties: {
           claim_id: { type: "string", format: "uuid" },
-          contributor_external_id: { type: "string" },
           contributor_display_name: { type: "string" },
           contribution_type: { type: "string" },
           content: { type: "string" },
@@ -96,10 +89,22 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      // Get or create contributor
+      // The acting contributor comes from the authenticated API key (issue
+      // #10) — never from the request body, which would let any caller act as
+      // any contributor.
+      const externalId = request.contributorExternalId;
+      if (!externalId) {
+        return reply.code(403).send({
+          error: {
+            code: "NO_CONTRIBUTOR_IDENTITY",
+            message: "API key is not bound to a contributor identity",
+          },
+        });
+      }
+
       const contributor = await getOrCreateContributor({
-        externalId: body.contributor_external_id,
-        displayName: body.contributor_display_name,
+        externalId,
+        displayName: body.contributor_display_name ?? externalId,
       });
 
       // Check if contributor is suspended

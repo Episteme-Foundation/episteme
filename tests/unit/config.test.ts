@@ -52,3 +52,33 @@ describe("loadConfig model defaults", () => {
     expect(() => loadConfig()).toThrow();
   });
 });
+
+describe("loadConfig API key contributor bindings (issue #10)", () => {
+  let savedApiKeys: string | undefined;
+
+  beforeEach(() => {
+    savedApiKeys = process.env.API_KEYS;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    if (savedApiKeys === undefined) delete process.env.API_KEYS;
+    else process.env.API_KEYS = savedApiKeys;
+  });
+
+  it("parses bound and unbound keys", async () => {
+    process.env.API_KEYS = "k1:alice, k2";
+    const { loadConfig } = await import("../../src/config.js");
+    const config = loadConfig();
+    expect(config.apiKeys).toEqual(["k1", "k2"]);
+    expect(config.apiKeyContributors).toEqual({ k1: "alice" });
+  });
+
+  it("defaults to no keys and no bindings", async () => {
+    delete process.env.API_KEYS;
+    const { loadConfig } = await import("../../src/config.js");
+    const config = loadConfig();
+    expect(config.apiKeys).toEqual([""]);
+    expect(config.apiKeyContributors).toEqual({});
+  });
+});
