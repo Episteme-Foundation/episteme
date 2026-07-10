@@ -7,10 +7,12 @@ import {
 
 // ---- Request schemas ----
 
+// The acting contributor is derived from the authenticated API key (issue #10),
+// never from the request body. The optional display name is only used when the
+// contributor record is first created.
 export const createContributionBody = z.object({
   claim_id: uuidSchema,
-  contributor_external_id: z.string().min(1),
-  contributor_display_name: z.string().min(1),
+  contributor_display_name: z.string().min(1).optional(),
   contribution_type: contributionTypeEnum,
   content: z.string().min(1).max(10000),
   evidence_urls: z.array(z.string().url()).optional(),
@@ -26,8 +28,7 @@ export const listContributionsParams = paginationSchema.extend({
 
 export const createAppealBody = z.object({
   contribution_id: uuidSchema,
-  contributor_external_id: z.string().min(1),
-  contributor_display_name: z.string().min(1),
+  contributor_display_name: z.string().min(1).optional(),
   appeal_reasoning: z.string().min(1).max(10000),
 });
 
