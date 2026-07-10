@@ -23,8 +23,17 @@ import {
   executeMatcherTool,
 } from "../tools/matcher-tools.js";
 import { loadConfig } from "../../config.js";
+import { withAgent } from "../usage-context.js";
 
-export async function runClaimSteward(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function runClaimSteward(
+  input: Parameters<typeof runClaimStewardImpl>[0]
+): ReturnType<typeof runClaimStewardImpl> {
+  return withAgent("steward", () => runClaimStewardImpl(input));
+}
+
+async function runClaimStewardImpl(input: {
   trigger: string;
   claimId: string;
   context: string;

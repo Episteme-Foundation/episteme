@@ -1,14 +1,17 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import { sources } from "../db/schema.js";
-import { createJob } from "./job-service.js";
+import { createJob, type JobAttribution } from "./job-service.js";
 import { enqueueUrlExtraction } from "./queue-service.js";
 
-export async function submitSource(input: {
-  url: string;
-  title?: string;
-  content?: string;
-}) {
+export async function submitSource(
+  input: {
+    url: string;
+    title?: string;
+    content?: string;
+  },
+  attribution?: JobAttribution
+) {
   const db = getDb();
 
   // Check for existing source with same URL
@@ -20,10 +23,14 @@ export async function submitSource(input: {
 
   if (existing) {
     // Re-process existing source
-    const job = await createJob("url_extraction", {
-      sourceId: existing.id,
-      url: input.url,
-    });
+    const job = await createJob(
+      "url_extraction",
+      {
+        sourceId: existing.id,
+        url: input.url,
+      },
+      attribution
+    );
 
     await enqueueUrlExtraction({
       sourceId: existing.id,
@@ -44,10 +51,14 @@ export async function submitSource(input: {
     })
     .returning();
 
-  const job = await createJob("url_extraction", {
-    sourceId: source!.id,
-    url: input.url,
-  });
+  const job = await createJob(
+    "url_extraction",
+    {
+      sourceId: source!.id,
+      url: input.url,
+    },
+    attribution
+  );
 
   await enqueueUrlExtraction({
     sourceId: source!.id,

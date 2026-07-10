@@ -15,8 +15,17 @@ import {
   executeReviewerTool,
 } from "../tools/reviewer-tools.js";
 import { loadConfig } from "../../config.js";
+import { withAgent } from "../usage-context.js";
 
-export async function runContributionReview(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function runContributionReview(
+  input: Parameters<typeof runContributionReviewImpl>[0]
+): ReturnType<typeof runContributionReviewImpl> {
+  return withAgent("contribution_reviewer", () => runContributionReviewImpl(input));
+}
+
+async function runContributionReviewImpl(input: {
   contributionId: string;
   model?: string;
 }): Promise<void> {

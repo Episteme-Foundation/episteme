@@ -2,9 +2,31 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import { jobs } from "../db/schema.js";
 
-export async function createJob(type: string, input: Record<string, unknown>) {
+/**
+ * Attribution for per-token metering (#70): which account/key requested this
+ * job. Workers restore it into the LLM usage context so background agent
+ * work is billed to the requester. Omitted = system-initiated.
+ */
+export interface JobAttribution {
+  userId?: string | null;
+  apiKeyId?: string | null;
+}
+
+export async function createJob(
+  type: string,
+  input: Record<string, unknown>,
+  attribution?: JobAttribution
+) {
   const db = getDb();
-  const [job] = await db.insert(jobs).values({ type, input }).returning();
+  const [job] = await db
+    .insert(jobs)
+    .values({
+      type,
+      input,
+      userId: attribution?.userId ?? null,
+      apiKeyId: attribution?.apiKeyId ?? null,
+    })
+    .returning();
   return job!;
 }
 

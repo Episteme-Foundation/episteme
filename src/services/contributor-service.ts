@@ -43,3 +43,39 @@ export async function getOrCreateContributor(input: {
 
   return contributor!;
 }
+
+/**
+ * Upsert an account from a sign-in (#70). Called by the web app (service
+ * context) after the auth provider verifies the user. Keyed on externalId
+ * ("<provider>:<subject>"); refreshes profile fields on every sign-in so a
+ * changed display name or avatar propagates. Concurrent first sign-ins are
+ * handled by the unique index + ON CONFLICT.
+ */
+export async function provisionUser(input: {
+  externalId: string;
+  displayName: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+}) {
+  const db = getDb();
+  const [user] = await db
+    .insert(contributors)
+    .values({
+      externalId: input.externalId,
+      displayName: input.displayName,
+      email: input.email ?? null,
+      avatarUrl: input.avatarUrl ?? null,
+    })
+    .onConflictDoUpdate({
+      target: contributors.externalId,
+      set: {
+        displayName: input.displayName,
+        // Preserve an existing email/avatar if the provider stops sending one.
+        ...(input.email ? { email: input.email } : {}),
+        ...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
+        lastActiveAt: new Date(),
+      },
+    })
+    .returning();
+  return user!;
+}

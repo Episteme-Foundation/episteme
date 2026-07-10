@@ -15,8 +15,17 @@ import {
   executeArbitratorTool,
 } from "../tools/arbitrator-tools.js";
 import { loadConfig } from "../../config.js";
+import { withAgent } from "../usage-context.js";
 
-export async function runArbitration(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function runArbitration(
+  input: Parameters<typeof runArbitrationImpl>[0]
+): ReturnType<typeof runArbitrationImpl> {
+  return withAgent("dispute_arbitrator", () => runArbitrationImpl(input));
+}
+
+async function runArbitrationImpl(input: {
   contributionId: string;
   trigger: string;
   appealId?: string;

@@ -25,8 +25,17 @@ import {
   executeCuratorTool,
 } from "../tools/curator-tools.js";
 import { loadConfig } from "../../config.js";
+import { withAgent } from "../usage-context.js";
 
-export async function runCurator(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function runCurator(
+  input: Parameters<typeof runCuratorImpl>[0]
+): ReturnType<typeof runCuratorImpl> {
+  return withAgent("curator", () => runCuratorImpl(input));
+}
+
+async function runCuratorImpl(input: {
   trigger: string;
   claimId: string;
   context: string;

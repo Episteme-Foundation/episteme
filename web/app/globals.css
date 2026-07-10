@@ -584,3 +584,91 @@ html { scroll-behavior: smooth; }
   .toc details[open] summary { margin-bottom: 0.55rem; }
   .toc details[open] summary::before { transform: rotate(90deg); }
 }
+
+/* ==========================================================================
+   Account & sign-in (#70) — same paper-and-hairline language as the rest.
+   ========================================================================== */
+
+.signin-options { margin-top: 1.6rem; display: flex; flex-direction: column; gap: 0.9rem; max-width: 24rem; }
+.signin-button {
+  font-family: var(--sans); font-size: 0.86rem; font-weight: 600;
+  padding: 0.5rem 1rem; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--paper-card); color: var(--ink); cursor: pointer;
+  transition: background 0.12s ease;
+}
+.signin-button:hover { background: var(--paper-sunk); }
+.signin-dev { border-top: 1px solid var(--rule-soft); padding-top: 1rem; }
+.signin-dev-row { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.signin-dev input {
+  font-family: var(--mono); font-size: 0.86rem; padding: 0.45rem 0.6rem;
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-card);
+  color: var(--ink); flex: 1; min-width: 0;
+}
+.signin-note { font-family: var(--sans); font-size: 0.78rem; color: var(--faint); margin: 0.5rem 0 0; }
+
+.account section { margin-top: 2.4rem; border-top: 1px solid var(--rule-soft); padding-top: 1.4rem; }
+.account-head { display: flex; align-items: baseline; gap: 1rem; }
+.account-head h1 { margin-bottom: 0.2rem; }
+.account-head form { margin-left: auto; }
+.account-meta { font-family: var(--sans); font-size: 0.82rem; color: var(--muted); margin-top: 0; }
+.account-window { font-family: var(--sans); font-size: 0.78rem; font-weight: 400; color: var(--faint); letter-spacing: 0; text-transform: none; }
+.account-empty { font-family: var(--sans); font-size: 0.82rem; color: var(--faint); }
+
+.linklike {
+  font-family: var(--sans); font-size: 0.8rem; color: var(--link);
+  background: none; border: none; padding: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+  text-decoration-color: var(--rule);
+}
+.linklike:hover { text-decoration-color: currentColor; }
+.linklike.danger { color: var(--st-contradicted); }
+
+/* free-tier allowance meter — hairline track, ink fill */
+.meter {
+  height: 6px; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--paper-sunk); overflow: hidden; max-width: 24rem;
+}
+.meter-fill { height: 100%; background: var(--ink-soft); }
+.meter-caption { font-family: var(--sans); font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem; }
+
+.key-create { display: flex; gap: 0.5rem; max-width: 30rem; margin: 0.8rem 0; }
+.key-create input {
+  font-family: var(--sans); font-size: 0.86rem; padding: 0.45rem 0.6rem;
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-card);
+  color: var(--ink); flex: 1; min-width: 0;
+}
+.key-create button {
+  font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+  padding: 0.45rem 0.9rem; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--paper-card); color: var(--ink); cursor: pointer; white-space: nowrap;
+}
+.key-create button:hover:not(:disabled) { background: var(--paper-sunk); }
+.key-create button:disabled { color: var(--faint); cursor: default; }
+.form-error { font-family: var(--sans); font-size: 0.8rem; color: var(--st-contradicted); }
+
+/* the one-time key reveal — deliberately loud relative to the quiet page */
+.key-reveal {
+  border: 1px solid var(--st-contested); background: var(--st-contested-tint);
+  border-radius: 4px; padding: 0.7rem 0.9rem; margin: 0.8rem 0;
+}
+.key-reveal .sc { display: block; color: var(--st-contested); margin-bottom: 0.35rem; }
+.key-plaintext {
+  font-family: var(--mono); font-size: 0.82rem; word-break: break-all;
+  background: none; border: none; padding: 0; user-select: all;
+}
+
+.account-table {
+  border-collapse: collapse; font-size: 0.86rem; width: 100%; max-width: 46rem;
+  margin: 0.6rem 0 1.2rem;
+}
+.account-table th, .account-table td {
+  border-bottom: 1px solid var(--rule-soft); padding: 0.35rem 0.9rem 0.35rem 0;
+  text-align: left; vertical-align: baseline;
+}
+.account-table th {
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  border-bottom: 1px solid var(--rule);
+}
+.account-table code { font-size: 0.8rem; }
+.usage-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
