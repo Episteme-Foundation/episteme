@@ -11,7 +11,7 @@ const modelId = (defaultId: string) =>
     .string()
     .refine(isAnthropicModelId, {
       message:
-        'must be an Anthropic API model ID like "claude-sonnet-4-6", not a ' +
+        'must be an Anthropic API model ID like "claude-sonnet-5", not a ' +
         'Bedrock "us.anthropic.*" ID',
     })
     .default(defaultId);
@@ -107,19 +107,20 @@ const configSchema = z.object({
   matcherModel: modelId(MODELS.haiku),
   // The Steward assesses AND decomposes the "main" claims — the load-bearing
   // epistemic work. Default Sonnet keeps tests cheap; production sets
-  // STEWARD_MODEL=claude-opus-4-8 so the most important claims get Opus. The
-  // importance-priority drain means Opus only ever runs on the top of the queue.
+  // STEWARD_MODEL=claude-fable-5 so the most important claims get the deepest
+  // judgment (issue #77). The importance-priority drain means Fable only ever
+  // runs on the top of the queue.
   stewardModel: modelId(MODELS.sonnet),
   // The Curator adjudicates merges/splits and proposes structure — recognizing
   // duplicates saturates, but a contested split is judgment, so production runs
-  // it on Opus (CURATOR_MODEL).
+  // it on Fable (CURATOR_MODEL).
   curatorModel: modelId(MODELS.sonnet),
   // Shared by the Contribution Reviewer. The Audit Agent has its own knob
   // (auditModel) so it can run on Opus without also upgrading the reviewer.
   governanceModel: modelId(MODELS.sonnet),
   auditModel: modelId(MODELS.sonnet),
   // Arbitration is the highest-stakes governance call; production sets
-  // ARBITRATION_MODEL=claude-opus-4-8.
+  // ARBITRATION_MODEL=claude-fable-5.
   arbitrationModel: modelId(MODELS.sonnet),
   enableContributions: z
     .string()

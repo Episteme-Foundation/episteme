@@ -9,7 +9,13 @@ type ToolUnion = Anthropic.Messages.ToolUnion;
 type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 import { loadConfig } from "../config.js";
 import { checkBudget, recordUsage } from "./budget-tracker.js";
-import { DEFAULT_MODEL, modelAcceptsTemperature } from "./models.js";
+import { LlmRefusalError } from "./errors.js";
+import {
+  DEFAULT_MODEL,
+  MODELS,
+  modelAcceptsTemperature,
+  modelNeedsRefusalFallback,
+} from "./models.js";
 
 /** Build the optional `temperature` field, omitting it for models that reject it. */
 function temperatureParam(model: string, temperature?: number): { temperature?: number } {
@@ -105,9 +111,45 @@ function cachedTools(tools: ToolUnion[]): ToolUnion[] {
   return out;
 }
 
-// DEFAULT_MODEL (Claude Sonnet 4.6) lives in ./models.ts — the single source of
-// truth for model IDs. Note: the prior Bedrock client used Sonnet 4
-// ("claude-sonnet-4-20250514"); this is a deliberate version bump.
+// DEFAULT_MODEL (Claude Sonnet 5) lives in ./models.ts — the single source of
+// truth for model IDs.
+
+/**
+ * Create one message, routing Fable-family models through the beta endpoint
+ * with the server-side Opus fallback: their safety classifiers can decline a
+ * benign-adjacent request (HTTP 200, stop_reason "refusal"), and the fallback
+ * re-serves it on Opus 4.8 inside the same call instead of failing the agent
+ * run. Other models use the plain Messages endpoint unchanged.
+ *
+ * The beta response/params are structural supersets of the non-beta types for
+ * everything this client reads (content, usage, stop_reason, container), so
+ * the casts below keep the beta surface contained to this one function.
+ */
+async function createMessage(
+  params: Anthropic.MessageCreateParamsNonStreaming
+): Promise<Anthropic.Message> {
+  const client = getClient();
+  if (modelNeedsRefusalFallback(params.model)) {
+    const response = await client.beta.messages.create({
+      ...(params as unknown as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming),
+      betas: ["server-side-fallback-2026-06-01"],
+      fallbacks: [{ model: MODELS.opus }],
+    });
+    return response as unknown as Anthropic.Message;
+  }
+  return client.messages.create(params);
+}
+
+/**
+ * Fail loudly on stop_reason "refusal" instead of returning empty content (or
+ * a misleading "Model did not use the respond tool" from completeStructured).
+ * On Fable models this fires only when the Opus fallback refused too.
+ */
+function checkRefusal(response: Anthropic.Message, model: string): void {
+  if (response.stop_reason === "refusal") {
+    throw new LlmRefusalError(model, response.stop_details?.category ?? null);
+  }
+}
 
 export async function complete(options: {
   messages: MessageParam[];
@@ -120,18 +162,21 @@ export async function complete(options: {
 }): Promise<CompletionResult> {
   checkBudget();
 
-  const client = getClient();
   const model = options.model ?? DEFAULT_MODEL;
 
-  const response = await client.messages.create({
+  // Sonnet 5 runs adaptive thinking by default and thinking spend counts
+  // against max_tokens, so the old 4096 default left too little room for the
+  // actual answer — 8192 keeps headroom without changing agent call sites.
+  const response = await createMessage({
     model,
     messages: options.messages,
-    max_tokens: options.maxTokens ?? 4096,
+    max_tokens: options.maxTokens ?? 8192,
     ...temperatureParam(model, options.temperature),
     ...(options.system ? { system: cachedSystem(options.system) } : {}),
     ...(options.tools ? { tools: cachedTools(options.tools) } : {}),
     ...(options.container ? { container: options.container } : {}),
   });
+  checkRefusal(response, model);
 
   const usage: TokenUsage = {
     inputTokens: response.usage.input_tokens,
@@ -171,18 +216,18 @@ export async function completeWithTools(options: {
 }): Promise<ToolCompletionResult> {
   checkBudget();
 
-  const client = getClient();
   const model = options.model ?? DEFAULT_MODEL;
 
-  const response = await client.messages.create({
+  const response = await createMessage({
     model,
     messages: options.messages,
-    max_tokens: options.maxTokens ?? 4096,
+    max_tokens: options.maxTokens ?? 8192,
     ...temperatureParam(model, options.temperature),
     tools: cachedTools(options.tools),
     ...(options.system ? { system: cachedSystem(options.system) } : {}),
     ...(options.container ? { container: options.container } : {}),
   });
+  checkRefusal(response, model);
 
   const usage: TokenUsage = {
     inputTokens: response.usage.input_tokens,
@@ -305,7 +350,7 @@ export async function completeStructuredList<T>(options: {
     // a downstream "x is not iterable".
     throw new Error(
       `Structured list "${options.schemaName}" returned no items array — the ` +
-        `response was likely truncated at max_tokens (${options.maxTokens ?? 4096}). ` +
+        `response was likely truncated at max_tokens (${options.maxTokens ?? 8192}). ` +
         `Increase maxTokens or reduce the input size.`
     );
   }

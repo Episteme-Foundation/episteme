@@ -8,8 +8,16 @@
  * silently drift back into the defaults (see issue #11).
  */
 export const MODELS = {
+  /**
+   * Fable 5 — the load-bearing agents (Steward, Curator, Audit, Arbitration)
+   * run on it in production (issue #77). Thinking is always on (never send a
+   * `thinking` config), and its safety classifiers can refuse benign-adjacent
+   * requests, so the client opts into the server-side Opus fallback for it —
+   * see modelNeedsRefusalFallback and client.ts.
+   */
+  fable: "claude-fable-5",
   opus: "claude-opus-4-8",
-  sonnet: "claude-sonnet-4-6",
+  sonnet: "claude-sonnet-5",
   haiku: "claude-haiku-4-5-20251001",
 } as const;
 
@@ -25,12 +33,25 @@ export function isAnthropicModelId(id: string): boolean {
 }
 
 /**
- * Whether a model accepts the `temperature` request parameter. Opus 4.8
- * **deprecated** it — sending `temperature` to it returns
- * `400 invalid_request_error: "temperature is deprecated for this model."`,
- * which silently fails every Steward run when STEWARD_MODEL is Opus. Omit the
- * parameter for such models. (Sonnet/Haiku still accept it.)
+ * Whether a model accepts the `temperature` request parameter. The Claude 5
+ * family (Fable 5, Sonnet 5) and Opus 4.7+ reject non-default sampling params
+ * with a 400 — and the client sends `temperature: 0`, which counts as
+ * non-default — so this is an ALLOWLIST of families known to accept it
+ * (Haiku 4.x, Sonnet 4.x), not a blocklist of ones that don't. Omitting the
+ * parameter is always safe; sending it to the wrong model fails every run of
+ * that agent (see issue #77).
  */
 export function modelAcceptsTemperature(id: string): boolean {
-  return !/^claude-opus-4-8/.test(id);
+  return /^claude-(haiku|sonnet-4)-/.test(id);
+}
+
+/**
+ * Whether the model's safety classifiers can refuse benign-adjacent requests
+ * (HTTP 200 with stop_reason "refusal") and should opt into the server-side
+ * Opus fallback (`server-side-fallback-2026-06-01`) so a false positive
+ * degrades to Opus instead of failing the agent run. Currently the Fable /
+ * Mythos family.
+ */
+export function modelNeedsRefusalFallback(id: string): boolean {
+  return /^claude-(fable|mythos)-/.test(id);
 }
