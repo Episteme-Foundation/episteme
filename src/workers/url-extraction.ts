@@ -88,11 +88,18 @@ export async function handleUrlExtraction(
           // Continue without embedding
         }
 
+        // The extractor's importance is a provisional prior (salience in the
+        // document + reach in the discourse); it seeds the Steward work-queue
+        // ordering and the Steward overrides it with a considered, dependency-
+        // aware judgment (#67).
+        const importance = clampImportance(claim.importance);
+
         const [newClaim] = await db
           .insert(claims)
           .values({
             text: canonicalText,
             claimType: claim.claim_type,
+            ...(importance !== undefined ? { importance } : {}),
             embedding,
             createdBy: "extractor",
           })
@@ -152,6 +159,14 @@ export async function handleUrlExtraction(
     });
     throw err;
   }
+}
+
+/** Coerce the extractor's importance to [0, 1], or undefined (→ DB default) if absent/invalid. */
+function clampImportance(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return undefined;
+  return Math.min(1, Math.max(0, n));
 }
 
 async function fetchUrlContent(url: string): Promise<string> {

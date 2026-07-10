@@ -85,7 +85,10 @@ get_claim_dependents to gauge how foundational a claim is:
 
 Importance is also a stored, revisable judgment (0..1) that **orders the work
 queue** — more important claims are structured and assessed first under a run
-budget. Record it: set your own claim's importance with set_claim_importance when
+budget. A freshly extracted claim arrives with a provisional importance seeded by
+the Extractor from a single document — treat it as a prior, not a settled judgment:
+your dependency-aware estimate (via get_claim_dependents) supersedes it, in either
+direction. Record it: set your own claim's importance with set_claim_importance when
 you can judge it, and when you add a subclaim, give add_decomposition_edge an
 importance value reflecting how load-bearing that subclaim is. A claim you judge minor
 may never be fully processed — it persists as an embedded stub, which is fine; do
