@@ -37,7 +37,9 @@ function filterClauses(filters: SearchFilters, params: unknown[]): string {
 }
 
 /**
- * Hybrid search combining keyword (tsvector + pg_trgm) and semantic (pgvector) scores.
+ * Hybrid search: keyword (tsvector) OR semantic (pgvector) matching for recall,
+ * ranked by cosine similarity to the query embedding, keyword rank as tiebreak.
+ * `similarity_score` is the cosine similarity (0 for claims with no embedding).
  * Falls back to keyword-only if no embedding is available.
  */
 export async function hybridSearch(
@@ -50,8 +52,13 @@ export async function hybridSearch(
   let embedding: number[] | null = null;
   try {
     embedding = await generateEmbedding(query);
-  } catch {
-    // Fall back to keyword-only search if embedding fails
+  } catch (err) {
+    // Fall back to keyword-only search if embedding fails. Loudly: the
+    // fallback has no proximity ordering, so a quiet failure here looks
+    // like "search is broken" rather than "embeddings are down" (#43).
+    console.warn(
+      `Search embedding failed; falling back to keyword-only ranking: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 
   if (embedding) {
@@ -74,6 +81,11 @@ async function hybridSearchWithEmbedding(
   params.push(limit);
   const limitIdx = params.length;
 
+  // Order by semantic proximity, not a keyword/semantic blend: ts_rank and
+  // cosine similarity live on different scales, so blending scrambled the
+  // proximity order (#43). Keyword matching still widens recall via the WHERE
+  // clause; ts_rank only breaks ties. COALESCE pins claims with NULL
+  // embeddings to score 0 so they sort after every scored row.
   const rows = await rawQuery<
     SearchResult & { text_rank: number; semantic_score: number }
   >(
@@ -87,8 +99,8 @@ async function hybridSearchWithEmbedding(
     WHERE c.state != 'deprecated' AND c.merged_into IS NULL
       AND (c.text_search @@ websearch_to_tsquery('english', $1)
            OR 1 - (c.embedding <=> $2::vector) > $3)${filterSql}
-    ORDER BY (0.4 * ts_rank(c.text_search, websearch_to_tsquery('english', $1))
-            + 0.6 * (1 - (c.embedding <=> $2::vector))) DESC
+    ORDER BY COALESCE(1 - (c.embedding <=> $2::vector), 0) DESC,
+      ts_rank(c.text_search, websearch_to_tsquery('english', $1)) DESC
     LIMIT $${limitIdx}
     `,
     params
@@ -99,7 +111,7 @@ async function hybridSearchWithEmbedding(
     text: r.text,
     claim_type: r.claim_type,
     state: r.state,
-    similarity_score: 0.4 * (r.text_rank ?? 0) + 0.6 * (r.semantic_score ?? 0),
+    similarity_score: r.semantic_score ?? 0,
     importance: r.importance,
     assessment_status: r.assessment_status,
     assessment_confidence: r.assessment_confidence,

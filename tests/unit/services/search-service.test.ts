@@ -48,8 +48,41 @@ describe("search-service", () => {
       const result = await hybridSearch("test query");
       expect(result.results).toHaveLength(1);
       expect(result.results[0]!.id).toBe("claim-1");
-      // Score = 0.4 * 0.5 + 0.6 * 0.8 = 0.68
-      expect(result.results[0]!.similarity_score).toBeCloseTo(0.68, 2);
+      // similarity_score is the cosine similarity, not a keyword/semantic blend (#43)
+      expect(result.results[0]!.similarity_score).toBeCloseTo(0.8, 2);
+    });
+
+    it("orders by semantic proximity with keyword rank as tiebreak", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(new Array(1536).fill(0.1));
+      mockRawQuery.mockResolvedValueOnce([]);
+
+      await hybridSearch("test query");
+      const [sql] = mockRawQuery.mock.calls[0]!;
+      expect(sql).toMatch(
+        /ORDER BY COALESCE\(1 - \(c\.embedding <=> \$2::vector\), 0\) DESC,\s*ts_rank/
+      );
+      // No blended keyword+semantic ordering expression
+      expect(sql).not.toContain("0.4 *");
+      expect(sql).not.toContain("0.6 *");
+    });
+
+    it("scores claims with NULL embeddings as 0", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(new Array(1536).fill(0.1));
+      mockRawQuery.mockResolvedValueOnce([
+        {
+          id: "claim-no-embedding",
+          text: "Keyword-only match",
+          claim_type: "empirical_derived",
+          state: "active",
+          text_rank: 0.9,
+          semantic_score: null,
+          assessment_status: null,
+          assessment_confidence: null,
+        },
+      ]);
+
+      const result = await hybridSearch("test query");
+      expect(result.results[0]!.similarity_score).toBe(0);
     });
 
     it("falls back to keyword search when embedding fails", async () => {
