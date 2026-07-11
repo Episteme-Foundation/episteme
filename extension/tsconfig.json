@@ -1,12 +1,24 @@
 {
-  "extends": "plasmo/templates/tsconfig.base",
+  "//": "Self-contained (options inlined from plasmo/templates/tsconfig.base + strict): the repo's root vitest imports lib/anchor.ts, and an `extends` into extension/node_modules would break any tooling that hasn't installed the extension's deps (e.g. CI).",
   "exclude": ["node_modules", "build", ".plasmo"],
   "include": [".plasmo/index.d.ts", "./**/*.ts", "./**/*.tsx"],
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "verbatimModuleSyntax": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
     "paths": {
       "~*": ["./*"]
-    },
-    "baseUrl": "."
+    }
   }
 }
