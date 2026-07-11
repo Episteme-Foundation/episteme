@@ -64,22 +64,28 @@ export class ApiStack extends cdk.Stack {
         // in-memory queues are now drained in prod too (see index.ts).
         SQS_URL_EXTRACTION_QUEUE: props.urlExtractionQueue.queueUrl,
         SQS_CLAIM_PIPELINE_QUEUE: props.claimPipelineQueue.queueUrl,
-        // The Steward assesses/decomposes the main claims — use Opus there. The
-        // importance-priority drain means Opus only ever runs on the top of the
-        // queue; the rest stay embedded stubs until budget allows.
-        STEWARD_MODEL: "claude-opus-4-8",
-        // The other load-bearing governance agents also run on Opus: the Curator
-        // adjudicates merges/splits, the Audit Agent polices the governance
-        // system, and the Dispute Arbitrator resolves escalations and appeals.
-        // The Contribution Reviewer stays on the Sonnet default (governanceModel).
-        CURATOR_MODEL: "claude-opus-4-8",
-        AUDIT_MODEL: "claude-opus-4-8",
-        ARBITRATION_MODEL: "claude-opus-4-8",
+        // The Steward assesses/decomposes the main claims — use Fable 5 there
+        // (issue #77). The importance-priority drain means Fable only ever runs
+        // on the top of the queue; the rest stay embedded stubs until budget
+        // allows.
+        STEWARD_MODEL: "claude-fable-5",
+        // The other load-bearing governance agents also run on Fable: the
+        // Curator adjudicates merges/splits, the Audit Agent polices the
+        // governance system, and the Dispute Arbitrator resolves escalations
+        // and appeals. The Contribution Reviewer stays on the Sonnet default
+        // (governanceModel). Refusal false-positives degrade to Opus 4.8 via
+        // the server-side fallback in src/llm/client.ts.
+        CURATOR_MODEL: "claude-fable-5",
+        AUDIT_MODEL: "claude-fable-5",
+        ARBITRATION_MODEL: "claude-fable-5",
         // Spend guardrails. Call limits cap request rate; the TOKEN limits are
         // the real $ governor (they reset hourly/daily, so this is a rate limit:
         // the drain works the highest-importance claims each window and pauses
         // when spent). Tune to taste — these counters are per-process, so they
-        // scale with the autoscaled task count.
+        // scale with the autoscaled task count. NOTE: Fable is priced 2x Opus
+        // per token ($10/$50 vs $5/$25 per MTok), so unchanged token limits
+        // allow ~2x the dollar spend on the load-bearing agents — left as-is
+        // deliberately (issue #77); revisit after the first production window.
         LLM_HOURLY_CALL_LIMIT: "500",
         LLM_DAILY_CALL_LIMIT: "5000",
         LLM_HOURLY_TOKEN_LIMIT: "400000",
