@@ -70,6 +70,10 @@ export interface AccountUser {
   email: string | null;
   avatar_url: string | null;
   reputation_score: number;
+  trust_level: string;
+  kudos: number;
+  contribution_standing: string;
+  bad_faith_flags: number;
   contributions_accepted: number;
   contributions_rejected: number;
   contributions_escalated: number;

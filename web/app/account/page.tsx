@@ -271,13 +271,36 @@ export default async function AccountPage() {
       <section>
         <h2>Contributor standing</h2>
         <p>
-          The same account is your contributor identity: reputation{" "}
-          <strong>{user.reputation_score.toFixed(0)}</strong>,{" "}
-          {user.contributions_accepted} accepted ·{" "}
-          {user.contributions_rejected} rejected ·{" "}
-          {user.contributions_escalated} escalated. Reputation, kudos, and the
-          good-faith policy are being built out next (issue #71).
+          The same account is your contributor identity —{" "}
+          <a href={`/contributors/${user.id}`}>public profile</a>.
         </p>
+        <div className="usage-chips">
+          <span className="summary-chip">{user.kudos} kudos</span>
+          <span className="summary-chip">
+            reputation {user.reputation_score.toFixed(0)} ({user.trust_level})
+          </span>
+          <span className="summary-chip">
+            {user.contributions_accepted} accepted ·{" "}
+            {user.contributions_rejected} rejected ·{" "}
+            {user.contributions_escalated} escalated
+          </span>
+        </div>
+        <p>
+          Good-faith contribution is always free — a rejected-but-sincere
+          contribution costs nothing. Accepted contributions raise reputation
+          and earn kudos in proportion to the importance of the claim they
+          improve.
+        </p>
+        {user.contribution_standing === "must_pay" && (
+          <p>
+            <strong>Contribution paused:</strong> a contribution from this
+            account was flagged as suspected bad faith, which moves the
+            account to pay-to-contribute standing. Deposits are not yet
+            available, so contributing is paused — but the flag is appealable
+            (<code>POST /appeals</code>), and a successful appeal restores
+            your standing, reputation, and kudos in full.
+          </p>
+        )}
       </section>
     </div>
   );

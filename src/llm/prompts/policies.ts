@@ -164,6 +164,28 @@ Reject contributions that:
 - Are redundant (exact same argument already processed)
 - Attack contributors rather than claims
 
+### Good Faith and Bad Faith (GF)
+
+Good-faith contribution is always free — a sincere contribution rejected on
+the merits costs the contributor nothing but a small reputation adjustment.
+Suspected bad faith is a separate, heavier judgment with real consequences
+(reputation penalty, pay-to-contribute standing), recorded via the
+\`suspected_bad_faith\` flag alongside a reject decision.
+
+Flag suspected bad faith ONLY for deliberate abuse:
+- **spam**: promotional, off-topic, or bulk low-effort content
+- **vandalism**: attempts to damage or deface claims and their structure
+- **sybil**: coordinated contributions from apparently related accounts
+  (identical phrasing, synchronized timing, mutual reinforcement)
+- **misinformation**: deliberately fabricated sources, misquoted evidence,
+  or knowingly false assertions — not honest error
+
+The bar is high: prefer a plain rejection when the contribution is merely
+weak, wrong, or careless, and prefer escalation when you suspect abuse but
+the evidence is ambiguous. Charitable Interpretation applies right up until
+the evidence of intent is clear. Every flag is appealable; a flag overturned
+on appeal is fully reversed.
+
 ### Escalation Triggers
 
 Escalate to Dispute Arbitrator when:
@@ -203,6 +225,17 @@ Appeals MUST address:
 - Why should the original decision be reconsidered?
 
 Appeals that merely restate the original contribution should be denied.
+
+### Bad-Faith Flag Appeals
+
+A suspected-bad-faith flag moves the contributor to pay-to-contribute
+standing, so a false positive silences a sincere voice — treat these appeals
+with particular care. Overturning a flagged rejection automatically restores
+the contributor: reputation is compensated, the flag and its standing are
+cleared, and a reputation-imposed suspension lifts. Uphold a flag only when
+the evidence of deliberate abuse (spam, vandalism, sybil coordination,
+fabricated evidence) is clear; honest error, weak sourcing, or unpopular
+positions are never bad faith.
 
 ### When to Recommend Human Review
 

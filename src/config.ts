@@ -77,6 +77,15 @@ const configSchema = z.object({
   // guardrail is the metered monthly grant above.
   agenticRateLimitPerHour: z.coerce.number().default(30),
 
+  // Reputation / good-faith policy (#71)
+  // Hourly cap on contributions per contributor (0 = unlimited)...
+  contributionRateLimitPerHour: z.coerce.number().default(10),
+  // ...tightened for low-reputation (< 50) or brand-new (< 24h) accounts to
+  // blunt sybil floods. Reputation itself is governed by constants in
+  // src/services/reputation-service.ts (deltas, thresholds), not env config —
+  // the rules are policy, not deployment tuning.
+  newContributorRateLimitPerHour: z.coerce.number().default(3),
+
   // Budget limits (0 = unlimited)
   llmHourlyCallLimit: z.coerce.number().default(0),
   llmDailyCallLimit: z.coerce.number().default(0),
@@ -175,6 +184,9 @@ export function loadConfig(): Config {
     awsRegion: process.env.AWS_REGION,
     freeTierMonthlyUsd: process.env.FREE_TIER_MONTHLY_USD,
     agenticRateLimitPerHour: process.env.AGENTIC_RATE_LIMIT_PER_HOUR,
+    contributionRateLimitPerHour: process.env.CONTRIBUTION_RATE_LIMIT_PER_HOUR,
+    newContributorRateLimitPerHour:
+      process.env.NEW_CONTRIBUTOR_RATE_LIMIT_PER_HOUR,
     llmHourlyCallLimit: process.env.LLM_HOURLY_CALL_LIMIT,
     llmDailyCallLimit: process.env.LLM_DAILY_CALL_LIMIT,
     llmHourlyTokenLimit: process.env.LLM_HOURLY_TOKEN_LIMIT,

@@ -34,6 +34,12 @@ whether to accept, reject, or escalate them.
 - Evidence is insufficient
 - Argument is flawed
 - Must include specific reasoning and policy citations
+- Additionally set \`suspected_bad_faith\` (with a category) ONLY when the
+  contribution is deliberate abuse — spam, vandalism, sybil coordination, or
+  fabricated/misrepresented evidence. A sincere-but-wrong contribution is a
+  plain reject: rejection costs the contributor almost nothing, while a
+  bad-faith flag moves them to pay-to-contribute standing. The bar is high
+  and the flag is appealable; when unsure, reject without it or escalate.
 
 **ESCALATE**: Uncertain or high-stakes; send to Dispute Arbitrator.
 - High-importance claim (affects many other claims)

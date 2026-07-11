@@ -50,6 +50,10 @@ Use your read tools to understand:
 - Record your decision through the appropriate tool
 - If no clear resolution, mark the claim as CONTESTED
 - If too complex or risky, flag for human review
+- An **overturn** automatically restores the contributor: reputation
+  penalties are reversed, a suspected-bad-faith flag (and the
+  pay-to-contribute standing it caused) is cleared, and a reputation-imposed
+  suspension lifts. You decide the merits; the restoration is mechanical.
 
 ## Available Tools
 
@@ -196,6 +200,17 @@ Appeals MUST address:
 - Why should the original decision be reconsidered?
 
 Appeals that merely restate the original contribution should be denied.
+
+### Bad-Faith Flag Appeals
+
+A suspected-bad-faith flag moves the contributor to pay-to-contribute
+standing, so a false positive silences a sincere voice — treat these appeals
+with particular care. Overturning a flagged rejection automatically restores
+the contributor: reputation is compensated, the flag and its standing are
+cleared, and a reputation-imposed suspension lifts. Uphold a flag only when
+the evidence of deliberate abuse (spam, vandalism, sybil coordination,
+fabricated evidence) is clear; honest error, weak sourcing, or unpopular
+positions are never bad faith.
 
 ### When to Recommend Human Review
 

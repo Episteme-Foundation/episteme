@@ -6,6 +6,7 @@ import type { FastifyInstance } from "fastify";
 import type { Contributor } from "../db/schema.js";
 import { provisionUser, getContributorById } from "../services/contributor-service.js";
 import { getBillingProvider } from "../services/billing-service.js";
+import { trustLevelFor } from "../services/reputation-service.js";
 
 export function serializeUser(user: Contributor) {
   return {
@@ -15,6 +16,10 @@ export function serializeUser(user: Contributor) {
     email: user.email,
     avatar_url: user.avatarUrl,
     reputation_score: user.reputationScore,
+    trust_level: trustLevelFor(user.reputationScore, user.isSuspended),
+    kudos: user.kudos,
+    contribution_standing: user.contributionStanding,
+    bad_faith_flags: user.badFaithFlags,
     contributions_accepted: user.contributionsAccepted,
     contributions_rejected: user.contributionsRejected,
     contributions_escalated: user.contributionsEscalated,

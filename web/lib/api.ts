@@ -1,5 +1,12 @@
 import "server-only";
-import type { ClaimDetail, ClaimFilters, SearchResultItem, TrajectoryPoint } from "./types";
+import type {
+  ClaimDetail,
+  ClaimFilters,
+  ContributorProfile,
+  LeaderboardContributor,
+  SearchResultItem,
+  TrajectoryPoint,
+} from "./types";
 
 // Server-only client for the Episteme Fastify API. The API key is read from the
 // environment and attached here, on the server — it is never shipped to the
@@ -74,4 +81,24 @@ export async function fetchList(
     `/claims?${p.toString()}`,
   );
   return r.results;
+}
+
+export async function fetchLeaderboard(
+  limit = 20,
+): Promise<LeaderboardContributor[]> {
+  const r = await apiGet<{ contributors: LeaderboardContributor[] }>(
+    `/contributors?limit=${limit}`,
+  );
+  return r.contributors;
+}
+
+export async function fetchContributorProfile(
+  id: string,
+): Promise<ContributorProfile | null> {
+  try {
+    return await apiGet<ContributorProfile>(`/contributors/${id}`);
+  } catch {
+    // 404 (unknown contributor) renders as not-found upstream.
+    return null;
+  }
 }

@@ -131,8 +131,14 @@ export async function appealRoutes(app: FastifyInstance): Promise<void> {
         displayName: body.contributor_display_name ?? externalId,
       });
 
-      // Check if contributor is suspended
-      if (contributor.isSuspended) {
+      // Suspended contributors may still appeal their OWN contributions —
+      // appeals are the safety valve for bad-faith flags and auto-suspensions
+      // (#71), so suspension must not close the door on contesting it. They
+      // just can't appeal on behalf of others.
+      if (
+        contributor.isSuspended &&
+        contribution.contributorId !== contributor.id
+      ) {
         return reply.code(403).send({
           error: {
             code: "CONTRIBUTOR_SUSPENDED",

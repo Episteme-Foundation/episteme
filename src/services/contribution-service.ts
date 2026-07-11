@@ -51,6 +51,7 @@ export async function getContributionById(id: string) {
 
 export async function listContributions(filters: {
   claimId?: string;
+  contributorId?: string;
   status?: string;
   contributionType?: string;
   limit: number;
@@ -61,6 +62,9 @@ export async function listContributions(filters: {
   let conditions = sql`1=1`;
   if (filters.claimId) {
     conditions = sql`${conditions} AND ${contributions.claimId} = ${filters.claimId}`;
+  }
+  if (filters.contributorId) {
+    conditions = sql`${conditions} AND ${contributions.contributorId} = ${filters.contributorId}`;
   }
   if (filters.status) {
     conditions = sql`${conditions} AND ${contributions.reviewStatus} = ${filters.status}`;

@@ -19,6 +19,7 @@ import {
   contributionReviews,
   contributors,
 } from "../../db/schema.js";
+import { trustLevelFor } from "../../services/reputation-service.js";
 
 export function getGovernanceToolDefinitions(): Tool[] {
   return [
@@ -361,24 +362,21 @@ async function getContributorProfile(contributorId: string) {
     contributor.contributionsRejected +
     contributor.contributionsEscalated;
 
-  let trustLevel: string;
-  if (contributor.isSuspended) {
-    trustLevel = "suspended";
-  } else if (contributor.reputationScore >= 80) {
-    trustLevel = "trusted";
-  } else if (contributor.reputationScore >= 50) {
-    trustLevel = "standard";
-  } else if (contributor.reputationScore >= 20) {
-    trustLevel = "probationary";
-  } else {
-    trustLevel = "restricted";
-  }
+  const trustLevel = trustLevelFor(
+    contributor.reputationScore,
+    contributor.isSuspended
+  );
 
   return {
     id: contributor.id,
     display_name: contributor.displayName,
     reputation_score: contributor.reputationScore,
     trust_level: trustLevel,
+    kudos: contributor.kudos,
+    // Good-faith standing (#71): 'must_pay' means a prior suspected-bad-faith
+    // flag — weigh history charitably but attend to patterns of abuse.
+    contribution_standing: contributor.contributionStanding,
+    bad_faith_flags: contributor.badFaithFlags,
     is_verified: contributor.isVerified,
     is_suspended: contributor.isSuspended,
     suspension_reason: contributor.suspensionReason,
