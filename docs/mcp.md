@@ -53,7 +53,7 @@ Tool calls follow the same free-vs-metered split as the REST API (#70):
 |------|-------|------|
 | Free reads | `search_claims`, `get_claim`, `get_decomposition`, `get_contribution_status` | never metered |
 | Agentic | `match_claim`, `extract_claims`, `assess_text` | LLM tokens metered per account; rate-limited and gated on the monthly free-tier grant (402 `QUOTA_EXCEEDED` when exhausted) |
-| Writes | `submit_contribution` | free; goes through the contribution review pipeline and reputation rules (#71) |
+| Writes | `submit_contribution` | free for good-faith contributors; goes through the contribution review pipeline and reputation rules (#71) — new/low-reputation accounts get a tighter hourly cap (`CONTRIBUTION_RATE_LIMITED`), and an account flagged for suspected bad faith is blocked with `DEPOSIT_REQUIRED` until the flag is appealed |
 
 ## Tools
 

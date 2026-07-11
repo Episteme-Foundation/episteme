@@ -219,7 +219,14 @@ beforeEach(async () => {
     displayName: "mcp:tester",
     isSuspended: false,
     suspensionReason: null,
+    contributionStanding: "good",
+    reputationScore: 100,
+    createdAt: new Date("2026-01-01T00:00:00Z"),
   });
+  const { resetContributionRateLimiter } = await import(
+    "../../../src/services/reputation-service.js"
+  );
+  resetContributionRateLimiter();
   mocks.enqueueContribution.mockReset().mockResolvedValue(undefined);
   mocks.resolveApiKey.mockReset().mockResolvedValue(null);
   mocks.checkSpend.mockReset().mockResolvedValue({
@@ -439,6 +446,62 @@ describe("MCP tools", () => {
     await client.close();
   });
 
+  it("submit_contribution blocks must-pay standing (bad-faith flag, #71)", async () => {
+    mocks.getOrCreateContributor.mockResolvedValueOnce({
+      id: "contrib-1",
+      externalId: "mcp:tester",
+      displayName: "mcp:tester",
+      isSuspended: false,
+      suspensionReason: null,
+      contributionStanding: "must_pay",
+      reputationScore: 40,
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+    });
+    const result = await client.callTool({
+      name: "submit_contribution",
+      arguments: {
+        claim_id: CLAIM_ID,
+        contribution_type: "challenge",
+        content: "x",
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(parseText(result).error).toMatchObject({ code: "DEPOSIT_REQUIRED" });
+    expect(mocks.createContribution).not.toHaveBeenCalled();
+    await client.close();
+  });
+
+  it("submit_contribution sandboxes brand-new accounts (#71)", async () => {
+    mocks.getOrCreateContributor.mockResolvedValue({
+      id: "contrib-new",
+      externalId: "mcp:tester",
+      displayName: "mcp:tester",
+      isSuspended: false,
+      suspensionReason: null,
+      contributionStanding: "good",
+      reputationScore: 0,
+      createdAt: new Date(), // brand-new → sandboxed cap (3/hour default)
+    });
+    const submit = () =>
+      client.callTool({
+        name: "submit_contribution",
+        arguments: {
+          claim_id: CLAIM_ID,
+          contribution_type: "challenge",
+          content: "x",
+        },
+      });
+    for (let i = 0; i < 3; i++) {
+      expect((await submit()).isError).toBeFalsy();
+    }
+    const limited = await submit();
+    expect(limited.isError).toBe(true);
+    expect(parseText(limited).error).toMatchObject({
+      code: "CONTRIBUTION_RATE_LIMITED",
+    });
+    await client.close();
+  });
+
   it("submit_contribution rejects suspended contributors", async () => {
     mocks.getOrCreateContributor.mockResolvedValueOnce({
       id: "contrib-1",
@@ -446,6 +509,9 @@ describe("MCP tools", () => {
       displayName: "mcp:tester",
       isSuspended: true,
       suspensionReason: "bad faith",
+      contributionStanding: "good",
+      reputationScore: 40,
+      createdAt: new Date("2026-01-01T00:00:00Z"),
     });
     const result = await client.callTool({
       name: "submit_contribution",

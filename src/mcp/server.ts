@@ -46,6 +46,7 @@ import {
   getReviewForContribution,
 } from "../services/contribution-service.js";
 import { getOrCreateContributor } from "../services/contributor-service.js";
+import { checkContributionRateLimit } from "../services/reputation-service.js";
 import { enqueueContribution } from "../services/queue-service.js";
 import { contributionTypeEnum } from "../schemas/common.js";
 
@@ -457,6 +458,30 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
         return errorResult(
           "CONTRIBUTOR_SUSPENDED",
           `Contributor is suspended: ${contributor.suspensionReason ?? "No reason provided"}`
+        );
+      }
+
+      // Good-faith-free / bad-faith-pay (#71), same gate as POST
+      // /contributions: a suspected-bad-faith flag put this contributor in
+      // must-pay standing, and the deposit rail doesn't exist yet.
+      if (contributor.contributionStanding === "must_pay") {
+        return errorResult(
+          "DEPOSIT_REQUIRED",
+          "A suspected bad-faith contribution moved this account to " +
+            "pay-to-contribute standing. Deposits are not yet available; " +
+            "the flag can be appealed via POST /appeals."
+        );
+      }
+
+      // Sybil / flood sandbox (#71): low-reputation and brand-new accounts
+      // get a tighter hourly cap.
+      const rate = checkContributionRateLimit(contributor);
+      if (rate.limited) {
+        return errorResult(
+          "CONTRIBUTION_RATE_LIMITED",
+          rate.sandboxed
+            ? `New and low-reputation accounts are limited to ${rate.limitPerHour} contributions per hour; retry later`
+            : `Contribution rate limit (${rate.limitPerHour}/hour) exceeded; retry later`
         );
       }
 
