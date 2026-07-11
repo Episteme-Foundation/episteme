@@ -284,6 +284,18 @@ export const contributors = pgTable("contributors", {
   contributionsEscalated: integer("contributions_escalated")
     .notNull()
     .default(0),
+  // Kudos total (#71) — denormalized SUM of kudos_events for cheap profile and
+  // leaderboard reads; kudos_events is the source of truth.
+  kudos: integer("kudos").notNull().default(0),
+  // Good-faith-free / bad-faith-pay standing (#71):
+  //   'good'     — contribution is free (always, even when rejected on merits).
+  //   'must_pay' — a suspected-bad-faith flag was recorded; contributing now
+  //                requires a deposit/fee. No payment rail exists yet, so this
+  //                state returns 402 DEPOSIT_REQUIRED at POST /contributions
+  //                (the payment seam, like the consumer credits ledger).
+  //                Restored to 'good' when the flag is overturned on appeal.
+  contributionStanding: text("contribution_standing").notNull().default("good"),
+  badFaithFlags: integer("bad_faith_flags").notNull().default(0),
   isVerified: boolean("is_verified").notNull().default(false),
   isSuspended: boolean("is_suspended").notNull().default(false),
   suspensionReason: text("suspension_reason"),
@@ -426,6 +438,12 @@ export const contributionReviews = pgTable("contribution_reviews", {
   reasoning: text("reasoning").notNull(),
   confidence: real("confidence").notNull(),
   policyCitations: text("policy_citations").array().notNull().default([]),
+  // Suspected bad faith (#71) — distinct from rejected-on-the-merits. Only
+  // meaningful alongside a 'reject' decision; drives the contributor's
+  // must-pay standing and a reputation penalty. Appealable like any review.
+  suspectedBadFaith: boolean("suspected_bad_faith").notNull().default(false),
+  // 'spam' | 'vandalism' | 'sybil' | 'misinformation' when flagged.
+  badFaithCategory: text("bad_faith_category"),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -484,6 +502,85 @@ export const arbitrationResults = pgTable("arbitration_results", {
 });
 
 // ---------------------------------------------------------------------------
+// reputation_events
+//
+// Append-only ledger of every reputation change (#71) — the audit trail that
+// makes `contributors.reputation_score` load-bearing instead of a static
+// default. One row per change, with the score after applying it, so a
+// contributor's standing is always reconstructible and reversible (appeal
+// overturns insert a compensating event rather than editing history).
+// ---------------------------------------------------------------------------
+export const reputationEvents = pgTable(
+  "reputation_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    contributorId: uuid("contributor_id")
+      .notNull()
+      .references(() => contributors.id, { onDelete: "cascade" }),
+    // Nullable so the ledger outlives a deleted contribution/claim.
+    contributionId: uuid("contribution_id").references(() => contributions.id, {
+      onDelete: "set null",
+    }),
+    reviewId: uuid("review_id").references(() => contributionReviews.id, {
+      onDelete: "set null",
+    }),
+    delta: real("delta").notNull(),
+    scoreAfter: real("score_after").notNull(),
+    // 'contribution_accepted' | 'contribution_rejected' | 'bad_faith_flag' |
+    // 'appeal_overturned' | 'manual_adjustment'
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_reputation_events_contributor_time").on(
+      table.contributorId,
+      table.createdAt
+    ),
+    index("idx_reputation_events_contribution").on(table.contributionId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// kudos_events
+//
+// Append-only ledger of kudos (#71) — recognition of *helpful* contributions,
+// deliberately separate from reputation (which gates privileges). Mirrors the
+// llm_usage meter's shape (per-event rows, time-bucketed indexes) so it can
+// later convert to payouts for top contributors the way llm_usage maps onto a
+// consumer credits ledger. `contributors.kudos` caches the SUM.
+// ---------------------------------------------------------------------------
+export const kudosEvents = pgTable(
+  "kudos_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    contributorId: uuid("contributor_id")
+      .notNull()
+      .references(() => contributors.id, { onDelete: "cascade" }),
+    contributionId: uuid("contribution_id").references(() => contributions.id, {
+      onDelete: "set null",
+    }),
+    amount: integer("amount").notNull(),
+    // 'accepted_contribution' | 'survived_appeal' — see kudos-service.ts
+    reason: text("reason").notNull(),
+    // Who assigned it: 'system' (deterministic rules) today; peer signal or
+    // review agents may join later without a schema change.
+    awardedBy: text("awarded_by").notNull().default("system"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_kudos_events_contributor_time").on(
+      table.contributorId,
+      table.createdAt
+    ),
+    index("idx_kudos_events_time").on(table.createdAt),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // reconciliation_events
 //
 // An append-only audit log of the Curator's re-individuation surgery (§18):
@@ -534,3 +631,7 @@ export type Appeal = typeof appeals.$inferSelect;
 export type NewAppeal = typeof appeals.$inferInsert;
 export type ArbitrationResult = typeof arbitrationResults.$inferSelect;
 export type NewArbitrationResult = typeof arbitrationResults.$inferInsert;
+export type ReputationEvent = typeof reputationEvents.$inferSelect;
+export type NewReputationEvent = typeof reputationEvents.$inferInsert;
+export type KudosEvent = typeof kudosEvents.$inferSelect;
+export type NewKudosEvent = typeof kudosEvents.$inferInsert;

@@ -32,8 +32,8 @@
     "invokedWhen": "A contributor submits a challenge, support, merge, edit, instance, or argument.",
     "model": "Claude Sonnet 4.6",
     "hasConstitution": true,
-    "roleChars": 8284,
-    "fullChars": 39550
+    "roleChars": 9902,
+    "fullChars": 41168
   },
   {
     "key": "claim-steward",
@@ -68,8 +68,8 @@
     "invokedWhen": "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     "model": "Claude Opus 4.8",
     "hasConstitution": true,
-    "roleChars": 7293,
-    "fullChars": 38559
+    "roleChars": 8153,
+    "fullChars": 39419
   },
   {
     "key": "audit-agent",

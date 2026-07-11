@@ -14,6 +14,7 @@ import {
   appeals,
 } from "../../db/schema.js";
 import { enqueueSteward } from "../../services/queue-service.js";
+import { reverseReviewOutcome } from "../../services/reputation-service.js";
 
 export function getArbitratorToolDefinitions(): Tool[] {
   return [
@@ -166,9 +167,29 @@ export async function executeArbitratorTool(
             .where(eq(appeals.id, appealId));
         }
 
+        // An overturned rejection restores the contributor (#71): reputation
+        // penalties are compensated in the ledger, a bad-faith flag and its
+        // must-pay standing are cleared, an auto-suspension lifts, and the
+        // now-accepted contribution earns kudos (with a survived-scrutiny
+        // bonus). False-positive flags must not leave lasting damage.
+        let restoration = null;
+        if (outcome === "overturn") {
+          restoration = await reverseReviewOutcome({ contributionId });
+        }
+
         return JSON.stringify({
           success: true,
           message: `Arbitration decision recorded: ${outcome} for contribution ${contributionId}`,
+          ...(restoration
+            ? {
+                contributor_restored: {
+                  reputation: restoration.newScore,
+                  standing_restored: restoration.standingRestored,
+                  unsuspended: restoration.unsuspended,
+                  kudos_awarded: restoration.kudosAwarded,
+                },
+              }
+            : {}),
         });
       }
 

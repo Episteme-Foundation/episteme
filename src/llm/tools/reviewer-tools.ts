@@ -7,7 +7,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 type Tool = Anthropic.Tool;
 import { eq } from "drizzle-orm";
-import { getDb, rawQuery } from "../../db/client.js";
+import { getDb } from "../../db/client.js";
 import {
   contributions,
   contributionReviews,
@@ -16,6 +16,10 @@ import {
   enqueueArbitration,
   enqueueSteward,
 } from "../../services/queue-service.js";
+import {
+  applyReviewOutcome,
+  BAD_FAITH_CATEGORIES,
+} from "../../services/reputation-service.js";
 
 export function getReviewerToolDefinitions(): Tool[] {
   return [
@@ -49,6 +53,22 @@ export function getReviewerToolDefinitions(): Tool[] {
             items: { type: "string" },
             description:
               "Policy codes cited (e.g. VERIFIABILITY, SOURCE_HIERARCHY, CHARITABLE_INTERPRETATION)",
+          },
+          suspected_bad_faith: {
+            type: "boolean",
+            description:
+              "Set true ONLY with a 'reject' decision when the contribution " +
+              "shows deliberate abuse (spam, vandalism, sybil coordination, " +
+              "deliberate misinformation) — NOT for sincere contributions " +
+              "rejected on the merits. This flag has real consequences " +
+              "(reputation penalty, pay-to-contribute standing) and is " +
+              "appealable; when uncertain, reject without the flag or escalate.",
+          },
+          bad_faith_category: {
+            type: "string",
+            enum: [...BAD_FAITH_CATEGORIES],
+            description:
+              "Required when suspected_bad_faith is true: which kind of abuse.",
           },
         },
         required: [
@@ -117,22 +137,35 @@ export async function executeReviewerTool(
     switch (toolName) {
       case "record_review_decision": {
         const contributionId = input.contribution_id as string;
-        const decision = input.decision as string;
+        const decision = input.decision as "accept" | "reject" | "escalate";
         const reasoning = input.reasoning as string;
         const confidence = input.confidence as number;
         const policyCitations = (input.policy_citations as string[]) ?? [];
+        // A bad-faith flag is only coherent on a rejection; anything else is
+        // recorded as flag-free so the flag's consequences can't fire by
+        // accident (#71: sincere contributions must never pay).
+        const suspectedBadFaith =
+          input.suspected_bad_faith === true && decision === "reject";
+        const badFaithCategory = suspectedBadFaith
+          ? ((input.bad_faith_category as string) ?? "spam")
+          : null;
 
         const db = getDb();
 
         // Write review record
-        await db.insert(contributionReviews).values({
-          contributionId,
-          decision,
-          reasoning,
-          confidence,
-          policyCitations,
-          reviewedBy: "contribution_reviewer",
-        });
+        const [review] = await db
+          .insert(contributionReviews)
+          .values({
+            contributionId,
+            decision,
+            reasoning,
+            confidence,
+            policyCitations,
+            suspectedBadFaith,
+            badFaithCategory,
+            reviewedBy: "contribution_reviewer",
+          })
+          .returning();
 
         // Update contribution status
         await db
@@ -140,29 +173,34 @@ export async function executeReviewerTool(
           .set({ reviewStatus: decision === "accept" ? "accepted" : decision === "reject" ? "rejected" : "escalated" })
           .where(eq(contributions.id, contributionId));
 
-        // Atomically increment contributor stats
-        const [contribution] = await db
-          .select({ contributorId: contributions.contributorId })
-          .from(contributions)
-          .where(eq(contributions.id, contributionId))
-          .limit(1);
-
-        if (contribution) {
-          const column =
-            decision === "accept"
-              ? "contributions_accepted"
-              : decision === "reject"
-                ? "contributions_rejected"
-                : "contributions_escalated";
-          await rawQuery(
-            `UPDATE contributors SET ${column} = ${column} + 1 WHERE id = $1`,
-            [contribution.contributorId]
-          );
-        }
+        // Counters, reputation ledger, standing, and kudos — one write path
+        // in the reputation service (#71).
+        const outcome = await applyReviewOutcome({
+          contributionId,
+          reviewId: review?.id ?? null,
+          decision,
+          suspectedBadFaith,
+          badFaithCategory,
+        });
 
         return JSON.stringify({
           success: true,
           message: `Review decision '${decision}' recorded for contribution ${contributionId}`,
+          ...(input.suspected_bad_faith === true && !suspectedBadFaith
+            ? {
+                note: "suspected_bad_faith was ignored because the decision is not 'reject'",
+              }
+            : {}),
+          ...(outcome
+            ? {
+                contributor: {
+                  reputation: outcome.newScore,
+                  standing: outcome.standing,
+                  suspended: outcome.suspended,
+                  kudos_awarded: outcome.kudosAwarded,
+                },
+              }
+            : {}),
         });
       }
 

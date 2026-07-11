@@ -50,6 +50,13 @@
       "when": 1783719833871,
       "tag": "0006_accounts_keys_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783738820303,
+      "tag": "0007_reputation_kudos",
+      "breakpoints": true
     }
   ]
 }

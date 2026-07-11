@@ -379,6 +379,12 @@ whether to accept, reject, or escalate them.
 - Evidence is insufficient
 - Argument is flawed
 - Must include specific reasoning and policy citations
+- Additionally set `suspected_bad_faith` (with a category) ONLY when the
+  contribution is deliberate abuse — spam, vandalism, sybil coordination, or
+  fabricated/misrepresented evidence. A sincere-but-wrong contribution is a
+  plain reject: rejection costs the contributor almost nothing, while a
+  bad-faith flag moves them to pay-to-contribute standing. The bar is high
+  and the flag is appealable; when unsure, reject without it or escalate.
 
 **ESCALATE**: Uncertain or high-stakes; send to Dispute Arbitrator.
 - High-importance claim (affects many other claims)
@@ -572,6 +578,28 @@ Reject contributions that:
 - Demonstrate clear bad faith (deliberate misrepresentation)
 - Are redundant (exact same argument already processed)
 - Attack contributors rather than claims
+
+### Good Faith and Bad Faith (GF)
+
+Good-faith contribution is always free — a sincere contribution rejected on
+the merits costs the contributor nothing but a small reputation adjustment.
+Suspected bad faith is a separate, heavier judgment with real consequences
+(reputation penalty, pay-to-contribute standing), recorded via the
+`suspected_bad_faith` flag alongside a reject decision.
+
+Flag suspected bad faith ONLY for deliberate abuse:
+- **spam**: promotional, off-topic, or bulk low-effort content
+- **vandalism**: attempts to damage or deface claims and their structure
+- **sybil**: coordinated contributions from apparently related accounts
+  (identical phrasing, synchronized timing, mutual reinforcement)
+- **misinformation**: deliberately fabricated sources, misquoted evidence,
+  or knowingly false assertions — not honest error
+
+The bar is high: prefer a plain rejection when the contribution is merely
+weak, wrong, or careless, and prefer escalation when you suspect abuse but
+the evidence is ambiguous. Charitable Interpretation applies right up until
+the evidence of intent is clear. Every flag is appealable; a flag overturned
+on appeal is fully reversed.
 
 ### Escalation Triggers
 

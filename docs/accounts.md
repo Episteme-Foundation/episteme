@@ -12,7 +12,8 @@ A *user* (API consumer) and a *contributor* (graph editor) are the same
 account: one row in `contributors`. The auth subject is
 `contributors.external_id`, in the form `<provider>:<subject>`
 (e.g. `github:12345`). Consumer concerns (keys, usage, credits) and
-contributor concerns (reputation, kudos — issue #71) hang off the same row.
+contributor concerns (reputation, kudos, good-faith standing — issue #71,
+see [reputation.md](reputation.md)) hang off the same row.
 
 ```
  human ──► web sign-in (Auth.js: GitHub/Google OAuth)

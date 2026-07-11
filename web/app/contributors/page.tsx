@@ -1,0 +1,74 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { apiConfigured, fetchLeaderboard } from "../../lib/api";
+
+export const metadata: Metadata = {
+  title: "Contributors — Episteme",
+  description:
+    "The contributors whose accepted challenges, evidence, and proposals have most improved the graph.",
+};
+
+export const revalidate = 60;
+
+export default async function ContributorsPage() {
+  if (!apiConfigured()) {
+    return (
+      <div className="col">
+        <h1>Contributors</h1>
+        <p>
+          The frontend is not connected to an Episteme API (set{" "}
+          <code>EPISTEME_API_URL</code>), so contributor data is unavailable.
+        </p>
+      </div>
+    );
+  }
+
+  const contributors = await fetchLeaderboard(50);
+
+  return (
+    <div className="col">
+      <p className="claim-eyebrow">contributors</p>
+      <h1>Leaderboard</h1>
+      <p>
+        <strong>Kudos</strong> recognizes helpful contributions: accepted
+        challenges, evidence, and proposals earn kudos in proportion to how
+        load-bearing the affected claim is, with a bonus for contributions
+        that survive appeal scrutiny. It is distinct from{" "}
+        <strong>reputation</strong>, which tracks standing — good-faith
+        contribution is always free, whether or not it is accepted.
+      </p>
+
+      {contributors.length === 0 ? (
+        <p className="account-empty">
+          No kudos have been earned yet. Kudos appear when contributions are
+          accepted.
+        </p>
+      ) : (
+        <table className="account-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>contributor</th>
+              <th>kudos</th>
+              <th>accepted</th>
+              <th>standing</th>
+            </tr>
+          </thead>
+          <tbody>
+            {contributors.map((c, i) => (
+              <tr key={c.id}>
+                <td>{i + 1}</td>
+                <td>
+                  <Link href={`/contributors/${c.id}`}>{c.display_name}</Link>
+                </td>
+                <td>{c.kudos}</td>
+                <td>{c.contributions_accepted}</td>
+                <td>{c.trust_level}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}

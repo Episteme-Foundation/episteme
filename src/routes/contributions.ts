@@ -12,6 +12,7 @@ import {
 import { getOrCreateContributor } from "../services/contributor-service.js";
 import { getClaimById } from "../services/claim-service.js";
 import { enqueueContribution } from "../services/queue-service.js";
+import { checkContributionRateLimit } from "../services/reputation-service.js";
 
 export async function contributionRoutes(app: FastifyInstance): Promise<void> {
   // POST /contributions
@@ -51,6 +52,18 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
             },
           },
         },
+        402: {
+          type: "object",
+          properties: {
+            error: {
+              type: "object",
+              properties: {
+                code: { type: "string" },
+                message: { type: "string" },
+              },
+            },
+          },
+        },
         403: {
           type: "object",
           properties: {
@@ -64,6 +77,18 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
           },
         },
         404: {
+          type: "object",
+          properties: {
+            error: {
+              type: "object",
+              properties: {
+                code: { type: "string" },
+                message: { type: "string" },
+              },
+            },
+          },
+        },
+        429: {
           type: "object",
           properties: {
             error: {
@@ -113,6 +138,36 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
           error: {
             code: "CONTRIBUTOR_SUSPENDED",
             message: `Contributor is suspended: ${contributor.suspensionReason ?? "No reason provided"}`,
+          },
+        });
+      }
+
+      // Good-faith-free / bad-faith-pay (#71): a suspected-bad-faith flag put
+      // this contributor in must-pay standing. The deposit rail doesn't exist
+      // yet (mirrors the consumer credits seam), so contributing is blocked
+      // with 402 until the flag is overturned on appeal — which stays open.
+      if (contributor.contributionStanding === "must_pay") {
+        return reply.code(402).send({
+          error: {
+            code: "DEPOSIT_REQUIRED",
+            message:
+              "A suspected bad-faith contribution moved this account to " +
+              "pay-to-contribute standing. Deposits are not yet available; " +
+              "you can appeal the flag via POST /appeals.",
+          },
+        });
+      }
+
+      // Sybil / flood sandbox (#71): low-reputation and brand-new accounts
+      // get a tighter hourly cap.
+      const rate = checkContributionRateLimit(contributor);
+      if (rate.limited) {
+        return reply.code(429).send({
+          error: {
+            code: "CONTRIBUTION_RATE_LIMITED",
+            message: rate.sandboxed
+              ? `New and low-reputation accounts are limited to ${rate.limitPerHour} contributions per hour; retry later`
+              : `Contribution rate limit (${rate.limitPerHour}/hour) exceeded; retry later`,
           },
         });
       }

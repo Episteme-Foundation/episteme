@@ -142,3 +142,51 @@ export interface ClaimFilters {
   assessed?: AssessedFilter;
   minImportance?: number;
 }
+
+// --- contributors (#71) ------------------------------------------------------
+
+export interface LeaderboardContributor {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  kudos: number;
+  reputation_score: number;
+  trust_level: string;
+  contributions_accepted: number;
+  member_since: string;
+}
+
+export interface ContributorProfile {
+  contributor: {
+    id: string;
+    display_name: string;
+    avatar_url: string | null;
+    member_since: string;
+    reputation_score: number;
+    trust_level: string;
+    kudos: number;
+    contribution_standing: string;
+    is_verified: boolean;
+    is_suspended: boolean;
+    contributions_accepted: number;
+    contributions_rejected: number;
+    contributions_escalated: number;
+    total_contributions: number;
+    acceptance_rate: number | null;
+  };
+  recent_contributions: Array<{
+    id: string;
+    claim_id: string;
+    contribution_type: string;
+    review_status: string;
+    submitted_at: string;
+  }>;
+  recent_kudos: Array<{
+    id: string;
+    contribution_id: string | null;
+    amount: number;
+    reason: string;
+    awarded_by: string;
+    created_at: string;
+  }>;
+}

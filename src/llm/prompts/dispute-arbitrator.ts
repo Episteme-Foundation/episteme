@@ -53,6 +53,10 @@ Use your read tools to understand:
 - Record your decision through the appropriate tool
 - If no clear resolution, mark the claim as CONTESTED
 - If too complex or risky, flag for human review
+- An **overturn** automatically restores the contributor: reputation
+  penalties are reversed, a suspected-bad-faith flag (and the
+  pay-to-contribute standing it caused) is cleared, and a reputation-imposed
+  suspension lifts. You decide the merits; the restoration is mechanical.
 
 ## Available Tools
 

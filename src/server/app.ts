@@ -13,6 +13,7 @@ import { jobRoutes } from "../routes/jobs.js";
 import { contributionRoutes } from "../routes/contributions.js";
 import { appealRoutes } from "../routes/appeals.js";
 import { userRoutes } from "../routes/users.js";
+import { contributorRoutes } from "../routes/contributors.js";
 import { apiKeyRoutes } from "../routes/api-keys.js";
 import { usageRoutes } from "../routes/usage.js";
 
@@ -49,6 +50,7 @@ export async function buildApp() {
   await app.register(contributionRoutes, { prefix: "/contributions" });
   await app.register(appealRoutes, { prefix: "/appeals" });
   await app.register(userRoutes, { prefix: "/users" });
+  await app.register(contributorRoutes, { prefix: "/contributors" });
   await app.register(apiKeyRoutes, { prefix: "/api-keys" });
   await app.register(usageRoutes, { prefix: "/usage" });
 

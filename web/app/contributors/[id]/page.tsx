@@ -1,0 +1,143 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { apiConfigured, fetchContributorProfile } from "../../../lib/api";
+
+export const revalidate = 60;
+
+const KUDOS_REASON_LABELS: Record<string, string> = {
+  accepted_contribution: "accepted contribution",
+  survived_appeal: "survived appeal scrutiny",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  challenge: "challenge",
+  support: "supporting evidence",
+  propose_merge: "merge proposal",
+  propose_split: "split proposal",
+  propose_edit: "edit proposal",
+  add_instance: "source instance",
+  propose_argument: "argument",
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const profile = apiConfigured() ? await fetchContributorProfile(id) : null;
+  return {
+    title: profile
+      ? `${profile.contributor.display_name} — Episteme`
+      : "Contributor — Episteme",
+  };
+}
+
+export default async function ContributorPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  if (!apiConfigured()) {
+    return (
+      <div className="col">
+        <h1>Contributor</h1>
+        <p>
+          The frontend is not connected to an Episteme API (set{" "}
+          <code>EPISTEME_API_URL</code>), so contributor data is unavailable.
+        </p>
+      </div>
+    );
+  }
+
+  const profile = await fetchContributorProfile(id);
+  if (!profile) notFound();
+
+  const c = profile.contributor;
+
+  return (
+    <div className="col">
+      <p className="claim-eyebrow">contributor</p>
+      <h1>{c.display_name}</h1>
+      <p className="account-meta">
+        member since {c.member_since.slice(0, 10)} · {c.trust_level}
+        {c.is_suspended ? " · suspended" : ""}
+      </p>
+
+      <section>
+        <h2>Standing</h2>
+        <div className="usage-chips">
+          <span className="summary-chip">{c.kudos} kudos</span>
+          <span className="summary-chip">
+            reputation {c.reputation_score.toFixed(0)}
+          </span>
+          <span className="summary-chip">
+            {c.contributions_accepted} accepted
+          </span>
+          <span className="summary-chip">
+            {c.contributions_rejected} rejected
+          </span>
+          {c.acceptance_rate !== null && (
+            <span className="summary-chip">
+              {c.acceptance_rate}% acceptance
+            </span>
+          )}
+        </div>
+      </section>
+
+      {profile.recent_contributions.length > 0 && (
+        <section>
+          <h2>Recent contributions</h2>
+          <table className="account-table">
+            <thead>
+              <tr>
+                <th>type</th>
+                <th>claim</th>
+                <th>status</th>
+                <th>submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              {profile.recent_contributions.map((r) => (
+                <tr key={r.id}>
+                  <td>{TYPE_LABELS[r.contribution_type] ?? r.contribution_type}</td>
+                  <td>
+                    <Link href={`/claims/${r.claim_id}`}>view claim</Link>
+                  </td>
+                  <td>{r.review_status}</td>
+                  <td>{r.submitted_at.slice(0, 10)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {profile.recent_kudos.length > 0 && (
+        <section>
+          <h2>Recent kudos</h2>
+          <table className="account-table">
+            <thead>
+              <tr>
+                <th>amount</th>
+                <th>for</th>
+                <th>date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {profile.recent_kudos.map((k) => (
+                <tr key={k.id}>
+                  <td>+{k.amount}</td>
+                  <td>{KUDOS_REASON_LABELS[k.reason] ?? k.reason}</td>
+                  <td>{k.created_at.slice(0, 10)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+    </div>
+  );
+}
