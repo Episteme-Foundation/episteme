@@ -24,14 +24,20 @@ interface ModelRates {
 // Keyed by model-ID prefix so dated snapshots ("claude-haiku-4-5-20251001")
 // resolve to their family. Longest prefix wins.
 const MODEL_RATES: Record<string, ModelRates> = {
+  // Fable/Mythos 5 share pricing.
+  "claude-fable-5": { inputPerMtok: 10, outputPerMtok: 50 },
+  "claude-mythos-5": { inputPerMtok: 10, outputPerMtok: 50 },
   "claude-opus-4-8": { inputPerMtok: 5, outputPerMtok: 25 },
+  // Sonnet 5 list price; there is an intro rate ($2/$10) through 2026-08-31 —
+  // we meter at list so derived costs never understate what credits will owe.
+  "claude-sonnet-5": { inputPerMtok: 3, outputPerMtok: 15 },
   "claude-sonnet-4-6": { inputPerMtok: 3, outputPerMtok: 15 },
   "claude-haiku-4-5": { inputPerMtok: 1, outputPerMtok: 5 },
 };
 
-// Conservative default for unknown models: price as Opus so a new model ID
-// never meters as free. Ops sees the unknown model in the usage rows.
-const FALLBACK_RATES: ModelRates = { inputPerMtok: 5, outputPerMtok: 25 };
+// Conservative default for unknown models: price at the top (Fable) tier so a
+// new model ID never meters as free. Ops sees the unknown model in usage rows.
+const FALLBACK_RATES: ModelRates = { inputPerMtok: 10, outputPerMtok: 50 };
 
 const CACHE_READ_MULTIPLIER = 0.1;
 const CACHE_WRITE_MULTIPLIER = 1.25;

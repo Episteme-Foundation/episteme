@@ -45,7 +45,7 @@ vi.mock("../../../src/llm/agents/claim-steward.js", () => ({
 
 vi.mock("../../../src/llm/budget-tracker.js", () => ({ checkBudget: vi.fn() }));
 vi.mock("../../../src/config.js", () => ({
-  loadConfig: () => ({ stewardModel: "claude-sonnet-4-6", stewardMaxRuns: 0 }),
+  loadConfig: () => ({ stewardModel: "claude-sonnet-5", stewardMaxRuns: 0 }),
 }));
 
 import {
