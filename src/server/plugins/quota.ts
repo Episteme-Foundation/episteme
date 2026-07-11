@@ -41,43 +41,83 @@ export function resetRateLimiter(): void {
   windows.clear();
 }
 
+export interface QuotaDecision {
+  allowed: boolean;
+  /** HTTP-shaped status for the denial: 429 (rate) or 402 (grant). */
+  statusCode?: 429 | 402;
+  code?: "RATE_LIMITED" | "QUOTA_EXCEEDED";
+  message?: string;
+  entitlement?: {
+    plan: string;
+    monthly_grant_micro_usd: number;
+    used_micro_usd: number;
+    remaining_micro_usd: number;
+  };
+}
+
+/**
+ * The agentic-quota decision, independent of transport. Used by the REST
+ * preHandler below and by MCP tool handlers (#73), which enforce the same
+ * gate per tool call rather than per HTTP request.
+ */
+export async function checkAgenticQuota(
+  auth: Pick<
+    NonNullable<FastifyRequest["auth"]>,
+    "apiKeyId" | "userId" | "method"
+  > | null
+): Promise<QuotaDecision> {
+  const config = loadConfig();
+
+  const callerKey =
+    auth?.apiKeyId ?? auth?.userId ?? auth?.method ?? "anonymous";
+  if (rateLimited(callerKey, config.agenticRateLimitPerHour)) {
+    return {
+      allowed: false,
+      statusCode: 429,
+      code: "RATE_LIMITED",
+      message: "Rate limit exceeded for agentic endpoints; retry later",
+    };
+  }
+
+  // Metered grant applies to user-attributed work. Trusted service
+  // traffic without an acting user is system work and exempt.
+  if (auth?.userId) {
+    const { allowed, entitlement } = await getBillingProvider().checkSpend(
+      auth.userId
+    );
+    if (!allowed) {
+      return {
+        allowed: false,
+        statusCode: 402,
+        code: "QUOTA_EXCEEDED",
+        message:
+          "Monthly free-tier allowance for LLM-backed requests is exhausted. " +
+          "Purchasing credits is not yet available; the allowance resets at " +
+          "the start of next month.",
+        entitlement: {
+          plan: entitlement.plan,
+          monthly_grant_micro_usd: entitlement.monthlyGrantMicroUsd,
+          used_micro_usd: entitlement.usedMicroUsd,
+          remaining_micro_usd: entitlement.remainingMicroUsd,
+        },
+      };
+    }
+  }
+
+  return { allowed: true };
+}
+
 export async function registerQuota(app: FastifyInstance): Promise<void> {
   app.decorate(
     "requireAgenticQuota",
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const config = loadConfig();
-      const auth = request.auth;
-
-      const callerKey =
-        auth?.apiKeyId ?? auth?.userId ?? auth?.method ?? "anonymous";
-      if (rateLimited(callerKey, config.agenticRateLimitPerHour)) {
-        return reply.code(429).send({
-          error: "Rate limit exceeded for agentic endpoints; retry later",
-          code: "RATE_LIMITED",
+      const decision = await checkAgenticQuota(request.auth);
+      if (!decision.allowed) {
+        return reply.code(decision.statusCode!).send({
+          error: decision.message,
+          code: decision.code,
+          ...(decision.entitlement ? { entitlement: decision.entitlement } : {}),
         });
-      }
-
-      // Metered grant applies to user-attributed work. Trusted service
-      // traffic without an acting user is system work and exempt.
-      if (auth?.userId) {
-        const { allowed, entitlement } = await getBillingProvider().checkSpend(
-          auth.userId
-        );
-        if (!allowed) {
-          return reply.code(402).send({
-            error:
-              "Monthly free-tier allowance for LLM-backed requests is exhausted. " +
-              "Purchasing credits is not yet available; the allowance resets at " +
-              "the start of next month.",
-            code: "QUOTA_EXCEEDED",
-            entitlement: {
-              plan: entitlement.plan,
-              monthly_grant_micro_usd: entitlement.monthlyGrantMicroUsd,
-              used_micro_usd: entitlement.usedMicroUsd,
-              remaining_micro_usd: entitlement.remainingMicroUsd,
-            },
-          });
-        }
       }
     }
   );

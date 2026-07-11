@@ -136,6 +136,7 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 | Frontend | React + TypeScript |
 | Browser Extension | Plasmo |
 | Accounts & metering | One identity for users & contributors, hashed API keys, per-token LLM meter — see [docs/accounts.md](docs/accounts.md) |
+| MCP | Remote MCP server (streamable HTTP) exposing the claim graph to MCP clients — see [docs/mcp.md](docs/mcp.md) |
 
 ## Project Status
 

@@ -1,6 +1,13 @@
 import { and, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db/client.js";
-import { claims, assessments, arguments_, type NewClaim } from "../db/schema.js";
+import {
+  claims,
+  assessments,
+  arguments_,
+  claimInstances,
+  sources,
+  type NewClaim,
+} from "../db/schema.js";
 import { generateEmbedding } from "./embedding-service.js";
 import { createJob } from "./job-service.js";
 import { enqueueClaimPipeline } from "./queue-service.js";
@@ -154,6 +161,28 @@ export async function getClaimById(claimId: string) {
     .where(eq(claims.id, claimId))
     .limit(1);
   return claim ?? null;
+}
+
+/**
+ * Source instances of a claim — where in the corpus it was asserted, and with
+ * what stance. The claim page's provenance panel and the MCP `get_claim` tool
+ * (#73) share this shape.
+ */
+export async function getClaimInstances(claimId: string) {
+  const db = getDb();
+  return db
+    .select({
+      id: claimInstances.id,
+      source_id: claimInstances.sourceId,
+      original_text: claimInstances.originalText,
+      context: claimInstances.context,
+      confidence: claimInstances.confidence,
+      source_title: sources.title,
+      source_url: sources.url,
+    })
+    .from(claimInstances)
+    .innerJoin(sources, eq(claimInstances.sourceId, sources.id))
+    .where(eq(claimInstances.claimId, claimId));
 }
 
 /**
