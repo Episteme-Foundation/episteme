@@ -23,6 +23,11 @@ Markup is non-destructive: highlights are overlay elements anchored to the
 rendered text, re-anchored when the page mutates. The page's DOM text is never
 rewritten.
 
+Analysis is asynchronous (#93): big pages take minutes, so the API answers
+202 + a content hash once its grace window passes and the extension polls
+until the result is ready. Results are cached server-side by url + content
+hash, so re-analyzing an unchanged page is instant.
+
 ## Privacy
 
 Analyzing a page sends its readable text to the Episteme API for claim

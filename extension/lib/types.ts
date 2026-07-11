@@ -89,8 +89,20 @@ export const DEFAULT_SETTINGS: Settings = {
 
 // --- Messages between popup / content script / background -------------------
 
+/**
+ * Analyze is asynchronous end-to-end (#93): the API answers 202 + content
+ * hash when the pipeline outlasts its grace window, and the content script
+ * polls via short "check-analysis" messages (each one a quick request, so no
+ * load-balancer timeout and no long-lived message channels for MV3's service
+ * worker to die under).
+ */
+export type AnalyzeProgress =
+  | { done: true; analysis: PageAnalysis }
+  | { done: false; content_hash: string };
+
 export type BackgroundRequest =
   | { type: "analyze"; url: string; title: string; content: string }
+  | { type: "check-analysis"; contentHash: string }
   | {
       type: "chat";
       messages: ChatTurn[];

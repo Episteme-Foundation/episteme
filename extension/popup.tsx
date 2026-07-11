@@ -78,6 +78,16 @@ function Chat({ settings }: { settings: Settings }) {
   useEffect(() => {
     void getPageState().then(setPage);
   }, []);
+  // A page analysis can run for minutes (async flow, #93); keep the status
+  // line live while one is in flight.
+  useEffect(() => {
+    if (!page?.running && !analyzing) return;
+    const timer = window.setInterval(
+      () => void getPageState().then(setPage),
+      3000
+    );
+    return () => window.clearInterval(timer);
+  }, [page?.running, analyzing]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages, busy]);
@@ -161,12 +171,15 @@ function Chat({ settings }: { settings: Settings }) {
         {page && disabled && (
           <span className="muted">Episteme is disabled on {host}.</span>
         )}
-        {page && !disabled && !page.analyzed && (
+        {page && !disabled && !page.analyzed && (page.running || analyzing) && (
+          <span className="muted">
+            Analyzing… large pages can take a few minutes.
+          </span>
+        )}
+        {page && !disabled && !page.analyzed && !page.running && !analyzing && (
           <>
             <span className="muted">Page not analyzed yet.</span>
-            <button onClick={() => void analyze()} disabled={analyzing}>
-              {analyzing ? "Analyzing…" : "Analyze page"}
-            </button>
+            <button onClick={() => void analyze()}>Analyze page</button>
           </>
         )}
         {page && page.analyzed && (

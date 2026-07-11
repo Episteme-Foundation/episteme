@@ -9,6 +9,7 @@ import {
 import { getSettings, onSettingsChanged, resolveSitePolicy } from "~lib/settings";
 import {
   LEVEL_VERDICTS,
+  type AnalyzeProgress,
   type BackgroundRequest,
   type ContentRequest,
   type PageAnalysis,
@@ -358,6 +359,13 @@ function anchorAnnotations(index?: TextIndex): void {
 
 // --- Analysis -----------------------------------------------------------------
 
+const POLL_INTERVAL_MS = 4_000;
+const POLL_DEADLINE_MS = 20 * 60_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => window.setTimeout(r, ms));
+}
+
 async function runAnalysis(): Promise<void> {
   if (state.running) return;
   const settings = state.settings ?? (await getSettings());
@@ -370,17 +378,40 @@ async function runAnalysis(): Promise<void> {
   state.running = true;
   state.error = null;
   try {
-    const result = await sendToBackground<PageAnalysis>({
+    // Start (or join) the server-side run; big pages come back "not done"
+    // with a content hash and we poll. Every message is short-lived, so no
+    // load-balancer timeout and no long-open MV3 message channels.
+    const started = await sendToBackground<AnalyzeProgress>({
       type: "analyze",
       url: location.href,
       title: document.title,
       content,
     });
-    if (!result.ok) {
-      state.error = result.error;
+    if (!started.ok) {
+      state.error = started.error;
       return;
     }
-    state.analysis = result.data;
+
+    let progress = started.data;
+    const deadline = Date.now() + POLL_DEADLINE_MS;
+    while (!progress.done) {
+      if (Date.now() > deadline) {
+        state.error = "Analysis timed out; try again";
+        return;
+      }
+      await sleep(POLL_INTERVAL_MS);
+      const poll = await sendToBackground<AnalyzeProgress>({
+        type: "check-analysis",
+        contentHash: progress.content_hash,
+      });
+      if (!poll.ok) {
+        state.error = poll.error;
+        return;
+      }
+      progress = poll.data;
+    }
+
+    state.analysis = progress.analysis;
     anchorAnnotations();
   } catch (err) {
     state.error = err instanceof Error ? err.message : String(err);

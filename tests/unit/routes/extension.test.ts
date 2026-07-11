@@ -3,13 +3,15 @@ import Fastify from "fastify";
 import type { RequestAuth } from "../../../src/server/plugins/auth.js";
 
 const mocks = vi.hoisted(() => ({
-  analyzePage: vi.fn(),
+  startAnalysis: vi.fn(),
+  getAnalysisByHash: vi.fn(),
   chatAboutPage: vi.fn(),
   usageContexts: [] as unknown[],
 }));
 
 vi.mock("../../../src/services/extension-service.js", () => ({
-  analyzePage: mocks.analyzePage,
+  startAnalysis: mocks.startAnalysis,
+  getAnalysisByHash: mocks.getAnalysisByHash,
   chatAboutPage: mocks.chatAboutPage,
 }));
 
@@ -46,9 +48,11 @@ async function buildTestApp() {
   return { app, gates };
 }
 
+const HASH = "a".repeat(64);
+
 const ANALYSIS = {
   url: "https://example.com/a",
-  content_hash: "abc",
+  content_hash: HASH,
   annotations: [],
   stats: { extracted: 0, matched: 0 },
   analyzed_at: "2026-07-10T00:00:00.000Z",
@@ -56,13 +60,18 @@ const ANALYSIS = {
 
 describe("extension routes", () => {
   beforeEach(() => {
-    mocks.analyzePage.mockReset();
+    mocks.startAnalysis.mockReset();
+    mocks.getAnalysisByHash.mockReset();
     mocks.chatAboutPage.mockReset();
     mocks.usageContexts.length = 0;
   });
 
-  it("POST /extension/analyze runs both auth gates and meters as the caller", async () => {
-    mocks.analyzePage.mockResolvedValue({ analysis: ANALYSIS, cached: false });
+  it("POST /extension/analyze returns 200 with the result when ready in time", async () => {
+    mocks.startAnalysis.mockResolvedValue({
+      state: "ready",
+      analysis: ANALYSIS,
+      cached: false,
+    });
     const { app, gates } = await buildTestApp();
 
     const res = await app.inject({
@@ -83,6 +92,55 @@ describe("extension routes", () => {
       userId: "user-1",
       apiKeyId: "key-1",
     });
+  });
+
+  it("POST /extension/analyze returns 202 + content_hash when the run outlasts the grace window (#93)", async () => {
+    mocks.startAnalysis.mockResolvedValue({
+      state: "running",
+      content_hash: HASH,
+    });
+    const { app } = await buildTestApp();
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/extension/analyze",
+      payload: { url: "https://example.com/a", content: "x".repeat(200) },
+    });
+
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ content_hash: HASH, status: "running" });
+  });
+
+  it("GET /extension/analysis/:hash maps ready/running/failed/unknown to 200/202/502/404", async () => {
+    const { app, gates } = await buildTestApp();
+    const cases = [
+      [{ state: "ready", analysis: ANALYSIS, cached: true }, 200],
+      [{ state: "running", content_hash: HASH }, 202],
+      [{ state: "failed", content_hash: HASH, error: "boom" }, 502],
+      [{ state: "unknown" }, 404],
+    ] as const;
+
+    for (const [state, expected] of cases) {
+      mocks.getAnalysisByHash.mockReturnValueOnce(state);
+      const res = await app.inject({
+        method: "GET",
+        url: `/extension/analysis/${HASH}`,
+      });
+      expect(res.statusCode).toBe(expected);
+    }
+    // Poll is authenticated but NOT quota-gated: it does no LLM work.
+    expect(gates.authenticate).toBe(4);
+    expect(gates.quota).toBe(0);
+  });
+
+  it("GET /extension/analysis rejects a malformed hash", async () => {
+    const { app } = await buildTestApp();
+    const res = await app.inject({
+      method: "GET",
+      url: "/extension/analysis/not-a-hash",
+    });
+    expect(res.statusCode).toBeGreaterThanOrEqual(400);
+    expect(mocks.getAnalysisByHash).not.toHaveBeenCalled();
   });
 
   it("POST /extension/chat forwards history + page context and returns citations", async () => {
@@ -142,6 +200,6 @@ describe("extension routes", () => {
       payload: { url: "https://example.com/a", content: "too short" },
     });
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
-    expect(mocks.analyzePage).not.toHaveBeenCalled();
+    expect(mocks.startAnalysis).not.toHaveBeenCalled();
   });
 });

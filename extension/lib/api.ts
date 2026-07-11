@@ -20,7 +20,10 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, body: unknown): Promise<T> {
+async function request<T>(
+  path: string,
+  body?: unknown
+): Promise<{ status: number; data: T }> {
   const settings = await getSettings();
   if (!settings.apiKey && !settings.apiBaseUrl.includes("localhost")) {
     throw new ApiError(
@@ -30,12 +33,12 @@ async function request<T>(path: string, body: unknown): Promise<T> {
   }
 
   const res = await fetch(`${settings.apiBaseUrl.replace(/\/$/, "")}${path}`, {
-    method: "POST",
+    method: body === undefined ? "GET" : "POST",
     headers: {
-      "content-type": "application/json",
+      ...(body === undefined ? {} : { "content-type": "application/json" }),
       ...(settings.apiKey ? { "x-api-key": settings.apiKey } : {}),
     },
-    body: JSON.stringify(body),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 
   if (!res.ok) {
@@ -56,24 +59,47 @@ async function request<T>(path: string, body: unknown): Promise<T> {
     throw new ApiError(detail, res.status);
   }
 
-  return (await res.json()) as T;
+  return { status: res.status, data: (await res.json()) as T };
 }
 
-export function analyzePage(input: {
+export type AnalyzeApiResult =
+  | { status: "ready"; analysis: PageAnalysis }
+  | { status: "running"; contentHash: string };
+
+/** Start (or join) a page analysis; 202 means poll getAnalysisStatus. */
+export async function analyzePage(input: {
   url: string;
   title: string;
   content: string;
-}): Promise<PageAnalysis> {
-  return request<PageAnalysis>("/extension/analyze", input);
+}): Promise<AnalyzeApiResult> {
+  const { status, data } = await request<
+    PageAnalysis & { content_hash: string }
+  >("/extension/analyze", input);
+  if (status === 202) {
+    return { status: "running", contentHash: data.content_hash };
+  }
+  return { status: "ready", analysis: data };
 }
 
-export function chat(
+/** Poll a started analysis. Throws ApiError on failed/expired runs. */
+export async function getAnalysisStatus(
+  contentHash: string
+): Promise<AnalyzeApiResult> {
+  const { status, data } = await request<
+    PageAnalysis & { content_hash: string }
+  >(`/extension/analysis/${contentHash}`);
+  if (status === 202) return { status: "running", contentHash };
+  return { status: "ready", analysis: data };
+}
+
+export async function chat(
   input: Extract<BackgroundRequest, { type: "chat" }>
 ): Promise<ChatResponse> {
-  return request<ChatResponse>("/extension/chat", {
+  const { data } = await request<ChatResponse>("/extension/chat", {
     messages: input.messages,
     page: input.page,
   });
+  return data;
 }
 
 /** Free (non-agentic) read used by the click-through panel. */

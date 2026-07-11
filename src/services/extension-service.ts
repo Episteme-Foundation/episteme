@@ -113,16 +113,21 @@ export class AnalysisCache<T> {
 
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 500;
+// Failures are cached briefly so pollers see "failed" instead of 404, but a
+// fresh POST retries quickly rather than replaying a stale error.
+const FAILURE_TTL_MS = 2 * 60 * 1000;
 
 const cache = new AnalysisCache<PageAnalysis>(CACHE_TTL_MS, CACHE_MAX_ENTRIES);
 // Concurrent requests for the same page share one pipeline run instead of
 // each paying for extraction + matching.
 const inFlight = new Map<string, Promise<PageAnalysis>>();
+const failedRuns = new AnalysisCache<string>(FAILURE_TTL_MS, 100);
 
 /** Test hook. */
 export function resetAnalysisCache(): void {
   cache.clear();
   inFlight.clear();
+  failedRuns.clear();
 }
 
 /** Link to the claim's page on the public site (same knob as the MCP server, #73). */
@@ -283,28 +288,108 @@ async function getSubclaimCount(claimId: string): Promise<number> {
   return Number(rows[0]?.count ?? 0);
 }
 
-export async function analyzePage(input: {
-  url: string;
-  title?: string;
-  content: string;
-}): Promise<{ analysis: PageAnalysis; cached: boolean }> {
+/**
+ * Async analyze protocol (#93). A page analysis can run for minutes — longer
+ * than any sane load-balancer timeout — so POST /extension/analyze no longer
+ * blocks for the whole pipeline. startAnalysis() launches (or joins) the run,
+ * waits a short grace window so small/cached pages still return in one round
+ * trip, and otherwise reports "running"; the client polls getAnalysisByHash().
+ */
+export type AnalysisState =
+  | { state: "ready"; analysis: PageAnalysis; cached: boolean }
+  | { state: "running"; content_hash: string }
+  | { state: "failed"; content_hash: string; error: string }
+  | { state: "unknown" };
+
+/** How long a POST waits before handing the client off to polling. */
+const ANALYZE_GRACE_MS = 20_000;
+
+/** Await `p` for at most `ms`, reporting how (or whether) it settled. */
+async function settleWithin<T>(
+  p: Promise<T>,
+  ms: number
+): Promise<
+  { done: true; ok: true; value: T } | { done: true; ok: false; error: unknown } | { done: false }
+> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      p.then(
+        (value) => ({ done: true as const, ok: true as const, value }),
+        (error) => ({ done: true as const, ok: false as const, error })
+      ),
+      new Promise<{ done: false }>((resolve) => {
+        timer = setTimeout(() => resolve({ done: false }), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Launch the pipeline detached from the request: the run outlives the HTTP
+ * response (the caller may already hold a 202), landing in the result cache
+ * or the failure cache. The ambient usage context at launch time carries
+ * user/key attribution through the whole run (AsyncLocalStorage).
+ */
+function launchRun(
+  input: { url: string; title?: string; content: string },
+  key: string
+): Promise<PageAnalysis> {
+  const run = analyzePageUncached(input, key)
+    .then((analysis) => {
+      cache.set(key, analysis);
+      return analysis;
+    })
+    .catch((err) => {
+      failedRuns.set(key, errorMessage(err));
+      throw err;
+    })
+    .finally(() => inFlight.delete(key));
+  inFlight.set(key, run);
+  // A detached run's rejection is reported via the failure cache; without
+  // this no-op handler it would also crash the process as unhandled.
+  run.catch(() => {});
+  return run;
+}
+
+export async function startAnalysis(
+  input: { url: string; title?: string; content: string },
+  opts: { graceMs?: number } = {}
+): Promise<Exclude<AnalysisState, { state: "unknown" }>> {
   const key = pageCacheKey(input.url, input.content);
 
   const hit = cache.get(key);
-  if (hit) return { analysis: hit, cached: true };
+  if (hit) return { state: "ready", analysis: hit, cached: true };
 
-  const pending = inFlight.get(key);
-  if (pending) return { analysis: await pending, cached: true };
+  const existing = inFlight.get(key);
+  const run = existing ?? launchRun(input, key);
 
-  const run = analyzePageUncached(input, key);
-  inFlight.set(key, run);
-  try {
-    const analysis = await run;
-    cache.set(key, analysis);
-    return { analysis, cached: false };
-  } finally {
-    inFlight.delete(key);
+  const settled = await settleWithin(run, opts.graceMs ?? ANALYZE_GRACE_MS);
+  if (!settled.done) return { state: "running", content_hash: key };
+  if (!settled.ok) {
+    return { state: "failed", content_hash: key, error: errorMessage(settled.error) };
   }
+  return { state: "ready", analysis: settled.value, cached: existing !== undefined };
+}
+
+/** Poll a previously started run by its content hash. */
+export function getAnalysisByHash(contentHash: string): AnalysisState {
+  const hit = cache.get(contentHash);
+  if (hit) return { state: "ready", analysis: hit, cached: true };
+  if (inFlight.has(contentHash)) {
+    return { state: "running", content_hash: contentHash };
+  }
+  const failure = failedRuns.get(contentHash);
+  if (failure !== null) {
+    return { state: "failed", content_hash: contentHash, error: failure };
+  }
+  return { state: "unknown" };
 }
 
 async function analyzePageUncached(

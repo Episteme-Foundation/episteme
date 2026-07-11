@@ -10,6 +10,10 @@ export const extensionAnalyzeBody = z.object({
   content: z.string().min(80).max(200_000),
 });
 
+export const extensionAnalysisParams = z.object({
+  content_hash: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
 export const extensionChatBody = z.object({
   messages: z
     .array(
