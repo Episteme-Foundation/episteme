@@ -1,0 +1,166 @@
+/* Quiet, text-first styling in the episteme.wiki spirit — no gradients, no glow. */
+
+body {
+  margin: 0;
+  font: 14px/1.5 Georgia, "Times New Roman", serif;
+  color: #222;
+  background: #fffef9;
+}
+
+.popup {
+  width: 380px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid #d5d0c2;
+}
+
+.brand {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+nav button {
+  border: none;
+  background: none;
+  font: 13px Georgia, serif;
+  color: #555;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+nav button.active {
+  color: #222;
+  border-bottom: 2px solid #8c2f24;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.page-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #eee9dc;
+  font-size: 12px;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  max-height: 320px;
+}
+
+.msg {
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+
+.msg.user {
+  color: #333;
+  padding-left: 10px;
+  border-left: 3px solid #d5d0c2;
+}
+
+.msg.assistant a {
+  color: #274870;
+}
+
+.citations {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #555;
+}
+
+.hint {
+  color: #777;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.error {
+  color: #b3261e;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.composer {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid #d5d0c2;
+}
+
+.composer input {
+  flex: 1;
+  font: 13px Georgia, serif;
+  padding: 6px 8px;
+  border: 1px solid #b9b5a7;
+  border-radius: 3px;
+  background: #fff;
+}
+
+button {
+  font: 13px Georgia, serif;
+  padding: 6px 10px;
+  border: 1px solid #b9b5a7;
+  border-radius: 3px;
+  background: #f4f1e8;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.settings {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.settings label.row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings input,
+.settings select {
+  font: 13px Georgia, serif;
+  padding: 6px 8px;
+  border: 1px solid #b9b5a7;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.muted {
+  color: #777;
+  font-size: 12px;
+  margin: 0;
+}

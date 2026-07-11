@@ -17,6 +17,7 @@ import { contributorRoutes } from "../routes/contributors.js";
 import { apiKeyRoutes } from "../routes/api-keys.js";
 import { usageRoutes } from "../routes/usage.js";
 import { mcpRoutes } from "../routes/mcp.js";
+import { extensionRoutes } from "../routes/extension.js";
 
 export async function buildApp() {
   const config = loadConfig();
@@ -55,6 +56,7 @@ export async function buildApp() {
   await app.register(apiKeyRoutes, { prefix: "/api-keys" });
   await app.register(usageRoutes, { prefix: "/usage" });
   await app.register(mcpRoutes, { prefix: "/mcp" });
+  await app.register(extensionRoutes, { prefix: "/extension" });
 
   return app;
 }

@@ -104,7 +104,7 @@ This is valuable whether the claim is "the Earth is 4.5 billion years old" (veri
 
 ### LLM Agents
 
-The system uses seven specialized LLM agents for different tasks:
+The system uses eight specialized LLM agents for different tasks:
 
 - **Extractor** — Identifies claims in documents
 - **Matcher** — Determines if a claim matches an existing canonical form or is new
@@ -113,6 +113,7 @@ The system uses seven specialized LLM agents for different tasks:
 - **Contribution Reviewer** — Evaluates community contributions against policies
 - **Dispute Arbitrator** — Resolves escalated disputes and appeals
 - **Audit Agent** — Reviews system decisions for quality and consistency
+- **Extension Agent** — Lives with the browser extension (never edits the graph): judges how on-page phrasings relate to graph state and powers the in-page chat — see [extension/](extension/)
 
 ### Governance Model
 
@@ -134,7 +135,7 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 | LLM | Anthropic Claude (Anthropic Messages API) |
 | Infrastructure | AWS CDK (ECS Fargate, RDS, SQS) |
 | Frontend | React + TypeScript |
-| Browser Extension | Plasmo |
+| Browser Extension | Plasmo — in [extension/](extension/) |
 | Accounts & metering | One identity for users & contributors, hashed API keys, per-token LLM meter — see [docs/accounts.md](docs/accounts.md) |
 | MCP | Remote MCP server (streamable HTTP) exposing the claim graph to MCP clients — see [docs/mcp.md](docs/mcp.md) |
 
