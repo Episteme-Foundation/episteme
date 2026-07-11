@@ -67,7 +67,10 @@ const STYLE = `
 .ep-box.ep-oversimplified { background: rgba(110, 110, 110, 0.09); border-bottom: 2px dashed #767676; }
 .ep-box.ep-noteworthy { background: rgba(62, 98, 138, 0.07); border-bottom: 1px solid #3e628a; }
 .ep-card {
-  position: absolute; z-index: 2147483646; max-width: 360px; padding: 10px 12px;
+  /* Explicit width: the card lives in a zero-width overlay container, so
+     shrink-to-fit (max-width alone) would collapse it to min-content. */
+  position: absolute; z-index: 2147483646; width: min(340px, 80vw); padding: 10px 12px;
+  box-sizing: border-box;
   background: #fffef9; color: #222; border: 1px solid #b9b5a7; border-radius: 3px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   font: 13px/1.45 Georgia, 'Times New Roman', serif; pointer-events: auto;
