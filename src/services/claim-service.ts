@@ -12,6 +12,8 @@ export async function proposeClaim(input: {
   claim: string;
   argument: string;
   createdBy?: string;
+  /** Metering attribution (#70): the requesting account/key. */
+  attribution?: { userId?: string | null; apiKeyId?: string | null };
 }) {
   const db = getDb();
   const createdBy = input.createdBy ?? "user";
@@ -44,8 +46,12 @@ export async function proposeClaim(input: {
     })
     .returning();
 
-  // Create tracking job
-  const job = await createJob("claim_pipeline", { claimId: claim!.id });
+  // Create tracking job (carrying metering attribution to the pipeline)
+  const job = await createJob(
+    "claim_pipeline",
+    { claimId: claim!.id },
+    input.attribution
+  );
 
   // Onboard the new claim (the Steward will structure + assess it)
   await enqueueClaimPipeline({

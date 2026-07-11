@@ -3,6 +3,7 @@ import {
   getExtractorSystemPrompt,
   getExtractionPrompt,
 } from "../prompts/extractor.js";
+import { withAgent } from "../usage-context.js";
 
 export interface ExtractedClaim {
   original_text: string;
@@ -29,7 +30,15 @@ const EXTRACTED_CLAIM_SCHEMA = {
   required: ["original_text", "proposed_canonical_form", "claim_type", "confidence", "importance"],
 };
 
-export async function extractClaims(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function extractClaims(
+  input: Parameters<typeof extractClaimsImpl>[0]
+): ReturnType<typeof extractClaimsImpl> {
+  return withAgent("extractor", () => extractClaimsImpl(input));
+}
+
+async function extractClaimsImpl(input: {
   content: string;
   sourceType?: string;
   additionalContext?: string;

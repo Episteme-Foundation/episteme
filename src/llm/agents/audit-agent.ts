@@ -16,8 +16,17 @@ import {
   executeAuditTool,
 } from "../tools/audit-tools.js";
 import { loadConfig } from "../../config.js";
+import { withAgent } from "../usage-context.js";
 
-export async function runAudit(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function runAudit(
+  input: Parameters<typeof runAuditImpl>[0]
+): ReturnType<typeof runAuditImpl> {
+  return withAgent("audit", () => runAuditImpl(input));
+}
+
+async function runAuditImpl(input: {
   auditType: string;
   context: string;
   model?: string;

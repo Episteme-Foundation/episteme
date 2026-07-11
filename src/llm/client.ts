@@ -16,6 +16,30 @@ import {
   modelAcceptsTemperature,
   modelNeedsRefusalFallback,
 } from "./models.js";
+import { meterLlmUsage } from "../services/usage-service.js";
+
+/**
+ * Record one call against both meters: the in-memory budget tracker (process
+ * circuit breaker) and the durable per-user meter (#70). The durable write is
+ * fire-and-forget and swallows its own errors — metering must never fail a
+ * call — while attribution (user/key/agent) rides in via the ambient usage
+ * context (see usage-context.ts).
+ */
+function recordCallUsage(model: string, u: Anthropic.Usage): void {
+  const cacheRead = u.cache_read_input_tokens ?? 0;
+  const cacheCreation = u.cache_creation_input_tokens ?? 0;
+  recordUsage(u.input_tokens, u.output_tokens, {
+    readTokens: cacheRead,
+    creationTokens: cacheCreation,
+  });
+  void meterLlmUsage({
+    model,
+    inputTokens: u.input_tokens,
+    outputTokens: u.output_tokens,
+    cacheReadTokens: cacheRead,
+    cacheCreationTokens: cacheCreation,
+  });
+}
 
 /** Build the optional `temperature` field, omitting it for models that reject it. */
 function temperatureParam(model: string, temperature?: number): { temperature?: number } {
@@ -183,10 +207,7 @@ export async function complete(options: {
     outputTokens: response.usage.output_tokens,
   };
 
-  recordUsage(usage.inputTokens, usage.outputTokens, {
-    readTokens: response.usage.cache_read_input_tokens ?? 0,
-    creationTokens: response.usage.cache_creation_input_tokens ?? 0,
-  });
+  recordCallUsage(response.model ?? model, response.usage);
   logCacheUsage(response.usage);
 
   let content = "";
@@ -234,10 +255,7 @@ export async function completeWithTools(options: {
     outputTokens: response.usage.output_tokens,
   };
 
-  recordUsage(usage.inputTokens, usage.outputTokens, {
-    readTokens: response.usage.cache_read_input_tokens ?? 0,
-    creationTokens: response.usage.cache_creation_input_tokens ?? 0,
-  });
+  recordCallUsage(response.model ?? model, response.usage);
   logCacheUsage(response.usage);
 
   let textContent = "";

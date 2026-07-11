@@ -321,12 +321,18 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
         },
       },
     },
-    preHandler: app.authenticate,
+    // Proposing a claim triggers LLM work (matching + stewarding), so it is
+    // a metered agentic surface (#70).
+    preHandler: [app.authenticate, app.requireAgenticQuota],
     handler: async (request, reply) => {
       const body = claimProposeBody.parse(request.body);
       const result = await proposeClaim({
         claim: body.claim,
         argument: body.argument,
+        attribution: {
+          userId: request.auth?.userId ?? null,
+          apiKeyId: request.auth?.apiKeyId ?? null,
+        },
       });
 
       return reply.code(201).send({

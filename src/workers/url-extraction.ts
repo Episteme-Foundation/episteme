@@ -4,9 +4,10 @@ import { sources, claims, claimInstances } from "../db/schema.js";
 import { extractClaims } from "../llm/agents/extractor.js";
 import { matchClaim } from "../llm/agents/matcher.js";
 import { generateEmbedding } from "../services/embedding-service.js";
-import { updateJob } from "../services/job-service.js";
+import { updateJob, getJobById } from "../services/job-service.js";
 import { enqueueClaimPipeline, enqueueCurator } from "../services/queue-service.js";
 import type { UrlExtractionMessage } from "../services/queue-service.js";
+import { runWithUsageContext } from "../llm/usage-context.js";
 import { loadConfig } from "../config.js";
 
 /**
@@ -16,8 +17,27 @@ import { loadConfig } from "../config.js";
  * 3. For each claim: match against existing claims or create new
  * 4. Create claim instances linking claims to source
  * 5. Enqueue new claims for the claim pipeline
+ *
+ * Extraction + matching are user-initiated agentic work, so the LLM calls in
+ * here are metered against the account that submitted the source (#70): the
+ * job row carries the attribution and we restore it into the usage context
+ * for the duration of the run.
  */
 export async function handleUrlExtraction(
+  message: UrlExtractionMessage
+): Promise<void> {
+  const job = await getJobById(message.jobId);
+  return runWithUsageContext(
+    {
+      userId: job?.userId ?? null,
+      apiKeyId: job?.apiKeyId ?? null,
+      jobId: message.jobId,
+    },
+    () => processUrlExtraction(message)
+  );
+}
+
+async function processUrlExtraction(
   message: UrlExtractionMessage
 ): Promise<void> {
   const db = getDb();

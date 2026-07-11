@@ -28,10 +28,15 @@ export async function sourceRoutes(app: FastifyInstance): Promise<void> {
         },
       },
     },
-    preHandler: app.authenticate,
+    // Source ingestion drives the extractor + matcher (LLM work), so it is a
+    // metered agentic surface (#70).
+    preHandler: [app.authenticate, app.requireAgenticQuota],
     handler: async (request, reply) => {
       const body = sourceSubmitBody.parse(request.body);
-      const result = await submitSource(body);
+      const result = await submitSource(body, {
+        userId: request.auth?.userId ?? null,
+        apiKeyId: request.auth?.apiKeyId ?? null,
+      });
 
       return reply.code(202).send({
         source_id: result.sourceId,

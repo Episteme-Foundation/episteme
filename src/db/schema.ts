@@ -4,6 +4,7 @@ import {
   text,
   real,
   integer,
+  bigint,
   boolean,
   timestamp,
   jsonb,
@@ -242,6 +243,16 @@ export const jobs = pgTable(
     input: jsonb("input").notNull(),
     result: jsonb("result"),
     error: text("error"),
+    // Attribution for per-token metering (#70): the account and API key that
+    // requested this job. Workers restore these into the LLM usage context so
+    // background agent calls (extraction, matching) are billed to the
+    // requesting user, not lost as anonymous work. Null = system-initiated.
+    userId: uuid("user_id").references(() => contributors.id, {
+      onDelete: "set null",
+    }),
+    apiKeyId: uuid("api_key_id").references(() => apiKeys.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -252,11 +263,21 @@ export const jobs = pgTable(
 
 // ---------------------------------------------------------------------------
 // contributors
+//
+// The single account table (issue #70): a *user* (API consumer) and a
+// *contributor* (graph editor) are the same identity — one human, one row.
+// `externalId` is the auth subject in the form "<provider>:<subject>"
+// (e.g. "github:12345"), minted by the web app's sign-in flow; the API never
+// talks to the auth provider itself. Consumer concerns (API keys, usage,
+// credits) and contributor concerns (reputation, kudos — #71) both hang off
+// this row.
 // ---------------------------------------------------------------------------
 export const contributors = pgTable("contributors", {
   id: uuid("id").primaryKey().defaultRandom(),
   externalId: text("external_id").unique(),
   displayName: text("display_name").notNull(),
+  email: text("email").unique(),
+  avatarUrl: text("avatar_url"),
   reputationScore: real("reputation_score").notNull().default(50),
   contributionsAccepted: integer("contributions_accepted").notNull().default(0),
   contributionsRejected: integer("contributions_rejected").notNull().default(0),
@@ -273,6 +294,93 @@ export const contributors = pgTable("contributors", {
     .notNull()
     .defaultNow(),
 });
+
+// ---------------------------------------------------------------------------
+// api_keys
+//
+// DB-backed API keys (#70). A user mints keys from the dashboard; the key is
+// shown once and only its SHA-256 hash is stored. Keys are high-entropy random
+// strings, so a fast unsalted hash is the correct construction (unlike
+// passwords) — it gives O(1) lookup by hash with no oracle risk.
+//
+// scope:
+//   'user'    — a normal consumer key; acts as its owning user.
+//   'service' — a trusted first-party key (e.g. the web frontend's BFF key)
+//               that may additionally act ON BEHALF OF another user via the
+//               x-acting-user header. Never issued from the public dashboard.
+// ---------------------------------------------------------------------------
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => contributors.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // First characters of the plaintext key (e.g. "epk_a1b2c3d4"), kept so the
+    // dashboard can identify a key without ever storing the key itself.
+    keyPrefix: text("key_prefix").notNull(),
+    keyHash: text("key_hash").notNull().unique(),
+    scope: text("scope").notNull().default("user"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [index("idx_api_keys_user").on(table.userId)]
+);
+
+// ---------------------------------------------------------------------------
+// llm_usage
+//
+// The per-token meter (#70): one row per LLM call, written at the single
+// chokepoint in src/llm/client.ts. Captured at token granularity from day one
+// because backfill is impossible; a credits ledger (Stripe metered billing)
+// can later decrement against these rows without schema upheaval — see
+// src/services/billing-service.ts for the seam.
+//
+// userId/apiKeyId null = system-initiated governance work (Steward sweeps,
+// audits, contribution review), which is deliberately NOT billed to users:
+// the metered surface is user-initiated agentic work (extraction, matching).
+// ---------------------------------------------------------------------------
+export const llmUsage = pgTable(
+  "llm_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => contributors.id, {
+      onDelete: "set null",
+    }),
+    apiKeyId: uuid("api_key_id").references(() => apiKeys.id, {
+      onDelete: "set null",
+    }),
+    // Which agent made the call (extractor, matcher, steward, curator,
+    // contribution_reviewer, dispute_arbitrator, audit, ...) — set by the
+    // agent's entry point via the usage context.
+    agent: text("agent").notNull().default("unknown"),
+    model: text("model").notNull(),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+    cacheCreationTokens: integer("cache_creation_tokens").notNull().default(0),
+    // Derived cost in micro-USD (1e-6 USD) from src/llm/pricing.ts at insert
+    // time, so historical rows keep the price that was in effect when the
+    // tokens were spent.
+    costMicroUsd: bigint("cost_micro_usd", { mode: "number" })
+      .notNull()
+      .default(0),
+    jobId: uuid("job_id"),
+    requestId: text("request_id"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_llm_usage_user_time").on(table.userId, table.createdAt),
+    index("idx_llm_usage_key_time").on(table.apiKeyId, table.createdAt),
+    index("idx_llm_usage_time").on(table.createdAt),
+  ]
+);
 
 // ---------------------------------------------------------------------------
 // contributions
@@ -414,6 +522,10 @@ export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
 export type Contributor = typeof contributors.$inferSelect;
 export type NewContributor = typeof contributors.$inferInsert;
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;
+export type LlmUsage = typeof llmUsage.$inferSelect;
+export type NewLlmUsage = typeof llmUsage.$inferInsert;
 export type Contribution = typeof contributions.$inferSelect;
 export type NewContribution = typeof contributions.$inferInsert;
 export type ContributionReview = typeof contributionReviews.$inferSelect;

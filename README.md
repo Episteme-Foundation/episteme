@@ -135,6 +135,7 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 | Infrastructure | AWS CDK (ECS Fargate, RDS, SQS) |
 | Frontend | React + TypeScript |
 | Browser Extension | Plasmo |
+| Accounts & metering | One identity for users & contributors, hashed API keys, per-token LLM meter — see [docs/accounts.md](docs/accounts.md) |
 
 ## Project Status
 

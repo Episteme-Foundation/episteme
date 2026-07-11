@@ -5,6 +5,7 @@ import { getMatcherSystemPrompt, getMatchingPrompt } from "../prompts/matcher.js
 import { generateEmbedding } from "../../services/embedding-service.js";
 import { findSimilarClaims } from "../../services/search-service.js";
 import { loadConfig } from "../../config.js";
+import { withAgent } from "../usage-context.js";
 
 export interface MatchDecision {
   is_match: boolean;
@@ -49,7 +50,15 @@ const MATCH_DECISION_SCHEMA = {
  *
  * Every new claim — top-level and subclaim — flows through this one matcher.
  */
-export async function matchClaim(input: {
+// Tag every LLM call in this agent for the per-token meter (#70); the
+// wrapper keeps attribution correct for any call site.
+export function matchClaim(
+  input: Parameters<typeof matchClaimImpl>[0]
+): ReturnType<typeof matchClaimImpl> {
+  return withAgent("matcher", () => matchClaimImpl(input));
+}
+
+async function matchClaimImpl(input: {
   extractedText: string;
   proposedCanonical: string;
   /**

@@ -4,6 +4,7 @@ import { loadConfig } from "../config.js";
 import { registerSwagger } from "./plugins/swagger.js";
 import { registerCors } from "./plugins/cors.js";
 import { registerAuth } from "./plugins/auth.js";
+import { registerQuota } from "./plugins/quota.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { healthRoutes } from "../routes/health.js";
 import { claimRoutes } from "../routes/claims.js";
@@ -11,6 +12,9 @@ import { sourceRoutes } from "../routes/sources.js";
 import { jobRoutes } from "../routes/jobs.js";
 import { contributionRoutes } from "../routes/contributions.js";
 import { appealRoutes } from "../routes/appeals.js";
+import { userRoutes } from "../routes/users.js";
+import { apiKeyRoutes } from "../routes/api-keys.js";
+import { usageRoutes } from "../routes/usage.js";
 
 export async function buildApp() {
   const config = loadConfig();
@@ -34,6 +38,7 @@ export async function buildApp() {
   await registerSwagger(app);
   await registerCors(app);
   await registerAuth(app);
+  await registerQuota(app);
   await registerErrorHandler(app);
 
   // Routes
@@ -43,6 +48,9 @@ export async function buildApp() {
   await app.register(jobRoutes, { prefix: "/jobs" });
   await app.register(contributionRoutes, { prefix: "/contributions" });
   await app.register(appealRoutes, { prefix: "/appeals" });
+  await app.register(userRoutes, { prefix: "/users" });
+  await app.register(apiKeyRoutes, { prefix: "/api-keys" });
+  await app.register(usageRoutes, { prefix: "/usage" });
 
   return app;
 }

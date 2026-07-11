@@ -67,6 +67,16 @@ const configSchema = z.object({
   anthropicApiKey: z.string().default(""),
   awsRegion: z.string().default("us-east-1"),
 
+  // Accounts / metering (#70)
+  // Monthly free-tier grant for METERED (agentic/LLM-backed) usage, in USD of
+  // derived cost. Non-agentic reads are never metered. 0 disables the trial
+  // (all agentic use requires credits, which aren't purchasable yet → 402).
+  freeTierMonthlyUsd: z.coerce.number().default(5),
+  // Per-key rate limit on agentic endpoints (requests/hour, 0 = unlimited).
+  // A blunt in-memory backstop against runaway clients; the real spend
+  // guardrail is the metered monthly grant above.
+  agenticRateLimitPerHour: z.coerce.number().default(30),
+
   // Budget limits (0 = unlimited)
   llmHourlyCallLimit: z.coerce.number().default(0),
   llmDailyCallLimit: z.coerce.number().default(0),
@@ -163,6 +173,8 @@ export function loadConfig(): Config {
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     awsRegion: process.env.AWS_REGION,
+    freeTierMonthlyUsd: process.env.FREE_TIER_MONTHLY_USD,
+    agenticRateLimitPerHour: process.env.AGENTIC_RATE_LIMIT_PER_HOUR,
     llmHourlyCallLimit: process.env.LLM_HOURLY_CALL_LIMIT,
     llmDailyCallLimit: process.env.LLM_DAILY_CALL_LIMIT,
     llmHourlyTokenLimit: process.env.LLM_HOURLY_TOKEN_LIMIT,
