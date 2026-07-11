@@ -94,6 +94,12 @@ export class ApiStack extends cdk.Stack {
         LLM_DAILY_TOKEN_LIMIT: "1500000",
         // Bound fan-out per document (the dominant cost multiplier). 0 = unlimited.
         EXTRACTION_MAX_CLAIMS: "8",
+        // Extension page analysis is synchronous behind the ALB (#91): cap
+        // claims per page so a typical analyze finishes inside the idle
+        // timeout below. The async flow (#93) relaxes the latency pressure,
+        // but the cap stays sensible — extension pages are reading surfaces,
+        // not corpus ingestion.
+        EXTENSION_MAX_CLAIMS: "10",
       },
       secrets: {
         DB_USERNAME: ecs.Secret.fromSecretsManager(props.dbSecret, "username"),
@@ -127,6 +133,10 @@ export class ApiStack extends cdk.Stack {
       vpc: props.vpc,
       internetFacing: true,
       securityGroup: props.albSg,
+      // Extension analyze/chat are long synchronous LLM requests; the 60s
+      // default idle timeout 504'd real page analyses while the API kept
+      // working (#91). 300s covers a capped analyze; #93 makes it async.
+      idleTimeout: cdk.Duration.seconds(300),
     });
 
     const listener = alb.addListener("HttpListener", {
