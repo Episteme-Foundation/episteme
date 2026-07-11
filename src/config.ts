@@ -90,6 +90,11 @@ const configSchema = z.object({
   // the rules are policy, not deployment tuning.
   newContributorRateLimitPerHour: z.coerce.number().default(3),
 
+  // Browser extension (#72)
+  // Cap on claims extracted per analyzed page — extension pages are ephemeral
+  // reading surfaces, not corpus ingestion, so keep fan-out tight by default.
+  extensionMaxClaims: z.coerce.number().default(25),
+
   // Budget limits (0 = unlimited)
   llmHourlyCallLimit: z.coerce.number().default(0),
   llmDailyCallLimit: z.coerce.number().default(0),
@@ -145,6 +150,9 @@ const configSchema = z.object({
   // Arbitration is the highest-stakes governance call; production sets
   // ARBITRATION_MODEL=claude-fable-5.
   arbitrationModel: modelId(MODELS.sonnet),
+  // The extension agent judges on-page phrasings against graph state and
+  // powers the extension chat — user-facing latency-sensitive work (#72).
+  extensionModel: modelId(MODELS.sonnet),
   enableContributions: z
     .string()
     .transform((s) => s === "true")
@@ -188,6 +196,7 @@ export function loadConfig(): Config {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     awsRegion: process.env.AWS_REGION,
     freeTierMonthlyUsd: process.env.FREE_TIER_MONTHLY_USD,
+    extensionMaxClaims: process.env.EXTENSION_MAX_CLAIMS,
     agenticRateLimitPerHour: process.env.AGENTIC_RATE_LIMIT_PER_HOUR,
     contributionRateLimitPerHour: process.env.CONTRIBUTION_RATE_LIMIT_PER_HOUR,
     newContributorRateLimitPerHour:
@@ -210,6 +219,7 @@ export function loadConfig(): Config {
     governanceModel: process.env.GOVERNANCE_MODEL,
     auditModel: process.env.AUDIT_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
+    extensionModel: process.env.EXTENSION_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
     escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
     auditSampleRate: process.env.AUDIT_SAMPLE_RATE,
