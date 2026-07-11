@@ -124,8 +124,13 @@ configured.
 - Migration `0006_accounts_keys_usage` adds `api_keys`, `llm_usage`, the
   `contributors.email/avatar_url` columns and `jobs` attribution columns.
   Applied automatically at boot in production (like all migrations).
-- The web frontend needs: `EPISTEME_API_KEY` (a service-trusted key — an
-  `API_KEYS` env entry today), `AUTH_SECRET`, and OAuth provider secrets in
+- Production keys live in Secrets Manager: `episteme/api-keys` (wired into
+  ECS as `API_KEYS` by the CDK stacks; populate with
+  `aws secretsmanager put-secret-value --secret-id episteme/api-keys
+  --secret-string "<key>"` and force a new service deployment). The API fails
+  closed in production without it.
+- The web frontend needs: `EPISTEME_API_KEY` (the same value as an
+  `episteme/api-keys` entry), `AUTH_SECRET`, and OAuth provider secrets in
   Vercel.
 - Metering never fails a call: `meterLlmUsage` catches and logs. The
   in-memory budget tracker (process circuit breaker) is unchanged and

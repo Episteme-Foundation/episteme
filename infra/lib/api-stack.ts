@@ -18,6 +18,7 @@ export interface ApiStackProps extends cdk.StackProps {
   claimPipelineQueue: sqs.Queue;
   openaiApiKeySecret: secretsmanager.Secret;
   anthropicApiKeySecret: secretsmanager.Secret;
+  apiKeysSecret: secretsmanager.Secret;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -45,6 +46,7 @@ export class ApiStack extends cdk.Stack {
     props.dbSecret.grantRead(taskDef.taskRole);
     props.openaiApiKeySecret.grantRead(taskDef.taskRole);
     props.anthropicApiKeySecret.grantRead(taskDef.taskRole);
+    props.apiKeysSecret.grantRead(taskDef.taskRole);
 
     const container = taskDef.addContainer("api", {
       image: ecs.ContainerImage.fromAsset("..", {
@@ -99,6 +101,10 @@ export class ApiStack extends cdk.Stack {
         OPENAI_API_KEY: ecs.Secret.fromSecretsManager(
           props.openaiApiKeySecret
         ),
+        // Operator/service keys (#70) — the API fails closed in production
+        // without them. The web frontend's EPISTEME_API_KEY must be one of
+        // these entries.
+        API_KEYS: ecs.Secret.fromSecretsManager(props.apiKeysSecret),
         ANTHROPIC_API_KEY: ecs.Secret.fromSecretsManager(
           props.anthropicApiKeySecret
         ),
