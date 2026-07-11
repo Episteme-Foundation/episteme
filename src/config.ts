@@ -60,6 +60,10 @@ const configSchema = z.object({
   // CORS
   corsOrigins: z.string().default(""),
 
+  // Public web frontend base URL, used to build human-readable claim-page
+  // links returned by the MCP server (#73).
+  publicWebBaseUrl: z.string().default("https://episteme.wiki"),
+
   // OpenAI embeddings
   openaiApiKey: z.string().default(""),
 
@@ -179,6 +183,7 @@ export function loadConfig(): Config {
     apiKeys: process.env.API_KEYS,
     apiKeyContributors: process.env.API_KEYS,
     corsOrigins: process.env.CORS_ORIGINS,
+    publicWebBaseUrl: process.env.PUBLIC_WEB_BASE_URL,
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     awsRegion: process.env.AWS_REGION,
