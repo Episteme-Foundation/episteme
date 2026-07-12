@@ -15,6 +15,7 @@ import {
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
 import { addArgument } from "../../services/argument-service.js";
+import { loadConfig } from "../../config.js";
 import {
   enqueueSteward,
   enqueueClaimPipeline,
@@ -209,10 +210,15 @@ export function getStewardToolDefinitions(): Tool[] {
           importance: {
             type: "number",
             description:
-              "How load-bearing this subclaim is, 0..1 (your judgment): how much " +
-              "the parent's truth rides on it. Sets the subclaim's importance, which " +
-              "orders the work queue so important claims are processed first. " +
-              "Defaults to 0.5 if omitted.",
+              "How much it is worth spending scarce intelligence to get this " +
+              "subclaim right, 0..1 — roughly consequence-if-wrong × contestability, " +
+              "NOT logical necessity. A dependency can be maximally load-bearing " +
+              "(the parent is false without it) yet LOW importance because nobody " +
+              "disputes it — getting an uncontested fact right is free. Reserve " +
+              "high values for genuinely contested or consequential dependencies. " +
+              "This orders the work queue AND (below a threshold) leaves the " +
+              "subclaim an un-decomposed embedded stub, so score uncontested " +
+              "bedrock low. Defaults to 0.5 if omitted.",
           },
         },
         required: ["parent_id", "child_text", "relation", "reasoning"],
@@ -221,10 +227,14 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "set_claim_importance",
       description:
-        "Set how load-bearing a claim is (0..1) — a revisable judgment that scales " +
-        "the effort spent on it and orders the work queue. Set your own claim's " +
-        "importance when you can judge it (e.g. from how many claims depend on it), " +
-        "or refine a subclaim's.",
+        "Set a claim's importance (0..1) — how much it is worth spending scarce " +
+        "intelligence to get it right (roughly consequence-if-wrong × " +
+        "contestability), NOT mere logical load-bearing-ness. A revisable judgment " +
+        "that scales effort and orders the work queue. Local dependents are only a " +
+        "local signal: a claim central to a niche subfield is still low-importance " +
+        "if the subfield is peripheral and the claim uncontested. An uncontested " +
+        "fact is low importance even if much depends on it, because getting it " +
+        "right is free.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -490,6 +500,23 @@ export async function executeStewardTool(
           // Continue without embedding
         }
 
+        // Economic brake (#98/#68): a subclaim the Steward judged below
+        // stewardEnqueueMinImportance is left a *deferred* embedded stub — NOT
+        // recursively decomposed. Uncontested bedrock (settled math/definitions)
+        // now scores low importance, so this stops the "one physics claim spawns a
+        // whole textbook" cost explosion at its root. Crucially the gate must set
+        // steward_state='deferred', because a claim created with the default
+        // 'pending' is ALREADY in the importance-ordered drain queue regardless of
+        // whether we enqueue a pipeline for it — the enqueue path only sets the
+        // trigger/decompositionStatus. 'deferred' keeps it out of the drain; a
+        // later re-trigger (enqueueSteward, e.g. a dependent's notification) flips
+        // it back to 'pending', so nothing is permanently stranded.
+        const { stewardEnqueueMinImportance } = loadConfig();
+        const effectiveImportance = importance ?? 0.5;
+        const gated =
+          stewardEnqueueMinImportance > 0 &&
+          effectiveImportance < stewardEnqueueMinImportance;
+
         const [newClaim] = await db
           .insert(claims)
           .values({
@@ -497,6 +524,7 @@ export async function executeStewardTool(
             claimType: "empirical_derived",
             embedding: embedding ?? undefined,
             ...(importance !== undefined ? { importance } : {}),
+            ...(gated ? { stewardState: "deferred" } : {}),
             createdBy: "claim_steward",
           })
           .returning();
@@ -517,20 +545,29 @@ export async function executeStewardTool(
         }
 
         // The new claim is created already embedded (above), so it is a valid,
-        // dedup-able stub even if it is never processed. Onboard it so its own
-        // Steward structures + assesses it, like any other claim. Steward work
-        // isn't tied to an ingestion job, so use a sentinel jobId (the pipeline
-        // only threads jobId; it never looks it up). No ancestor/depth threading:
-        // the child's Steward calls match_claim before creating anything, so it
-        // links this parent (and any other ancestor) rather than looping into it.
-        await enqueueClaimPipeline({
-          claimId: newClaim!.id,
-          jobId: "steward",
-        });
+        // dedup-able stub even if it is never processed. When NOT gated, we onboard
+        // it so its own Steward structures + assesses it, like any other claim.
+        // Steward work isn't tied to an ingestion job, so use a sentinel jobId (the
+        // pipeline only threads jobId; it never looks it up). No ancestor/depth
+        // threading: the child's Steward calls match_claim before creating
+        // anything, so it links this parent (and any other ancestor) rather than
+        // looping into it.
+        if (!gated) {
+          await enqueueClaimPipeline({
+            claimId: newClaim!.id,
+            jobId: "steward",
+          });
+        }
 
         return JSON.stringify({
           success: true,
-          message: `Added subclaim to ${parentId}: "${childText}" (${relation})`,
+          message:
+            `Added subclaim to ${parentId}: "${childText}" (${relation})` +
+            (gated
+              ? ` — kept as a deferred embedded stub (importance ` +
+                `${effectiveImportance} below the decomposition threshold ` +
+                `${stewardEnqueueMinImportance}); not recursively decomposed.`
+              : ""),
           child_claim_id: newClaim!.id,
         });
       }

@@ -1,0 +1,1 @@
+ALTER TABLE "claims" ADD COLUMN "steward_attempts" integer DEFAULT 0 NOT NULL;

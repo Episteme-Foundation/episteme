@@ -68,11 +68,21 @@ export const claims = pgTable(
     // "embedded stubs". Re-triggers (a changed subclaim, a Curator action) just
     // set this back to 'pending', coalescing a propagation storm into one slot.
     // Lifecycle: pending → running → done | error (→ pending again on re-trigger).
+    // 'deferred' is a low-importance subclaim intentionally held OUT of the drain
+    // (#98 economic brake): created and embedded/matchable but not recursively
+    // decomposed. A re-trigger promotes it back to 'pending'.
     stewardState: text("steward_state").notNull().default("pending"),
     stewardTrigger: text("steward_trigger"),
     stewardContext: text("steward_context"),
     stewardError: text("steward_error"),
     stewardedAt: timestamp("stewarded_at", { withTimezone: true }),
+    // Consecutive failed Steward attempts on this claim. Transient failures (API
+    // budget/credit outage, 429, 5xx, network) return the claim to 'pending'
+    // WITHOUT counting here — they are not the claim's fault (#97). Only genuine
+    // logic errors increment it; the claim parks as 'error' once it hits the
+    // attempt cap, so a truly poison claim stops spinning while a transient
+    // outage never permanently strands the graph.
+    stewardAttempts: integer("steward_attempts").notNull().default(0),
     embedding: vector("embedding"),
     textSearch: tsvector("text_search"),
     createdBy: text("created_by").notNull().default("system"),

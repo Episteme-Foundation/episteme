@@ -35,6 +35,8 @@ Claims decompose into subclaims. The admin's most important function is to ident
 - Reveals the actual points of disagreement hidden within superficially unified disputes
 - Continues until reaching claims that are either uncontested or genuinely fundamental
 
+The stopping condition is **contestedness, not logical primitiveness.** A claim reaches bedrock when no informed person in the live discourse would actually dispute it — *not* when it has been reduced to something logically primitive. An uncontested claim is a leaf: assess it directly (usually verified) rather than unfolding it into the mathematics, definitions, or textbook derivations that prove it. "Special relativity is empirically valid" is load-bearing for a physics claim, but it is settled, so it is a leaf — decomposing it into Lorentz-transformation algebra and then field-theory axioms produces a chain that is locally reasonable and globally absurd, and wastes the scarce effort that belongs on live disagreements. Decompose only where a dependency is *itself contested* or is the *actual locus of disagreement*. Ask of each candidate subclaim: would any informed person actually dispute this? If not, stop.
+
 The canonical form of a claim should make its parameters explicit. "Inflation was high" becomes "US CPI inflation in 2022 exceeded [threshold]," which depends on "BLS reported CPI at [X]" and "The threshold for 'high' inflation is [Y]."
 
 #### Multiple Arguments
@@ -231,23 +233,25 @@ When the admin's role includes oversight of multiple claims or coordination acro
 
 #### Claim Importance and Proportional Effort
 
-Not all claims warrant equal effort. Some are load-bearing—much depends on whether they are true, and getting them right repays the most careful judgment, the strongest models, and the deepest evidence-gathering. Others are peripheral, and spending the same effort on them wastes resources better spent elsewhere. Admins gauge a claim's importance and invest proportionally: the depth of assessment, the breadth of evidence search, and the scrutiny of review should scale with what rides on the claim.
+Not all claims warrant equal effort. **Importance is how much it is worth spending scarce intelligence to get a claim right—roughly consequence-if-wrong × contestability—not how logically load-bearing it is.** These two come apart, and conflating them is the central way to misuse importance. A claim can be maximally load-bearing—the parent proposition is simply false without it—yet not worth spending much effort on, because nobody disputes it: getting an uncontested fact right is essentially free. Settled mathematics, definitions, and textbook facts are load-bearing almost everywhere and important almost nowhere. What earns high importance is that getting the claim wrong would be consequential *and* the claim is genuinely contested or heavily consulted—a live crux, not settled scaffolding. Admins gauge importance in this sense and invest proportionally: the depth of assessment, the breadth of evidence search, and the scrutiny of review scale with it.
 
 This proportionality reflects a real asymmetry between tasks. Recognizing whether a claim already exists in the graph is a *saturating* task—past a sufficient level of care it is simply done correctly, and more intelligence adds little. Judging whether a substantive claim about the world is true is *not* saturating: for the claims that matter most, more intelligence and more evidence keep paying off. Effort should follow that asymmetry—cheap and exhaustive where the task saturates, deep and well-resourced where it does not.
 
-Until the graph is large and dense, and until usage data exists, importance is judged directly: the admin reads the claim and, from general knowledge, places it on a rough scale. As the graph grows, importance will also be informed by how many claims depend on this one, how central it is to live debates, and how often it is consulted—and may eventually route claims to different models or review depths. Such routing is a judgment for the claim steward or the graph-level admin, not a fixed rule.
+Importance is judged against **all of claimspace, not the local neighborhood.** Counting how many claims depend on this one is only a *local* signal, and on its own it over-rates niche claims: a claim central to a small subfield can look foundational within that subfield while the whole subfield is peripheral to the graph, and while the claim itself is uncontested. A precise, well-established measurement can anchor a niche literature yet still be minor. The admin therefore calibrates against cross-domain anchors—"this is about as important as X, and clearly below Y"—rather than treating local dependency count as the measure. Global usage data (how often a claim is consulted, how live the debate around it is) sharpens this as it accrues.
 
-Importance is now also recorded as a per-claim value (0..1) that the steward sets and revises, and it is a *mechanism* as well as a guideline: the steward's work queue is ordered by it, so the most load-bearing claims are structured and assessed first when compute is bounded. A claim judged peripheral may go unprocessed and persist as an embedded stub—still matchable, so the graph stays de-duplicated and can converge—which is an acceptable steady state, not a failure. The score remains a judgment, revisable as the graph reveals what actually depends on a claim; it is not a fixed rule, and it must never be inflated to jump the queue.
+Importance is recorded as a per-claim value (0..1) that the steward sets and revises, and it is a *mechanism* as well as a guideline: the steward's work queue is ordered by it, so the claims most worth getting right are structured and assessed first when compute is bounded, and a subclaim scored below a threshold is left an embedded stub rather than recursively decomposed—the economic brake that keeps a settled claim from spawning a whole textbook of uncontested sub-derivations. A claim judged peripheral may go unprocessed and persist as an embedded stub—still matchable, so the graph stays de-duplicated and can converge—which is an acceptable steady state, not a failure. The score remains a judgment, revisable as the graph reveals what is actually contested and consulted; it is not a fixed rule, and it must never be inflated to jump the queue.
 
-A rough scale:
+A rough scale (calibrated across fields, not within one):
 
-- **Foundational.** Widely consequential; many claims, decisions, or worldviews turn on it, so errors propagate far. *Examples: "Human activity is the principal cause of observed global warming since the mid-20th century"; "Advanced AI poses a non-negligible risk of human extinction this century"; "Smoking causes lung cancer."* These deserve the strongest assessment available—top-tier model, broad evidence search, and, when contested, independent or adversarial review.
+- **Central.** Widely consequential *and* live: many claims, decisions, or worldviews turn on it, and it is genuinely contested or heavily consulted. *Examples: "Human activity is the principal cause of observed global warming since the mid-20th century"; "Advanced AI poses a non-negligible risk of human extinction this century."* These deserve the strongest assessment available—top-tier model, broad evidence search, and, when contested, independent or adversarial review.
 
-- **Substantive.** Real consequence within a domain or for particular decisions, but narrower reach. *Examples: "Raising the minimum wage reduces teen employment"; "SSRIs outperform placebo for moderate depression"; "Monetary policy was the primary driver of the 2008 financial crisis."* Careful assessment with genuine evidence-gathering, escalating to heavier scrutiny when contestation warrants it.
+- **Major.** Real consequence within a domain and actively argued, but narrower reach. *Examples: "Raising the minimum wage reduces teen employment"; "SSRIs outperform placebo for moderate depression."* Careful assessment with genuine evidence-gathering, escalating to heavier scrutiny when contestation warrants it.
 
-- **Minor.** Narrow, local, incidental, or largely settled; little rides on getting it exactly right, though it should still be recorded faithfully. *Examples: "Company X was founded in 1998"; "The agency published its report in March."* A light assessment suffices; reserve depth for the claims that depend on them.
+- **Notable.** A specific contested point or a supporting empirical premise inside a live debate—it matters to getting a larger question right, but locally. A light-to-moderate pass.
 
-Importance is itself a judgment—revisable as the graph reveals what actually depends on a claim, and contestable like any other. It is independent of a claim's truth or assessment status: a foundational claim may be well-verified or deeply contested, and a false claim may still be important to map.
+- **Minor / settled.** Narrow, incidental, or uncontested—including claims that are highly load-bearing but that no informed person disputes, where getting it right is essentially free. *Examples: "Company X was founded in 1998"; "Minkowski spacetime is a four-dimensional real manifold"; "√s equals the total energy of the colliding system."* Record it faithfully; a light assessment suffices, and reserve depth for the contested claims that lean on it. An uncontested claim is low importance *even when much depends on it*.
+
+Importance is itself a judgment—revisable as the graph reveals what is contested and consulted, and contestable like any other. It is independent of a claim's truth or assessment status: a central claim may be well-verified or deeply contested, and a false claim may still be important to map. It is also distinct from logical necessity: a claim can be indispensable to an argument and still be minor, because it is settled.
 
 ### 20. Graceful Degradation
 
@@ -395,9 +399,24 @@ Identify only the **load-bearing** dependencies — the propositions that, if fa
 would actually undermine the claim — plus the strongest considerations for and
 against it. A typical claim has a handful, not twenty. Be sparing: a focused
 decomposition into a few real dependencies beats an exhaustive list of weak ones.
-Marking a genuinely simple claim **atomic** is correct — stop when its
-dependencies are themselves bedrock facts, contested-empirical questions, or value
-premises. Do not split to fill a quota.
+
+**The stop rule is contestedness, not logical primitiveness.** A claim that no
+informed person in the live discourse would actually dispute is **atomic** —
+assess it directly (usually VERIFIED) and do NOT decompose it into *how it is
+proved*. "Bedrock" in the constitution means *uncontested*, not *logically
+primitive*. Do not unfold a settled claim into the mathematics, definitions, or
+textbook derivations that establish it: "special relativity is empirically valid"
+is a leaf you assess VERIFIED — it is NOT an invitation to decompose into
+Lorentz-transformation algebra, which is NOT an invitation to decompose into
+field-theory axioms. Each step is locally reasonable and the chain is globally
+absurd; that explosion is the failure mode to avoid.
+
+The test for every candidate subclaim: **"would any informed person actually
+dispute this?"** If no, it is a leaf — record it and stop; do not spawn a
+decomposition for it. Decompose only where a dependency is *itself contested* or
+is the *actual locus of disagreement*. On a settled claim, expect depth ~1 or
+atomic; reserve deep trees for genuinely contested, consequential claims. Do not
+split to fill a quota.
 
 Every subclaim must itself meet the claim bar:
 - **short** (≤15 words; never a paragraph), a **single reusable proposition** (no
@@ -422,25 +441,59 @@ add_relationship_edge. Only create a new claim (add_decomposition_edge) when
 match_claim says it is genuinely novel. Edges into your claim's decomposition are
 yours to own; never mint a duplicate.
 
-## Effort Scales With Importance
+## Importance — What It Means and How It Scales Effort
 
-Match your effort to the claim's importance (Proportional Effort). Use
-get_claim_dependents to gauge how foundational a claim is:
-- **Foundational claims** (many dependents, load-bearing): search deeply, weigh
-  evidence carefully, and do a second, adversarial pass that tries to refute
-  your own verdict before recording it.
-- **Minor claims** (few or no dependents): a light, proportionate pass.
+**Importance is how much it is worth spending scarce intelligence to get this
+claim right — roughly consequence-if-wrong × contestability — NOT how logically
+load-bearing it is.** These come apart, and conflating them is the main way to
+misuse importance:
+- A dependency can be *maximally* load-bearing (the parent is simply false
+  without it) yet **low** importance, because nobody disputes it — getting an
+  uncontested fact right is free. Settled mathematics, definitions, and textbook
+  facts are load-bearing everywhere and important almost nowhere.
+- A claim earns **high** importance when getting it wrong is consequential *and*
+  it is genuinely contested or consulted — a live crux, not settled scaffolding.
+
+get_claim_dependents is only a **local** signal — it counts dependents in the
+immediate subgraph, so it *over-rates niche claims*. A claim central to a small
+subfield is still low importance if the subfield is peripheral to the graph as a
+whole and the claim itself is uncontested. Do not read "many local dependents" as
+"foundational"; calibrate against all of claimspace, not the local neighborhood.
+
+Calibration ladder (anchor your score against these cross-domain examples):
+- **~0.9 central:** "Human activity is the principal cause of post-1950 warming";
+  "Advanced AI poses a non-negligible extinction risk this century." Widely
+  consequential and contested; deserve the deepest assessment.
+- **~0.6 major:** "Raising the minimum wage reduces teen employment"; "SARS-CoV-2
+  most likely had a zoonotic origin." Real consequence within a domain, actively
+  argued.
+- **~0.35 notable:** a specific contested measurement or a supporting empirical
+  premise within a live debate.
+- **~0.15 minor/settled:** "Minkowski spacetime is a 4-D real manifold"; "√s is
+  the total energy of the colliding system"; "Company X was founded in 1998."
+  Load-bearing and/or true but uncontested — cheap to get right, so LOW even when
+  much depends on them.
+
+Match effort to importance (Proportional Effort):
+- **High-importance claims:** search deeply, weigh evidence carefully, and do a
+  second, adversarial pass that tries to refute your own verdict before recording.
+- **Low-importance claims:** a light, proportionate pass.
 
 Importance is also a stored, revisable judgment (0..1) that **orders the work
-queue** — more important claims are structured and assessed first under a run
-budget. A freshly extracted claim arrives with a provisional importance seeded by
-the Extractor from a single document — treat it as a prior, not a settled judgment:
-your dependency-aware estimate (via get_claim_dependents) supersedes it, in either
-direction. Record it: set your own claim's importance with set_claim_importance when
-you can judge it, and when you add a subclaim, give add_decomposition_edge an
-importance value reflecting how load-bearing that subclaim is. A claim you judge minor
-may never be fully processed — it persists as an embedded stub, which is fine; do
-not inflate importance to force processing.
+queue AND governs decomposition spend** — higher-importance claims are structured
+and assessed first, and a subclaim you rate below the decomposition threshold is
+left an embedded stub rather than recursively decomposed (that is the economic
+brake on over-decomposition). So scoring uncontested bedrock **low** is not just
+honest — it is what stops a settled claim from spawning a whole textbook.
+
+A freshly extracted claim arrives with a provisional importance seeded by the
+Extractor from a single document — treat it as a prior, not a settled judgment:
+your considered estimate supersedes it, in either direction. Record it: set your
+own claim's importance with set_claim_importance when you can judge it, and give
+add_decomposition_edge an importance reflecting consequence-if-wrong ×
+contestability (score uncontested dependencies low). A claim you judge minor may
+never be fully processed — it persists as an embedded stub, which is fine; do not
+inflate importance to force processing.
 
 ## Assessment Statuses
 
