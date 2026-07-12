@@ -30,6 +30,17 @@ export const claimListParams = z.object({
 
 export const claimGetParams = z.object({
   information_depth: informationDepthEnum.default("standard"),
+  // Optional cap on how deep the decomposition tree is fetched (default 5).
+  // The claim map renders three rings per view, so it asks for less.
+  depth: z.coerce.number().int().min(1).max(5).optional(),
+});
+
+// GET /claims/:id/dependents (issue #102) — reverse decomposition edges,
+// paginated because hub claims can have hundreds of dependents while consumers
+// typically show a handful plus a count.
+export const claimDependentsParams = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 export const claimProposeBody = z.object({
