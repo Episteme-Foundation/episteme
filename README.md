@@ -138,6 +138,7 @@ Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
 | Browser Extension | Plasmo — in [extension/](extension/) |
 | Accounts & metering | One identity for users & contributors, hashed API keys, per-token LLM meter — see [docs/accounts.md](docs/accounts.md) |
 | MCP | Remote MCP server (streamable HTTP) exposing the claim graph to MCP clients — see [docs/mcp.md](docs/mcp.md) |
+| Graph epochs | Claims are stamped with the pipeline era that minted them; superseded cohorts are archived, not deleted — see [docs/graph-epochs.md](docs/graph-epochs.md) |
 
 ## Project Status
 
