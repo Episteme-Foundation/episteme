@@ -328,6 +328,8 @@
   user-select: text;
   font-family: var(--sans);
 }
+.previewClickable { cursor: pointer; }
+.previewClickable:hover { border-color: var(--faint); }
 .previewHead { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 7px; }
 .previewText {
   font-family: var(--serif);

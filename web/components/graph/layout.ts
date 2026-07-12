@@ -121,7 +121,15 @@ export interface LayoutOptions {
 // focus is a full card, tier 1 a readable chip, tier 2 a two-line chip, tier 3
 // a glyph-only minim.
 const W = { focus: 420, t1: 150, t2: 118, mini: 30, dep: 172, depstub: 132, more: 58, side: 156 };
-const H = { focus: 140, t1: 106, t2: 72, mini: 18, dep: 54, depstub: 42, more: 34, pill: 22, side: 84 };
+const H = { t1: 112, t2: 76, mini: 18, dep: 58, depstub: 46, more: 34, pill: 22, side: 88 };
+
+// The focus card's height tracks its text: the hero clamps at three lines, so
+// estimate the line count from length (conservative chars-per-line so a
+// misjudged wrap gains whitespace, never an overflowing status band).
+function focusHeight(text: string): number {
+  const lines = Math.min(3, Math.max(1, Math.ceil(text.length / 40)));
+  return 88 + lines * 26;
+}
 const GAP = 10;
 const GRPGAP = 26;
 
@@ -141,6 +149,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
   const focusId = detail.claim.id;
   seen.add(focusId);
   const children = detail.tree?.children ?? [];
+  const focusH = focusHeight(detail.claim.text);
 
   const treeBits = (n: TreeNode): ClaimBits => ({
     id: n.id,
@@ -273,8 +282,8 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
   for (const [k, m] of groupMeta) if (m.stance === "against") order.push(k);
 
   const hasPills = order.some((k) => k !== "_");
-  const yPill = yFocus + H.focus + 86;
-  const yT1 = hasPills ? yPill + H.pill + 40 : yFocus + H.focus + 92;
+  const yPill = yFocus + focusH + 86;
+  const yT1 = hasPills ? yPill + H.pill + 40 : yFocus + focusH + 92;
   const yT2 = yT1 + H.t1 + 50;
   const yT3 = yT2 + H.t2 + 34;
 
@@ -311,14 +320,14 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
   for (const g of groups) {
     const gc = gx + g.w / 2;
     let srcX = 0;
-    let srcY = yFocus + H.focus;
+    let srcY = yFocus + focusH;
     if (g.meta) {
       nodes.push({
         key: `pill:${g.key}`, kind: "pill",
         x: gc, y: yPill, w: g.pillW, h: H.pill,
         pill: { argId: g.key, name: g.meta.name, stance: g.meta.stance },
       });
-      edges.push({ x1: 0, y1: yFocus + H.focus, x2: gc, y2: yPill, rel: "spine", ids: [`pill:${g.key}`] });
+      edges.push({ x1: 0, y1: yFocus + focusH, x2: gc, y2: yPill, rel: "spine", ids: [`pill:${g.key}`] });
       srcX = gc;
       srcY = yPill + H.pill;
     }
@@ -386,23 +395,40 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
     const sy = yFocus + 4 + i * (H.side + 12);
     nodes.push({ key: p.id, kind: "side", x: sx, y: sy, w: W.side, h: H.side, claim: treeBits(p), node: p });
     edges.push({
-      x1: -W.focus / 2, y1: yFocus + H.focus / 2,
+      x1: -W.focus / 2, y1: yFocus + focusH / 2,
       x2: sx + W.side / 2, y2: sy + H.side / 2,
       rel: "presupposes", ids: [p.id], horiz: true,
     });
-    labels.push({ x: (-W.focus / 2 + sx + W.side / 2) / 2, y: yFocus + H.focus / 2 - 12 + i * (H.side + 12), rel: "presupposes", text: "presupposes" });
+    labels.push({ x: (-W.focus / 2 + sx + W.side / 2) / 2, y: yFocus + focusH / 2 - 12 + i * (H.side + 12), rel: "presupposes", text: "presupposes" });
   });
 
   // ---- the focus card -------------------------------------------------------
-  nodes.push({ key: focusId, kind: "focus", x: 0, y: yFocus, w: W.focus, h: H.focus });
-  const focusCentre = { x: 0, y: yFocus + H.focus / 2 };
+  // Carries its own ClaimBits so hovering the centred claim fills the preview
+  // panel just like any other node (no edge note — it is the vantage point).
+  nodes.push({
+    key: focusId, kind: "focus", x: 0, y: yFocus, w: W.focus, h: focusH,
+    claim: {
+      id: focusId,
+      text: detail.claim.text,
+      claimType: detail.claim.claim_type,
+      status: detail.assessment?.status ?? null,
+      confidence: detail.assessment?.confidence ?? null,
+      relation: null,
+      reasoning: null,
+      argumentId: null, argumentName: null, argumentStance: null,
+      childCount: children.length,
+      bedrock: bedrockOf(detail.claim.claim_type, detail.assessment?.status ?? null, children.length === 0),
+      up: false,
+    },
+  });
+  const focusCentre = { x: 0, y: yFocus + focusH / 2 };
 
   // ---- empty state: the plinth ---------------------------------------------
-  let bottom = yFocus + H.focus;
+  let bottom = yFocus + focusH;
   if (!children.length) {
     misc.push({
       kind: "plinth",
-      x: 0, y: yFocus + H.focus + 36, w: W.focus * 0.82,
+      x: 0, y: yFocus + focusH + 36, w: W.focus * 0.82,
       bedrock: bedrockOf(
         detail.claim.claim_type,
         detail.assessment?.status ?? null,
@@ -410,7 +436,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
       ),
       note: opts.plinthNote,
     });
-    bottom = yFocus + H.focus + 36 + 90;
+    bottom = yFocus + focusH + 36 + 90;
   } else {
     const anyT3 = nodes.some((n) => n.kind === "mini");
     const anyT2 = nodes.some((n) => n.kind === "t2" || (n.kind === "more" && n.y >= yT2));

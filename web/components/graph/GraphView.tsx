@@ -333,8 +333,13 @@ export function GraphView({
   );
 
   // ---- fit: the world scales to the stage; scroll exists only at floor scale ---
+  // The fit is symmetric around x=0 (the focus spine), not around the bounding
+  // box's centre: the left gutter labels would otherwise push the focus card
+  // visually right of centre. Costs a little scale when one side is heavy;
+  // buys the reading that the centred claim IS the centre.
   const PAD = 48;
-  const contentW = layout.bounds.maxX - layout.bounds.minX + PAD * 2;
+  const halfW = Math.max(-layout.bounds.minX, layout.bounds.maxX) + PAD;
+  const contentW = halfW * 2;
   const contentH = layout.bounds.maxY - layout.bounds.minY + PAD * 2;
   const fit = Math.min(1, box.w / contentW, box.h / contentH);
   const SCALE_FLOOR = compact ? 0.7 : 0.55; // below this, text stops being text
@@ -342,7 +347,7 @@ export function GraphView({
   const scrollable = fit < SCALE_FLOOR - 1e-6;
   const spacerW = Math.max(contentW * scale, box.w);
   const spacerH = Math.max(contentH * scale, box.h);
-  const tx = (spacerW - contentW * scale) / 2 + (PAD - layout.bounds.minX) * scale;
+  const tx = spacerW / 2; // world x=0 lands dead centre
   const ty = (spacerH - contentH * scale) / 2 + (PAD - layout.bounds.minY) * scale;
 
   // When the stage does scroll, land each recentre with the focus card in view.
@@ -712,9 +717,24 @@ export function GraphView({
           </div>
         </div>
 
-        {/* the margin-note preview: selectable, linked, persistent */}
+        {/* the margin-note preview: selectable, linked, persistent — and itself
+            a recentre target: clicking the note walks to the claim it describes
+            (links, buttons, and in-progress text selections excepted) */}
         {preview && (
-          <aside className={styles.preview} aria-live="polite">
+          <aside
+            className={`${styles.preview}${
+              preview.kind === "claim" && preview.claim && !preview.isFocus ? ` ${styles.previewClickable}` : ""
+            }`}
+            aria-live="polite"
+            onClick={(ev) => {
+              if (preview.kind !== "claim" || !preview.claim || preview.isFocus) return;
+              if ((ev.target as HTMLElement).closest("a, button")) return;
+              const sel = window.getSelection();
+              if (sel && !sel.isCollapsed) return;
+              setPreview({ ...preview, isFocus: true });
+              recenter(preview.claim.id);
+            }}
+          >
             {preview.kind === "pill" && preview.pill ? (
               <>
                 <div className={styles.previewHead}>
