@@ -167,4 +167,33 @@ describe("tree-service", () => {
       expect(count).toBe(0);
     });
   });
+
+  // Archived epoch cohorts (and deprecated merge losers) must not surface as
+  // tree children or dependents. Only the tree ROOT is fetched regardless of
+  // state, so an archived claim stays readable by direct id.
+  describe("active-only filtering", () => {
+    it("tree CTE only descends into active children", async () => {
+      mockRawQuery.mockResolvedValueOnce([]);
+      await getClaimTree("claim-1");
+      const sql = mockRawQuery.mock.calls[0]![0] as string;
+      expect(sql).toContain("child.state = 'active'");
+    });
+
+    it("dependents page and its fallback count both filter to active parents", async () => {
+      mockRawQuery.mockResolvedValueOnce([]); // page query → empty
+      mockRawQuery.mockResolvedValueOnce([{ count: "0" }]); // fallback count
+      await listClaimDependents("child-1");
+      const pageSql = mockRawQuery.mock.calls[0]![0] as string;
+      const countSql = mockRawQuery.mock.calls[1]![0] as string;
+      expect(pageSql).toContain("c.state = 'active'");
+      expect(countSql).toContain("c.state = 'active'");
+    });
+
+    it("subclaim count only counts active children", async () => {
+      mockRawQuery.mockResolvedValueOnce([{ count: "0" }]);
+      await getSubclaimCount("claim-1");
+      const sql = mockRawQuery.mock.calls[0]![0] as string;
+      expect(sql).toContain("c.state = 'active'");
+    });
+  });
 });

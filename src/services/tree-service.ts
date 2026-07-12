@@ -42,6 +42,7 @@ export async function getClaimTree(
       JOIN claim_relationships cr ON cr.parent_claim_id = tree.id
       JOIN claims child ON child.id = cr.child_claim_id
       WHERE tree.depth < $2
+        AND child.state = 'active'
     )
     SELECT t.*,
       a.status AS assessment_status, a.confidence AS assessment_confidence,
@@ -85,7 +86,7 @@ export async function getClaimDependents(claimId: string): Promise<DependentClai
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.parent_claim_id
      LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
-     WHERE cr.child_claim_id = $1
+     WHERE cr.child_claim_id = $1 AND c.state = 'active'
      ORDER BY c.importance DESC, a.confidence DESC NULLS LAST, c.text`,
     [claimId]
   );
@@ -113,14 +114,17 @@ export async function listClaimDependents(
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.parent_claim_id
      LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
-     WHERE cr.child_claim_id = $1
+     WHERE cr.child_claim_id = $1 AND c.state = 'active'
      ORDER BY c.importance DESC, a.confidence DESC NULLS LAST, c.text
      LIMIT $2 OFFSET $3`,
     [claimId, limit, offset]
   );
   if (rows.length === 0) {
     const [count] = await rawQuery<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM claim_relationships WHERE child_claim_id = $1`,
+      `SELECT COUNT(*)::text AS count
+         FROM claim_relationships cr
+         JOIN claims c ON c.id = cr.parent_claim_id
+        WHERE cr.child_claim_id = $1 AND c.state = 'active'`,
       [claimId]
     );
     return { dependents: [], total: parseInt(count?.count ?? "0", 10) };
@@ -136,7 +140,10 @@ export async function listClaimDependents(
  */
 export async function getSubclaimCount(claimId: string): Promise<number> {
   const rows = await rawQuery<{ count: string }>(
-    `SELECT COUNT(*)::text AS count FROM claim_relationships WHERE parent_claim_id = $1`,
+    `SELECT COUNT(*)::text AS count
+       FROM claim_relationships cr
+       JOIN claims c ON c.id = cr.child_claim_id
+      WHERE cr.parent_claim_id = $1 AND c.state = 'active'`,
     [claimId]
   );
   return parseInt(rows[0]?.count ?? "0", 10);

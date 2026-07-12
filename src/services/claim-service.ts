@@ -105,8 +105,11 @@ export async function listClaims(opts: {
 }) {
   const db = getDb();
 
+  // Default to active-only: archived epoch cohorts and deprecated merge losers
+  // stay out of the activity stream. Passing an explicit state (e.g. 'archived')
+  // still works — that is how the archive remains browsable on request.
   const filters = [isNull(claims.mergedInto)];
-  if (opts.state) filters.push(eq(claims.state, opts.state));
+  filters.push(eq(claims.state, opts.state ?? "active"));
   if (opts.assessed === "assessed") filters.push(isNotNull(assessments.status));
   else if (opts.assessed === "unassessed") filters.push(isNull(assessments.status));
   if (opts.minImportance && opts.minImportance > 0) {

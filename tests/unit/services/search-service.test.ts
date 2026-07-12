@@ -161,6 +161,38 @@ describe("search-service", () => {
     });
   });
 
+  // The archive contract: every search path serves ONLY state='active' claims,
+  // as an allowlist. This keeps archived epoch cohorts out of the matcher's
+  // candidate pool — a blocklist (state != 'deprecated') would let new
+  // ingestion link into retired structure and resurrect it.
+  describe("active-only filtering", () => {
+    it("hybrid (embedding) search filters to state = 'active'", async () => {
+      mockGenerateEmbedding.mockResolvedValueOnce(new Array(1536).fill(0.1));
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q");
+      const sql = mockRawQuery.mock.calls[0]![0] as string;
+      expect(sql).toContain("c.state = 'active'");
+      expect(sql).not.toContain("!= 'deprecated'");
+    });
+
+    it("keyword-fallback search filters to state = 'active'", async () => {
+      mockGenerateEmbedding.mockRejectedValueOnce(new Error("embeddings down"));
+      mockRawQuery.mockResolvedValueOnce([]);
+      await hybridSearch("q");
+      const sql = mockRawQuery.mock.calls[0]![0] as string;
+      expect(sql).toContain("c.state = 'active'");
+      expect(sql).not.toContain("!= 'deprecated'");
+    });
+
+    it("findSimilarClaims (matcher candidates) filters to state = 'active'", async () => {
+      mockRawQuery.mockResolvedValueOnce([]);
+      await findSimilarClaims(new Array(1536).fill(0.1));
+      const sql = mockRawQuery.mock.calls[0]![0] as string;
+      expect(sql).toContain("c.state = 'active'");
+      expect(sql).not.toContain("!= 'deprecated'");
+    });
+  });
+
   describe("findSimilarClaims", () => {
     it("finds similar claims by embedding", async () => {
       const embedding = new Array(1536).fill(0.1);
