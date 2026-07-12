@@ -20,6 +20,7 @@ import {
   contributors,
 } from "../../db/schema.js";
 import { trustLevelFor } from "../../services/reputation-service.js";
+import { getClaimDependents as fetchClaimDependents } from "../../services/tree-service.js";
 
 export function getGovernanceToolDefinitions(): Tool[] {
   return [
@@ -392,32 +393,19 @@ async function getContributorProfile(contributorId: string) {
   };
 }
 
+// Same reverse-edge query as the API's dependents endpoint (tree-service), kept
+// behind the agents' historical field names so tool payloads don't change.
 async function getClaimDependents(claimId: string) {
-  const rows = await rawQuery<{
-    parent_id: string;
-    parent_text: string;
-    parent_type: string;
-    relation_type: string;
-    parent_status: string | null;
-  }>(
-    `SELECT cr.parent_claim_id AS parent_id, c.text AS parent_text,
-            c.claim_type AS parent_type, cr.relation_type,
-            a.status AS parent_status
-     FROM claim_relationships cr
-     JOIN claims c ON c.id = cr.parent_claim_id
-     LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
-     WHERE cr.child_claim_id = $1`,
-    [claimId]
-  );
+  const rows = await fetchClaimDependents(claimId);
 
   return {
     child_claim_id: claimId,
     dependents: rows.map((r) => ({
-      id: r.parent_id,
-      text: r.parent_text,
-      type: r.parent_type,
+      id: r.id,
+      text: r.text,
+      type: r.claim_type,
       relation: r.relation_type,
-      current_status: r.parent_status,
+      current_status: r.assessment_status,
     })),
     count: rows.length,
   };

@@ -63,6 +63,7 @@ export interface DependentClaim {
   text: string;
   claim_type: string;
   relation_type: string;
+  importance: number;
   assessment_status: string | null;
   assessment_confidence: number | null;
 }
@@ -72,19 +73,62 @@ export interface DependentClaim {
  * reverse of the decomposition tree. Each row is a parent claim plus the
  * relationship edge by which it leans on this claim, and the parent's current
  * assessment. Mirrors the agents' `get_claim_dependents` graph query.
+ *
+ * Ordered by importance so consumers that truncate (the claim map shows a few
+ * chips plus a count) surface the most load-bearing dependents first.
  */
 export async function getClaimDependents(claimId: string): Promise<DependentClaim[]> {
   return rawQuery<DependentClaim>(
     `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
-            cr.relation_type,
+            cr.relation_type, c.importance,
             a.status AS assessment_status, a.confidence AS assessment_confidence
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.parent_claim_id
      LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
      WHERE cr.child_claim_id = $1
-     ORDER BY a.confidence DESC NULLS LAST, c.text`,
+     ORDER BY c.importance DESC, a.confidence DESC NULLS LAST, c.text`,
     [claimId]
   );
+}
+
+/**
+ * Paginated variant for GET /claims/:id/dependents (issue #102): the claim map
+ * recentres often and only shows a handful of dependent chips plus a count, so
+ * a hub claim with hundreds of dependents must not ship them all — nor drag
+ * the whole deep payload (tree, arguments, instances) along for the ride.
+ * `total` comes from a window function so page + count stay one query; the
+ * offset-past-the-end case falls back to a bare count.
+ */
+export async function listClaimDependents(
+  claimId: string,
+  opts: { limit?: number; offset?: number } = {}
+): Promise<{ dependents: DependentClaim[]; total: number }> {
+  const limit = opts.limit ?? 50;
+  const offset = opts.offset ?? 0;
+  const rows = await rawQuery<DependentClaim & { total: string }>(
+    `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
+            cr.relation_type, c.importance,
+            a.status AS assessment_status, a.confidence AS assessment_confidence,
+            COUNT(*) OVER ()::text AS total
+     FROM claim_relationships cr
+     JOIN claims c ON c.id = cr.parent_claim_id
+     LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
+     WHERE cr.child_claim_id = $1
+     ORDER BY c.importance DESC, a.confidence DESC NULLS LAST, c.text
+     LIMIT $2 OFFSET $3`,
+    [claimId, limit, offset]
+  );
+  if (rows.length === 0) {
+    const [count] = await rawQuery<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM claim_relationships WHERE child_claim_id = $1`,
+      [claimId]
+    );
+    return { dependents: [], total: parseInt(count?.count ?? "0", 10) };
+  }
+  return {
+    dependents: rows.map(({ total: _total, ...dep }) => dep),
+    total: parseInt(rows[0]!.total, 10),
+  };
 }
 
 /**
