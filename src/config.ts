@@ -153,6 +153,11 @@ const configSchema = z.object({
   // The extension agent judges on-page phrasings against graph state and
   // powers the extension chat — user-facing latency-sensitive work (#72).
   extensionModel: modelId(MODELS.sonnet),
+  // The corpus-run scorer's LLM judge (#99). Grades agent OUTPUT quality against
+  // the constitution, so it should be a capable model distinct from the agent
+  // under test — never let an agent grade its own trace with its own framing.
+  // Default Sonnet; raise to Opus/Fable for a higher-confidence judge.
+  judgeModel: modelId(MODELS.sonnet),
   enableContributions: z
     .string()
     .transform((s) => s === "true")
@@ -220,6 +225,7 @@ export function loadConfig(): Config {
     auditModel: process.env.AUDIT_MODEL,
     arbitrationModel: process.env.ARBITRATION_MODEL,
     extensionModel: process.env.EXTENSION_MODEL,
+    judgeModel: process.env.JUDGE_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
     escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
     auditSampleRate: process.env.AUDIT_SAMPLE_RATE,
