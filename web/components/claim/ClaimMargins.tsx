@@ -15,9 +15,15 @@ export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: 
   return (
     <div className={styles.bleed}>
       <div className={styles.grid}>
-        {/* LEFT — decomposition compass */}
+        {/* LEFT — decomposition compass, with the map view as its structural
+            counterpart: the same decomposition seen as a navigable figure */}
         <div className={styles.leftRail}>
           {detail.tree && <DecompositionCompass tree={detail.tree} />}
+          <p style={{ marginTop: "0.6rem" }}>
+            <Link className="sc" href={`/claims/${detail.claim.id}/map`}>
+              ▸ view as map
+            </Link>
+          </p>
         </div>
 
         {/* CENTRE — the reading column */}
