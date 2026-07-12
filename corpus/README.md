@@ -74,10 +74,21 @@ npm run corpus:run -- lethalities                # full cluster
 # Other entry points
 npm run corpus:reset                             # wipe the corpus DB only
 npm run corpus:report -- lethalities             # re-render a report from current DB state
+
+# Scored, diffable scorecard (#99) — the automated counterpart to report.md
+npm run corpus:score -- lethalities --no-judge   # structural metrics only (free)
+npm run corpus:score -- lethalities --sample=15  # + a bounded LLM-judge sample
+npm run corpus:compare -- runs/<A> runs/<B>      # diff two scorecards
 ```
 
 `corpus:run` flags: `--limit=N`, `--posts=id1,id2`, `--no-reset` (ingest on top
-of the existing graph instead of wiping first).
+of the existing graph instead of wiping first), `--score[=N]` (emit a scorecard
+into the run dir; `--score=0` is structural-only).
+
+`corpus:score` flags: `--sample=N` (claims to LLM-judge; default 15, `0` =
+structural-only), `--no-judge`, `--out=DIR`. The judge runs on `JUDGE_MODEL`
+(default Sonnet — deliberately a different model/context than the agents under
+test). See [`SCORING.md`](./SCORING.md).
 
 ## Reading the results
 

@@ -43,6 +43,7 @@ import { drainLocalQueues } from "../../src/workers/local-runner.js";
 import type { DrainStats, RunnerEvent } from "../../src/workers/local-runner.js";
 import { resetCorpusDb } from "./reset.js";
 import { generateReport } from "./report.js";
+import { scoreRun } from "./score.js";
 
 function formatActivity(stats: DrainStats): string {
   const acts = Object.entries(stats.processed).map(([q, n]) => `${q} ${n}`);
@@ -207,6 +208,22 @@ async function main(): Promise<void> {
   console.log(`\nReport: ${reportPath}`);
   console.log(`Trace:  ${join(runDir, "trace.jsonl")} (${trace.length} agent messages)`);
   console.log("Read the report alongside corpus/RUBRIC.md.");
+
+  // Optional scored scorecard (#99). --score emits structural metrics + a
+  // bounded LLM-judge sample into the same run dir; --score=N sets the sample
+  // size; --score=0 is structural-only (free). Off by default so a plain run
+  // stays cheap.
+  const scoreFlag = argFlag("score");
+  if (scoreFlag !== undefined) {
+    const sample = scoreFlag === "" ? undefined : Number(scoreFlag);
+    console.log("\nScoring the run…");
+    const { dir } = await scoreRun(cluster, {
+      sample: Number.isFinite(sample) ? sample : undefined,
+      judge: sample !== 0,
+      outDir: runDir,
+    });
+    console.log(`Scorecard: ${join(dir, "scorecard.md")}`);
+  }
 
   printUsage("this run");
 

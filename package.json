@@ -18,7 +18,9 @@
     "corpus:fetch": "tsx scripts/corpus/fetch.ts",
     "corpus:reset": "tsx scripts/corpus/reset.ts",
     "corpus:run": "tsx scripts/corpus/run.ts",
-    "corpus:report": "tsx scripts/corpus/report.ts"
+    "corpus:report": "tsx scripts/corpus/report.ts",
+    "corpus:score": "tsx scripts/corpus/score.ts",
+    "corpus:compare": "tsx scripts/corpus/compare.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
