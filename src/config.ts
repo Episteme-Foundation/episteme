@@ -121,6 +121,16 @@ const configSchema = z.object({
   // still works and the claim count can converge; importance-prioritized
   // processing is a follow-up.
   stewardMaxRuns: z.coerce.number().default(0),
+  // Economic brake on decomposition depth (#98/#68). When the Steward mints a
+  // NEW subclaim, we auto-enqueue a full Steward pass for it — which itself
+  // decomposes with web_search. For a subclaim the Steward judged BELOW this
+  // importance, we skip that enqueue and leave it an embedded stub (still
+  // embedded/matchable, just not recursively decomposed). Uncontested bedrock
+  // (settled math/definitions) now scores low importance, so this stops the
+  // "one physics claim spawns a whole textbook" explosion at its economic root
+  // without a blunt depth cap. 0.25 = the ontology's "peripheral" ceiling, so
+  // only genuinely peripheral subclaims are gated; set 0 to disable.
+  stewardEnqueueMinImportance: z.coerce.number().default(0.25),
   // Cap the total number of Curator invocations per process (0 = unlimited),
   // mirroring stewardMaxRuns for predictable test/deploy spend.
   curatorMaxRuns: z.coerce.number().default(0),
@@ -216,6 +226,7 @@ export function loadConfig(): Config {
     extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
     stewardMaxIterations: process.env.STEWARD_MAX_ITERATIONS,
     stewardMaxRuns: process.env.STEWARD_MAX_RUNS,
+    stewardEnqueueMinImportance: process.env.STEWARD_ENQUEUE_MIN_IMPORTANCE,
     curatorMaxRuns: process.env.CURATOR_MAX_RUNS,
     curatorSweepRate: process.env.CURATOR_SWEEP_RATE,
     matcherModel: process.env.MATCHER_MODEL,

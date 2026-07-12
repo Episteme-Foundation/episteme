@@ -24,7 +24,7 @@ const EXTRACTED_CLAIM_SCHEMA = {
     proposed_canonical_form: { type: "string", description: "Precise, unambiguous version with explicit parameters" },
     claim_type: { type: "string", description: "One of: empirical_verifiable, empirical_derived, definitional, evaluative, causal, normative" },
     confidence: { type: "number", description: "Confidence this is a valid claim (0.0-1.0)" },
-    importance: { type: "number", description: "Provisional importance: how load-bearing the claim is (0.0-1.0), from salience in the document and reach in the wider discourse. A prior the Steward will revise; distinct from confidence." },
+    importance: { type: "number", description: "Provisional importance (0.0-1.0): how much it is worth getting this claim right — roughly consequence-if-wrong × contestability — from document salience, contestedness, and discourse reach. Settled/uncontested facts score LOW even if load-bearing. A prior the Steward will revise; distinct from confidence." },
     source_location: { type: ["string", "null"], description: "Where in the document this was found" },
   },
   required: ["original_text", "proposed_canonical_form", "claim_type", "confidence", "importance"],

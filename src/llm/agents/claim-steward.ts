@@ -94,9 +94,12 @@ You OWN this claim — its structure (decomposition) and its assessment. Proceed
    assessments, its source instances (note each instance's affirm/deny stance),
    and its current assessment if any.
 ${structureStep}
-3. Gauge the claim's importance — use get_claim_dependents to see how many claims
-   rely on it. Scale your effort accordingly: foundational claims warrant deeper
-   search and a second, adversarial pass; minor claims warrant a light touch.
+3. Gauge the claim's importance — how much it is worth getting right
+   (consequence-if-wrong × contestability), NOT mere dependency count.
+   get_claim_dependents is only a local signal; an uncontested or niche claim is
+   low importance even with many local dependents. Scale effort accordingly:
+   consequential, contested claims warrant deeper search and a second, adversarial
+   pass; minor or settled claims warrant a light touch.
 4. Reach a holistic assessment using your judgment (no mechanical aggregation).
    Use web_search for external evidence where it would change the verdict.
    Credible instances that BOTH affirm and deny the claim are a strong signal

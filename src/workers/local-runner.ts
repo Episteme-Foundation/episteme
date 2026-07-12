@@ -152,6 +152,12 @@ export async function drainLocalQueues(opts: DrainOptions = {}): Promise<DrainSt
       checkBudget();
       return { processed, errors, capped: false };
     }
+    if (r.status === "transient") {
+      // A transient API/infra failure (billing/credit/429/5xx/network). The
+      // claim was requeued untouched (#97). Stop this pass cleanly — the API is
+      // struggling — leaving the queue for the next interval to retry.
+      return { processed, errors, capped: (await pendingStewardCount()) > 0 };
+    }
     seq++;
     stewardProcessed++;
     if (r.ok) {

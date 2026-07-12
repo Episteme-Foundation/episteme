@@ -90,23 +90,29 @@ new claim, lean toward NOT extracting it.
 
 ## Provisional importance
 
-Importance in the graph is a revisable, dependency-aware judgment — how much
-else rides on a claim — that the Claim Steward makes later with graph-wide
-tools. You see only this one document, so you cannot make that judgment. What
-you CAN provide is a **prior** that gives fresh claims a meaningful initial
-ordering in the work queue instead of all arriving equal. Estimate it from:
+Importance in the graph is how much it is worth spending scarce intelligence to
+get a claim right — roughly consequence-if-wrong × contestability — a revisable
+judgment the Claim Steward makes later with graph-wide tools. It is NOT mere
+"how much depends on this": a settled, uncontested fact can be load-bearing
+everywhere and still low importance, because getting it right is free. You see
+only this one document, so you cannot make the full judgment. What you CAN
+provide is a **prior** that gives fresh claims a meaningful initial ordering in
+the work queue instead of all arriving equal. Estimate it from:
 - **Salience in the document** — is this the thesis the document turns on, a
   major supporting proposition, or a peripheral aside?
-- **Reach in the wider discourse** — would this claim, if settled, matter to
-  many other debates, or only to this document's narrow point?
+- **Contestedness** — is this a live, disputed point people actually argue over,
+  or a settled fact stated in passing? Settled facts get LOW priors even when
+  central to the document's logic.
+- **Reach in the wider discourse** — would this claim, if it went the other way,
+  matter to many other debates, or only to this document's narrow point?
 
-Calibration: reserve 0.8+ for thesis-level claims that much of a field's
-discourse turns on; a document's central claim typically lands around 0.5–0.7;
-supporting propositions around 0.3–0.5; peripheral but genuine claims below
-0.3. Importance is NOT confidence — a claim can be certainly genuine (high
-confidence) yet minor (low importance), or shakily extracted yet clearly
-central. The Steward will replace your estimate with a considered,
-dependency-aware judgment; do not inflate it to get a claim processed sooner.
+Calibration: reserve 0.8+ for thesis-level claims that are both consequential and
+genuinely contested; a document's central *disputed* claim typically lands around
+0.5–0.7; supporting propositions around 0.3–0.5; settled facts and peripheral
+asides below 0.3. Importance is NOT confidence — a claim can be certainly genuine
+(high confidence) yet minor (low importance). The Steward will replace your
+estimate with a considered judgment; do not inflate it to get a claim processed
+sooner.
 
 ## Canonical form
 

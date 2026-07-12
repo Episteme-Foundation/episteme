@@ -8,8 +8,8 @@
     "invokedWhen": "A URL or document is submitted for ingestion.",
     "model": "Claude Sonnet 4.6",
     "hasConstitution": true,
-    "roleChars": 7686,
-    "fullChars": 38952
+    "roleChars": 8090,
+    "fullChars": 41685
   },
   {
     "key": "matcher",
@@ -21,7 +21,7 @@
     "model": "Claude Haiku 4.5",
     "hasConstitution": true,
     "roleChars": 6354,
-    "fullChars": 37620
+    "fullChars": 39949
   },
   {
     "key": "contribution-reviewer",
@@ -33,7 +33,7 @@
     "model": "Claude Sonnet 4.6",
     "hasConstitution": true,
     "roleChars": 9902,
-    "fullChars": 41168
+    "fullChars": 43497
   },
   {
     "key": "claim-steward",
@@ -44,8 +44,8 @@
     "invokedWhen": "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     "model": "Claude Opus 4.8",
     "hasConstitution": true,
-    "roleChars": 12698,
-    "fullChars": 43964
+    "roleChars": 15826,
+    "fullChars": 49421
   },
   {
     "key": "curator",
@@ -57,7 +57,7 @@
     "model": "Claude Opus 4.8",
     "hasConstitution": true,
     "roleChars": 3347,
-    "fullChars": 34613
+    "fullChars": 36942
   },
   {
     "key": "dispute-arbitrator",
@@ -69,7 +69,7 @@
     "model": "Claude Opus 4.8",
     "hasConstitution": true,
     "roleChars": 8153,
-    "fullChars": 39419
+    "fullChars": 41748
   },
   {
     "key": "audit-agent",
@@ -81,6 +81,6 @@
     "model": "Claude Opus 4.8",
     "hasConstitution": true,
     "roleChars": 7395,
-    "fullChars": 38661
+    "fullChars": 40990
   }
 ]

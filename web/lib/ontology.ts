@@ -119,11 +119,15 @@ export function decompositionNote(opts: {
   return "This claim has not been assessed yet — the Steward works through claims in order of importance, so lower-importance claims wait their turn. It may well decompose into subclaims once it is processed.";
 }
 
-// Claim importance — how load-bearing a claim is (0..1), a revisable judgment set
-// by the Steward that orders its work queue. We bucket the continuous score into
-// five named bands for display and keep the exact value for the tooltip. Note the
-// default for an unjudged claim is 0.5, so a "medium" reading is not necessarily a
-// deliberate judgment of medium importance.
+// Claim importance — how much it is worth spending scarce intelligence to get the
+// claim right (roughly consequence-if-wrong × contestability), 0..1, a revisable
+// judgment set by the Steward that orders its work queue. NOT mere graph
+// centrality: an uncontested claim is low importance even when much depends on it,
+// because getting a settled fact right is essentially free (#68). We bucket the
+// continuous score into five named bands for display and keep the exact value for
+// the tooltip. The default for an unjudged claim is 0.5, so a "notable" reading is
+// not necessarily a deliberate judgment.
+// The union keys are historical; the user-facing wording lives in `label`/`gloss`.
 export type ImportanceLevel = "foundational" | "high" | "medium" | "low" | "peripheral";
 
 export const IMPORTANCE_ORDER: ImportanceLevel[] = [
@@ -139,11 +143,11 @@ export function importanceLevel(v: number): ImportanceLevel {
 }
 
 export const IMPORTANCE: Record<ImportanceLevel, { label: string; pips: number; gloss: string }> = {
-  foundational: { label: "foundational", pips: 5, gloss: "many other claims lean on this one" },
-  high:         { label: "high",         pips: 4, gloss: "a load-bearing claim in the graph" },
-  medium:       { label: "medium",       pips: 3, gloss: "moderately load-bearing (also the default before judging)" },
-  low:          { label: "low",          pips: 2, gloss: "little else depends on this claim" },
-  peripheral:   { label: "peripheral",   pips: 1, gloss: "a leaf detail almost nothing depends on" },
+  foundational: { label: "central",  pips: 5, gloss: "consequential and genuinely contested — a live crux" },
+  high:         { label: "major",    pips: 4, gloss: "real consequence within a domain, actively argued" },
+  medium:       { label: "notable",  pips: 3, gloss: "a contested point in a live debate (also the default before judging)" },
+  low:          { label: "minor",    pips: 2, gloss: "narrow or largely settled — cheap to get right" },
+  peripheral:   { label: "settled",  pips: 1, gloss: "uncontested — low even if much depends on it" },
 };
 
 // Minimum-importance bands for the browse/search filter. Each `min` is the lower
@@ -152,11 +156,11 @@ export const IMPORTANCE: Record<ImportanceLevel, { label: string; pips: number; 
 export type ImportanceFloor = "any" | "low" | "medium" | "high" | "foundational";
 
 export const IMPORTANCE_FLOORS: { value: ImportanceFloor; label: string; short: string; min: number }[] = [
-  { value: "any",          label: "Any importance", short: "Any",          min: 0 },
-  { value: "low",          label: "Low & up",       short: "Low",          min: 0.25 },
-  { value: "medium",       label: "Medium & up",    short: "Medium",       min: 0.45 },
-  { value: "high",         label: "High & up",      short: "High",         min: 0.65 },
-  { value: "foundational", label: "Foundational",   short: "Foundational", min: 0.85 },
+  { value: "any",          label: "Any importance", short: "Any",     min: 0 },
+  { value: "low",          label: "Minor & up",     short: "Minor",   min: 0.25 },
+  { value: "medium",       label: "Notable & up",   short: "Notable", min: 0.45 },
+  { value: "high",         label: "Major & up",     short: "Major",   min: 0.65 },
+  { value: "foundational", label: "Central",        short: "Central", min: 0.85 },
 ];
 
 // URL band value → numeric floor passed to the API (0 = no constraint).

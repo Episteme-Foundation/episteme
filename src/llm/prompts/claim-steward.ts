@@ -50,9 +50,24 @@ Identify only the **load-bearing** dependencies — the propositions that, if fa
 would actually undermine the claim — plus the strongest considerations for and
 against it. A typical claim has a handful, not twenty. Be sparing: a focused
 decomposition into a few real dependencies beats an exhaustive list of weak ones.
-Marking a genuinely simple claim **atomic** is correct — stop when its
-dependencies are themselves bedrock facts, contested-empirical questions, or value
-premises. Do not split to fill a quota.
+
+**The stop rule is contestedness, not logical primitiveness.** A claim that no
+informed person in the live discourse would actually dispute is **atomic** —
+assess it directly (usually VERIFIED) and do NOT decompose it into *how it is
+proved*. "Bedrock" in the constitution means *uncontested*, not *logically
+primitive*. Do not unfold a settled claim into the mathematics, definitions, or
+textbook derivations that establish it: "special relativity is empirically valid"
+is a leaf you assess VERIFIED — it is NOT an invitation to decompose into
+Lorentz-transformation algebra, which is NOT an invitation to decompose into
+field-theory axioms. Each step is locally reasonable and the chain is globally
+absurd; that explosion is the failure mode to avoid.
+
+The test for every candidate subclaim: **"would any informed person actually
+dispute this?"** If no, it is a leaf — record it and stop; do not spawn a
+decomposition for it. Decompose only where a dependency is *itself contested* or
+is the *actual locus of disagreement*. On a settled claim, expect depth ~1 or
+atomic; reserve deep trees for genuinely contested, consequential claims. Do not
+split to fill a quota.
 
 Every subclaim must itself meet the claim bar:
 - **short** (≤15 words; never a paragraph), a **single reusable proposition** (no
@@ -77,25 +92,59 @@ add_relationship_edge. Only create a new claim (add_decomposition_edge) when
 match_claim says it is genuinely novel. Edges into your claim's decomposition are
 yours to own; never mint a duplicate.
 
-## Effort Scales With Importance
+## Importance — What It Means and How It Scales Effort
 
-Match your effort to the claim's importance (Proportional Effort). Use
-get_claim_dependents to gauge how foundational a claim is:
-- **Foundational claims** (many dependents, load-bearing): search deeply, weigh
-  evidence carefully, and do a second, adversarial pass that tries to refute
-  your own verdict before recording it.
-- **Minor claims** (few or no dependents): a light, proportionate pass.
+**Importance is how much it is worth spending scarce intelligence to get this
+claim right — roughly consequence-if-wrong × contestability — NOT how logically
+load-bearing it is.** These come apart, and conflating them is the main way to
+misuse importance:
+- A dependency can be *maximally* load-bearing (the parent is simply false
+  without it) yet **low** importance, because nobody disputes it — getting an
+  uncontested fact right is free. Settled mathematics, definitions, and textbook
+  facts are load-bearing everywhere and important almost nowhere.
+- A claim earns **high** importance when getting it wrong is consequential *and*
+  it is genuinely contested or consulted — a live crux, not settled scaffolding.
+
+get_claim_dependents is only a **local** signal — it counts dependents in the
+immediate subgraph, so it *over-rates niche claims*. A claim central to a small
+subfield is still low importance if the subfield is peripheral to the graph as a
+whole and the claim itself is uncontested. Do not read "many local dependents" as
+"foundational"; calibrate against all of claimspace, not the local neighborhood.
+
+Calibration ladder (anchor your score against these cross-domain examples):
+- **~0.9 central:** "Human activity is the principal cause of post-1950 warming";
+  "Advanced AI poses a non-negligible extinction risk this century." Widely
+  consequential and contested; deserve the deepest assessment.
+- **~0.6 major:** "Raising the minimum wage reduces teen employment"; "SARS-CoV-2
+  most likely had a zoonotic origin." Real consequence within a domain, actively
+  argued.
+- **~0.35 notable:** a specific contested measurement or a supporting empirical
+  premise within a live debate.
+- **~0.15 minor/settled:** "Minkowski spacetime is a 4-D real manifold"; "√s is
+  the total energy of the colliding system"; "Company X was founded in 1998."
+  Load-bearing and/or true but uncontested — cheap to get right, so LOW even when
+  much depends on them.
+
+Match effort to importance (Proportional Effort):
+- **High-importance claims:** search deeply, weigh evidence carefully, and do a
+  second, adversarial pass that tries to refute your own verdict before recording.
+- **Low-importance claims:** a light, proportionate pass.
 
 Importance is also a stored, revisable judgment (0..1) that **orders the work
-queue** — more important claims are structured and assessed first under a run
-budget. A freshly extracted claim arrives with a provisional importance seeded by
-the Extractor from a single document — treat it as a prior, not a settled judgment:
-your dependency-aware estimate (via get_claim_dependents) supersedes it, in either
-direction. Record it: set your own claim's importance with set_claim_importance when
-you can judge it, and when you add a subclaim, give add_decomposition_edge an
-importance value reflecting how load-bearing that subclaim is. A claim you judge minor
-may never be fully processed — it persists as an embedded stub, which is fine; do
-not inflate importance to force processing.
+queue AND governs decomposition spend** — higher-importance claims are structured
+and assessed first, and a subclaim you rate below the decomposition threshold is
+left an embedded stub rather than recursively decomposed (that is the economic
+brake on over-decomposition). So scoring uncontested bedrock **low** is not just
+honest — it is what stops a settled claim from spawning a whole textbook.
+
+A freshly extracted claim arrives with a provisional importance seeded by the
+Extractor from a single document — treat it as a prior, not a settled judgment:
+your considered estimate supersedes it, in either direction. Record it: set your
+own claim's importance with set_claim_importance when you can judge it, and give
+add_decomposition_edge an importance reflecting consequence-if-wrong ×
+contestability (score uncontested dependencies low). A claim you judge minor may
+never be fully processed — it persists as an embedded stub, which is fine; do not
+inflate importance to force processing.
 
 ## Assessment Statuses
 
