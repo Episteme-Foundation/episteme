@@ -106,6 +106,16 @@ const configSchema = z.object({
   sqsClaimPipelineQueue: z.string().default(""),
 
   // Processing
+  // The pipeline epoch every newly created claim is stamped with
+  // (claims.pipeline_epoch). Bump the default whenever the prompts/constitution
+  // change materially enough that claims minted before the change form a
+  // distinct cohort (different claim bar, importance standard, or decomposition
+  // behavior) — that makes "which claims predate fix X" a query instead of
+  // archaeology, and lets scripts/archive-legacy-claims.ts retire a cohort
+  // wholesale. NULL pipeline_epoch = legacy claims from before stamping existed.
+  // Current epoch: the #97/#98/#68 fixes (contestedness stop rule, importance =
+  // consequence-if-wrong × contestability, deferred-stub brake).
+  pipelineEpoch: z.string().default("2026-07-contestedness"),
   matchingTopK: z.coerce.number().default(20),
   // Quantity caps to bound graph fan-out (0 = unlimited). The dominant cost
   // driver is extraction count, since each extracted claim seeds a tree.
@@ -222,6 +232,7 @@ export function loadConfig(): Config {
     llmDailyTokenLimit: process.env.LLM_DAILY_TOKEN_LIMIT,
     sqsUrlExtractionQueue: process.env.SQS_URL_EXTRACTION_QUEUE,
     sqsClaimPipelineQueue: process.env.SQS_CLAIM_PIPELINE_QUEUE,
+    pipelineEpoch: process.env.PIPELINE_EPOCH,
     matchingTopK: process.env.MATCHING_TOP_K,
     extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
     stewardMaxIterations: process.env.STEWARD_MAX_ITERATIONS,

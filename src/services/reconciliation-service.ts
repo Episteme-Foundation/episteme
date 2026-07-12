@@ -11,6 +11,7 @@
 import { getDb, rawQuery } from "../db/client.js";
 import { claims, claimRelationships } from "../db/schema.js";
 import { generateEmbedding } from "./embedding-service.js";
+import { loadConfig } from "../config.js";
 
 interface EdgeRow {
   parent_claim_id: string;
@@ -183,6 +184,7 @@ export async function createClaim(input: {
       text: input.text,
       claimType: input.claimType ?? "empirical_derived",
       embedding: embedding ?? undefined,
+      pipelineEpoch: loadConfig().pipelineEpoch,
       createdBy: input.createdBy ?? "curator",
     })
     .returning();

@@ -511,7 +511,7 @@ export async function executeStewardTool(
         // trigger/decompositionStatus. 'deferred' keeps it out of the drain; a
         // later re-trigger (enqueueSteward, e.g. a dependent's notification) flips
         // it back to 'pending', so nothing is permanently stranded.
-        const { stewardEnqueueMinImportance } = loadConfig();
+        const { stewardEnqueueMinImportance, pipelineEpoch } = loadConfig();
         const effectiveImportance = importance ?? 0.5;
         const gated =
           stewardEnqueueMinImportance > 0 &&
@@ -525,6 +525,7 @@ export async function executeStewardTool(
             embedding: embedding ?? undefined,
             ...(importance !== undefined ? { importance } : {}),
             ...(gated ? { stewardState: "deferred" } : {}),
+            pipelineEpoch,
             createdBy: "claim_steward",
           })
           .returning();

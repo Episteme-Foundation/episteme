@@ -50,6 +50,11 @@ describe("steward add_decomposition_edge", () => {
 
     expect(JSON.parse(out).success).toBe(true);
 
+    // Every minted claim is stamped with the current pipeline epoch, so cohorts
+    // from before a prompt-era change stay identifiable (and archivable).
+    const claimRow = insertedValues.find((r) => "text" in r);
+    expect(claimRow?.pipelineEpoch).toBeTruthy();
+
     // The regression this guards: the created claim must be enqueued (onboarded)
     // so its Steward structures/assesses it instead of it sitting `pending`
     // forever. Recursion no longer threads depth/ancestors — the child's Steward

@@ -121,6 +121,7 @@ async function processUrlExtraction(
             claimType: claim.claim_type,
             ...(importance !== undefined ? { importance } : {}),
             embedding,
+            pipelineEpoch: loadConfig().pipelineEpoch,
             createdBy: "extractor",
           })
           .returning();

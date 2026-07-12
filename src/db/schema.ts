@@ -85,6 +85,12 @@ export const claims = pgTable(
     stewardAttempts: integer("steward_attempts").notNull().default(0),
     embedding: vector("embedding"),
     textSearch: tsvector("text_search"),
+    // Which pipeline epoch minted this claim (config.pipelineEpoch at creation).
+    // An epoch names a prompt/constitution era; when agent behavior changes
+    // materially, the epoch is bumped and the previous cohort can be archived
+    // wholesale (scripts/archive-legacy-claims.ts). NULL = legacy claims created
+    // before stamping existed (the pre-2026-07 physics seed cohort).
+    pipelineEpoch: text("pipeline_epoch"),
     createdBy: text("created_by").notNull().default("system"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
