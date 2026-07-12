@@ -1,6 +1,12 @@
 import { rawQuery } from "../db/client.js";
 import { generateEmbedding } from "./embedding-service.js";
 
+// All search paths below (browse search, matcher candidates, MCP, agent graph
+// tools) serve ONLY state='active' claims — an allowlist on purpose: archived
+// claims (retired pipeline-epoch cohorts) must leave the matcher's candidate
+// pool, or new ingestion would link into retired structure and resurrect it.
+// Archived/deprecated claims remain readable by direct id (getClaimById).
+
 export interface SearchResult {
   id: string;
   text: string;
@@ -96,7 +102,7 @@ async function hybridSearchWithEmbedding(
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
-    WHERE c.state != 'deprecated' AND c.merged_into IS NULL
+    WHERE c.state = 'active' AND c.merged_into IS NULL
       AND (c.text_search @@ websearch_to_tsquery('english', $1)
            OR 1 - (c.embedding <=> $2::vector) > $3)${filterSql}
     ORDER BY COALESCE(1 - (c.embedding <=> $2::vector), 0) DESC,
@@ -137,7 +143,7 @@ async function keywordSearch(
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
-    WHERE c.state != 'deprecated' AND c.merged_into IS NULL
+    WHERE c.state = 'active' AND c.merged_into IS NULL
       AND c.text_search @@ websearch_to_tsquery('english', $1)${filterSql}
     ORDER BY text_rank DESC
     LIMIT $${limitIdx}
@@ -183,7 +189,7 @@ export async function findSimilarClaims(
       a.status AS assessment_status, a.confidence AS assessment_confidence
     FROM claims c
     LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
-    WHERE c.state != 'deprecated' AND c.merged_into IS NULL
+    WHERE c.state = 'active' AND c.merged_into IS NULL
       AND 1 - (c.embedding <=> $1::vector) > $2
       ${excludeClause}
     ORDER BY semantic_score DESC
