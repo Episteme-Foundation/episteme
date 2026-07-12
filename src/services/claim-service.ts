@@ -11,6 +11,7 @@ import {
 import { generateEmbedding } from "./embedding-service.js";
 import { createJob } from "./job-service.js";
 import { enqueueClaimPipeline } from "./queue-service.js";
+import { loadConfig } from "../config.js";
 
 /**
  * Create a new claim with an initial argument, generate embedding, and enqueue for processing.
@@ -38,6 +39,7 @@ export async function proposeClaim(input: {
     text: input.claim,
     createdBy,
     embedding,
+    pipelineEpoch: loadConfig().pipelineEpoch,
   };
 
   const [claim] = await db.insert(claims).values(newClaim).returning();
