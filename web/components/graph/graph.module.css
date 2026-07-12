@@ -204,7 +204,10 @@
   white-space: nowrap; overflow: hidden;
   cursor: default;
 }
-.pillStance { opacity: 0.75; font-weight: 500; }
+/* If the width estimate ever falls short, the name shrinks and ellipsizes —
+   glyphs are never sliced. min-width: 0 lets the flex item actually shrink. */
+.pill > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pillStance { opacity: 0.75; font-weight: 500; flex: none; }
 .pillFor     { background: var(--st-supported-tint);    border-color: var(--stance-for);     color: var(--stance-for); }
 .pillAgainst { background: var(--st-contradicted-tint); border-color: var(--stance-against); color: var(--stance-against); }
 .pillNeutral { background: var(--paper-sunk);           border-color: var(--faint);          color: var(--muted); }

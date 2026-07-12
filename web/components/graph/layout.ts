@@ -310,7 +310,12 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
     const meta = key === "_" ? null : groupMeta.get(key)!;
     const rowW = slots.reduce((a, b) => a + b, 0) + Math.max(0, slots.length - 1) * GAP
       + (extra > 0 || open ? W.more + GAP : 0);
-    const pillW = meta ? Math.max(130, (meta.name.length + meta.stance.length + 3) * 6.4 + 46) : 0;
+    // Uppercase at 0.56rem with 0.07em tracking runs ~8.3px/char; the previous
+    // 6.4 undershot, and a centred overflow clips BOTH ends of the name. Cap at
+    // the focus card's width — past that the CSS ellipsis takes over.
+    const pillW = meta
+      ? Math.min(W.focus, Math.max(130, (meta.name.length + meta.stance.length + 3) * 8.3 + 50))
+      : 0;
     return { key, meta, vis, extra, open, slots, rowW, w: Math.max(rowW, pillW), pillW };
   });
 
