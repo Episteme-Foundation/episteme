@@ -30,22 +30,6 @@
 .search input::placeholder { color: var(--faint); }
 .search input:focus { border-color: var(--muted); }
 
-/* ----- corpus counters ----- */
-.vitals {
-  margin-top: 2.8rem;
-  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-  display: flex; justify-content: space-between; align-items: stretch;
-  padding: 0.9rem 0; gap: 1rem; flex-wrap: wrap;
-}
-.vital { display: flex; flex-direction: column; gap: 0.14rem; min-width: 9rem; }
-.vital b {
-  font-family: var(--mono); font-weight: 500; font-size: 1.12rem; color: var(--ink);
-}
-.vitalsNote {
-  text-align: center; margin: 0.55rem 0 0;
-  font-family: var(--sans); font-size: 0.66rem; color: var(--faint);
-}
-
 /* ----- surface tabs ----- */
 .section { padding: 3.2rem 0 0; }
 .tabs {
