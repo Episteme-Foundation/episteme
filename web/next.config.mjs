@@ -10,7 +10,16 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   // Ensure the vendored verbatim content ships in the serverless bundle.
   outputFileTracingIncludes: {
-    "/about/**": ["./content/**/*"],
+    "/docs/**": ["./content/**/*"],
+  },
+  // The explainer pages moved from /about/* to /docs/* (#112); old URLs live on.
+  async redirects() {
+    return [
+      { source: "/about/constitution", destination: "/docs/constitution", permanent: true },
+      { source: "/about/architecture", destination: "/docs/architecture", permanent: true },
+      { source: "/about/agents", destination: "/docs/agents", permanent: true },
+      { source: "/about/agents/:key", destination: "/docs/agents/:key", permanent: true },
+    ];
   },
 };
 

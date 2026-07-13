@@ -7,8 +7,8 @@ import styles from "@/components/home/home.module.css";
 // The home page (issue #80): show the graph, don't describe it. Hero + search,
 // the three-surface tabs (live claim map / extension demo / MCP & API), and a
 // closing triptych into the documentation. Explanation lives on the docs pages;
-// the triptych links point at the current /about/* routes until the /docs
-// consolidation lands (#112). A corpus-counters row was considered and cut:
+// the triptych links into /docs (#112). A corpus-counters row was considered
+// and cut:
 // too early while the corpus is in flux and there is no stats endpoint to
 // report real figures.
 
@@ -49,7 +49,7 @@ export default async function Home() {
           reasoning trace, and every trace is open to challenge.
         </p>
         <div className={styles.triptych}>
-          <Link className={styles.panelLink} href="/about/constitution">
+          <Link className={styles.panelLink} href="/docs/constitution">
             <span className="sc">The constitution</span>
             <h3>The principles that bind every agent</h3>
             <p>
@@ -58,7 +58,7 @@ export default async function Home() {
             </p>
             <span className={styles.go}>Read the constitution →</span>
           </Link>
-          <Link className={styles.panelLink} href="/about/architecture">
+          <Link className={styles.panelLink} href="/docs/architecture">
             <span className="sc">The architecture</span>
             <h3>How the graph is built and governed</h3>
             <p>
@@ -67,7 +67,7 @@ export default async function Home() {
             </p>
             <span className={styles.go}>Read the architecture →</span>
           </Link>
-          <Link className={styles.panelLink} href="/about/agents">
+          <Link className={styles.panelLink} href="/docs/agents">
             <span className="sc">The agents</span>
             <h3>Seven administrators, in the open</h3>
             <p>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAgentIndex } from "@/lib/content";
 
-export const metadata = { title: "The agents — Episteme" };
+export const metadata = { title: "The agents · Episteme" };
 
 export default function AgentsIndex() {
   const agents = getAgentIndex();
@@ -15,7 +15,7 @@ export default function AgentsIndex() {
       <p className="lede" style={{ fontSize: "1.08rem" }}>
         Episteme is run by LLM administrators, each with a narrow role and a published
         system prompt. Every one of them is given the full{" "}
-        <Link href="/about/constitution">Constitution</Link> as the first layer of its
+        <Link href="/docs/constitution">Constitution</Link> as the first layer of its
         prompt; below, you can read each agent&rsquo;s role-specific instructions — and the
         complete assembled prompt — exactly as the system uses them.
       </p>
@@ -41,7 +41,7 @@ function AgentList({ agents }: { agents: ReturnType<typeof getAgentIndex> }) {
   return (
     <div className="cards" style={{ marginTop: ".8rem" }}>
       {agents.map((a) => (
-        <Link href={`/about/agents/${a.key}`} className="card" key={a.key}>
+        <Link href={`/docs/agents/${a.key}`} className="card" key={a.key}>
           <div style={{ display: "flex", alignItems: "baseline", gap: ".6rem" }}>
             <span className="sc" style={{ color: "var(--faint)" }}>
               {String(a.stage).padStart(2, "0")}
