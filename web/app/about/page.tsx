@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { ContactForm } from "@/components/ContactForm";
 
-// A short about page (issue #112): what Episteme is and where to read more.
-// The explainer content that used to live here moved to /docs; a founder bio
-// and a contact form are planned for this page in issue #81.
+// A short about page: what Episteme is (#112), who builds it, and how to
+// reach the project (#81). The explainer content lives in /docs.
 
 export const metadata = {
   title: "About · Episteme",
@@ -38,13 +38,31 @@ export default function About() {
         prompts.
       </p>
 
+      <h2 id="whos-behind-this">Who&rsquo;s behind this</h2>
+      <p>
+        Episteme is built by <a href="https://jacksonhurley.com">Jackson Hurley</a>, a
+        writer and technologist based in New York. Trained as a mathematician at Pomona
+        College, with published research in matrix analysis, he writes on the economics
+        of science; his essay series{" "}
+        <a href="https://jacksonhurley.com">A Marketplace of Ideas</a> argues for funding
+        research by measuring what it actually settles, and Episteme is the public record
+        that kind of measurement requires. The project is independent and self-funded,
+        with its governing texts published in full.
+      </p>
       <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".84rem" }}>
         Episteme is open source:{" "}
         <a href="https://github.com/Episteme-Foundation/episteme">
           github.com/Episteme-Foundation/episteme
-        </a>
-        .
+        </a>{" "}
+        · <a href="https://github.com/jacksonqueenking">@jacksonqueenking</a>
       </p>
+
+      <h2 id="contact">Contact</h2>
+      <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".84rem" }}>
+        Questions, corrections, or a claim the graph gets wrong: write below and it lands
+        in a real inbox.
+      </p>
+      <ContactForm />
     </div>
   );
 }
