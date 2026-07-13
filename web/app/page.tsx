@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FLAGSHIP_ID } from "@/lib/fixtures";
 import { loadClaim } from "@/lib/data";
+import { SearchInput } from "@/components/home/SearchInput";
 import { Surfaces } from "@/components/home/Surfaces";
 import styles from "@/components/home/home.module.css";
 
@@ -29,12 +30,7 @@ export default async function Home() {
           constitution.
         </p>
         <form className={styles.search} role="search" action="/claims" method="get">
-          <input
-            type="search"
-            name="q"
-            placeholder="Search the claim graph: try “inflation” or “minimum wage”"
-            aria-label="Search the claim graph"
-          />
+          <SearchInput />
         </form>
       </div>
 
