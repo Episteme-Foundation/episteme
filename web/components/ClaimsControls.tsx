@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { IMPORTANCE_FLOORS, type ImportanceFloor } from "@/lib/ontology";
 import type { AssessedFilter } from "@/lib/types";
+import { useSuggestedClaim } from "@/components/useSuggestedClaim";
 
 // Defaults the browse feed lands on: only assessed claims, no importance floor.
 // These are the values omitted from the URL, so a shared link stays clean and
@@ -52,6 +53,7 @@ export function ClaimsControls({
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(q);
+  const suggestedClaim = useSuggestedClaim();
 
   // Build a clean URL — only non-default levers appear. `next` overrides the
   // current value for whichever lever changed; the live search text comes along
@@ -77,7 +79,7 @@ export function ClaimsControls({
           className="claims-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search claims — e.g. “was inflation high in 2022?”"
+          placeholder={`Search claims: try “${suggestedClaim}”`}
           aria-label="Search claims"
         />
       </form>
