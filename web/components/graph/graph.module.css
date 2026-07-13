@@ -60,6 +60,9 @@
 }
 .stage.scrollable { overflow: auto; }  /* floor-scale overflow: native scroll only */
 
+/* embedded on the home page: contained height instead of filling the viewport */
+.embedStage { height: 30rem; border-top: none; }
+
 .plane {
   position: absolute;
   left: 0; top: 0;

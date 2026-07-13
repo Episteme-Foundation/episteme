@@ -145,10 +145,13 @@ function BedStrip({ bed }: { bed: ClaimBits["bedrock"] }) {
 }
 
 export function GraphView({
-  initialDetail, source,
+  initialDetail, source, embed = false,
 }: {
   initialDetail: ClaimDetail;
   source: DataSource;
+  /** Contained mode for the home page: no toolbar/trail, fixed-height stage,
+      and no URL or global-keyboard side effects. */
+  embed?: boolean;
 }) {
   CACHE.set(initialDetail.claim.id, initialDetail);
 
@@ -265,15 +268,16 @@ export function GraphView({
       setDepsOpen(false);
       setEdgesShown(false);
       window.setTimeout(() => setEdgesShown(true), 280);
-      if (opts?.push !== false) {
+      if (opts?.push !== false && !embed) {
         window.history.pushState({ epistemeMap: id }, "", `/claims/${encodeURIComponent(id)}/map`);
       }
     },
-    [view.detail, compact, settle],
+    [view.detail, compact, settle, embed],
   );
 
   // Browser back/forward walks the same recentring path.
   useEffect(() => {
+    if (embed) return;
     const onPop = () => {
       const m = /\/claims\/([^/]+)\/map/.exec(window.location.pathname);
       if (!m) return;
@@ -284,10 +288,12 @@ export function GraphView({
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [recenter]);
+  }, [recenter, embed]);
 
   // Keyboard: ↓ into the decomposition, ↑ to a dependent, ⌫ back along the trail.
+  // Skipped in embed mode: the home page owns the window's keys.
   useEffect(() => {
+    if (embed) return;
     const onKey = (ev: KeyboardEvent) => {
       if (ev.target instanceof HTMLElement && /^(input|textarea|select)$/i.test(ev.target.tagName)) return;
       if (ev.key === "Backspace") {
@@ -308,7 +314,7 @@ export function GraphView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [view.detail, recenter]);
+  }, [view.detail, recenter, embed]);
 
   // ---- layout -----------------------------------------------------------------
   const plinthNote = useMemo(() => {
@@ -545,45 +551,49 @@ export function GraphView({
   const oy = layout.bounds.minY;
 
   return (
-    <div className={styles.bleed}>
-      {/* toolbar: the map is one view of the claim's address */}
-      <div className={styles.toolbar}>
-        <span className="sc"><Link href={`/claims/${focusId}`}>← claim page</Link></span>
-        <span className="sc" style={{ color: "var(--ink-soft)" }}>map view</span>
-        {source === "fixture" && (
-          <span className="tag" title="The API is not connected; showing a design fixture.">fixture data</span>
-        )}
-        <span className={`sc ${styles.hint}`} style={{ color: "var(--faint)" }}>
-          click a claim to recentre · hover to preview · ⌫ back
-        </span>
-      </div>
-
-      {/* trail of the walk so far */}
-      <div className={styles.trail} aria-label="Trail">
-        <span className="sc" style={{ fontSize: "0.56rem" }}>trail</span>
-        {trail.slice(-4).map((t, i, arr) => (
-          <span key={`${t.id}:${i}`} style={{ display: "inline-flex", gap: "0.45rem", alignItems: "center" }}>
-            <button
-              type="button"
-              className={styles.trailLink}
-              onClick={() => {
-                const cut = trail.length - arr.length + i;
-                setTrail(trail.slice(0, cut));
-                recenter(t.id, { viaTrail: true });
-              }}
-            >
-              {t.text}
-            </button>
-            <span className={styles.trailSep}>›</span>
+    <div className={embed ? undefined : styles.bleed}>
+      {/* toolbar: the map is one view of the claim's address (not in embed) */}
+      {!embed && (
+        <div className={styles.toolbar}>
+          <span className="sc"><Link href={`/claims/${focusId}`}>← claim page</Link></span>
+          <span className="sc" style={{ color: "var(--ink-soft)" }}>map view</span>
+          {source === "fixture" && (
+            <span className="tag" title="The API is not connected; showing a design fixture.">fixture data</span>
+          )}
+          <span className={`sc ${styles.hint}`} style={{ color: "var(--faint)" }}>
+            click a claim to recentre · hover to preview · ⌫ back
           </span>
-        ))}
-        <span className={styles.trailHere}>{d.claim.text}</span>
-      </div>
+        </div>
+      )}
+
+      {/* trail of the walk so far (not in embed) */}
+      {!embed && (
+        <div className={styles.trail} aria-label="Trail">
+          <span className="sc" style={{ fontSize: "0.56rem" }}>trail</span>
+          {trail.slice(-4).map((t, i, arr) => (
+            <span key={`${t.id}:${i}`} style={{ display: "inline-flex", gap: "0.45rem", alignItems: "center" }}>
+              <button
+                type="button"
+                className={styles.trailLink}
+                onClick={() => {
+                  const cut = trail.length - arr.length + i;
+                  setTrail(trail.slice(0, cut));
+                  recenter(t.id, { viaTrail: true });
+                }}
+              >
+                {t.text}
+              </button>
+              <span className={styles.trailSep}>›</span>
+            </span>
+          ))}
+          <span className={styles.trailHere}>{d.claim.text}</span>
+        </div>
+      )}
 
       {/* the stage */}
       <div
         ref={stageRef}
-        className={`${styles.stage}${scrollable ? ` ${styles.scrollable}` : ""}`}
+        className={`${styles.stage}${embed ? ` ${styles.embedStage}` : ""}${scrollable ? ` ${styles.scrollable}` : ""}`}
         role="figure"
         aria-label={`Claim map centred on: ${d.claim.text}`}
       >
