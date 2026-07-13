@@ -5,19 +5,12 @@ import { Surfaces } from "@/components/home/Surfaces";
 import styles from "@/components/home/home.module.css";
 
 // The home page (issue #80): show the graph, don't describe it. Hero + search,
-// the corpus counters, the three-surface tabs (live claim map / extension demo /
-// MCP & API), and a closing triptych into the documentation. Explanation lives
-// on the docs pages; the triptych links point at the current /about/* routes
-// until the /docs consolidation lands (#112).
-
-// Placeholder corpus figures, to be replaced by a public stats endpoint; the
-// note below the row says as much on the page.
-const VITALS: { value: string; label: string }[] = [
-  { value: "1,204", label: "claims tracked" },
-  { value: "5,318", label: "decomposition edges" },
-  { value: "342", label: "sources read" },
-  { value: "6", label: "verdicts on the record" },
-];
+// the three-surface tabs (live claim map / extension demo / MCP & API), and a
+// closing triptych into the documentation. Explanation lives on the docs pages;
+// the triptych links point at the current /about/* routes until the /docs
+// consolidation lands (#112). A corpus-counters row was considered and cut:
+// too early while the corpus is in flux and there is no stats endpoint to
+// report real figures.
 
 export default async function Home() {
   const { detail, source } = await loadClaim(FLAGSHIP_ID);
@@ -44,20 +37,6 @@ export default async function Home() {
           />
         </form>
       </div>
-
-      {/* the state of the corpus */}
-      <div className={styles.vitals} aria-label="Current state of the corpus">
-        {VITALS.map((v) => (
-          <div className={styles.vital} key={v.label}>
-            <b>{v.value}</b>
-            <span className="sc">{v.label}</span>
-          </div>
-        ))}
-      </div>
-      <p className={styles.vitalsNote}>
-        State of the corpus, July 2026. Early days: figures are placeholders to be wired
-        to a public stats endpoint.
-      </p>
 
       {/* what's built on the graph: 01 map · 02 extension · 03 MCP & API */}
       <Surfaces detail={detail} source={source} />
