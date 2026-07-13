@@ -4,7 +4,7 @@ import { Markdown } from "@/components/Markdown";
 import { DocLayout } from "@/components/DocLayout";
 import { extractToc } from "@/lib/toc";
 
-export const metadata = { title: "The Administrator Constitution — Episteme" };
+export const metadata = { title: "The Administrator Constitution · Episteme" };
 
 export default function ConstitutionPage() {
   const text = getDoc("constitution");
@@ -12,7 +12,7 @@ export default function ConstitutionPage() {
   return (
     <div>
       <p className="sc" style={{ marginBottom: "1rem" }}>
-        <Link href="/about">← about</Link>
+        <Link href="/docs">← docs</Link>
       </p>
       <DocLayout
         toc={toc}

@@ -1,58 +1,50 @@
 import Link from "next/link";
-import { DocLayout } from "@/components/DocLayout";
 
-const toc = [
-  { depth: 2, text: "The shape of the thing", slug: "the-shape-of-the-thing" },
-  { depth: 2, text: "Read further", slug: "read-further" },
-];
+// A short about page (issue #112): what Episteme is and where to read more.
+// The explainer content that used to live here moved to /docs; a founder bio
+// and a contact form are planned for this page in issue #81.
+
+export const metadata = {
+  title: "About · Episteme",
+  description: "What Episteme is, and who is behind it.",
+};
 
 export default function About() {
   return (
-    <DocLayout toc={toc}>
     <div className="doc">
       <p className="sc" style={{ marginBottom: ".5rem" }}>About</p>
       <h1>What is Episteme?</h1>
       <p className="lede">
-        An attempt to build, for the open internet, a shared and inspectable map of claims —
-        what is asserted, what each assertion rests on, and how much the evidence supports it.
+        An open repository of the world&rsquo;s claims: what is asserted, what each
+        assertion rests on, and how much the evidence supports it.
       </p>
 
       <p className="dropcap">
-        Wikipedia is valuable but limited to encyclopedic entries, and its editors must
-        defer to secondary sources rather than weigh primary evidence directly. Most
-        public disagreement, meanwhile, is confused: people believe they are arguing about
-        facts when they are using different definitions, or believe they disagree about
-        values when they actually disagree about empirical consequences. Episteme exists to
-        make that structure visible — not to declare winners.
+        Episteme decomposes every claim to its bedrock, weighs it against the evidence,
+        and keeps the verdict current as the world changes. The graph is maintained by
+        LLM administrators operating under a public constitution; every judgment carries
+        a reasoning trace, and every decision is open to challenge. Like Wikipedia, the
+        graph is a public good, and the payoff is what gets built on it: the site you are
+        reading, a browser extension that annotates the web by verdict, and an API and
+        MCP server that ground AI agents in claims that have already been weighed.
       </p>
 
       <p>
-        The graph is maintained by LLM <em>administrators</em> operating under a public{" "}
-        <Link href="/about/constitution">constitution</Link> and a set of operational{" "}
-        <Link href="/about/architecture">policies</Link>. Where a Wikipedia administrator
-        enforces human-written rules and cites secondary sources, a graph administrator
-        exercises judgment guided by stated principles and can examine primary sources
-        directly. Every judgment carries a reasoning trace; every decision is open to
-        challenge.
+        The full story lives in the <Link href="/docs">documentation</Link>: the idea and
+        the model, the pipeline, the{" "}
+        <Link href="/docs/constitution">Administrator Constitution</Link>, the{" "}
+        <Link href="/docs/architecture">architecture and policies</Link>, and{" "}
+        <Link href="/docs/agents">the seven agents</Link> with their complete system
+        prompts.
       </p>
 
-      <h2 id="the-shape-of-the-thing">The shape of the thing</h2>
-      <ul>
-        <li><strong>Claims</strong> — propositions that can be true or false, stored in a canonical form that makes their implicit parameters explicit.</li>
-        <li><strong>Arguments</strong> — named, independent lines of reasoning bearing on a claim, each grouping its own subclaims.</li>
-        <li><strong>Decomposition</strong> — typed edges (requires, supports, contradicts, specifies, defines, presupposes) linking a claim to the subclaims it rests on.</li>
-        <li><strong>Assessment</strong> — one of six honest verdicts, with a confidence and a reasoning trace, revisable as the world changes.</li>
-        <li><strong>Instances &amp; sources</strong> — the exact utterances of a claim across the internet, linked back to the canonical node.</li>
-        <li><strong>Governance</strong> — contributions, reviews, appeals, and arbitration that let humans and agents improve the graph.</li>
-      </ul>
-
-      <h2 id="read-further">Read further</h2>
-      <ul>
-        <li><Link href="/about/constitution">The Administrator Constitution</Link> — the 25 principles that govern every agent, in full.</li>
-        <li><Link href="/about/architecture">Architecture &amp; policies</Link> — the design of the graph and the operational rules.</li>
-        <li><Link href="/about/agents">The agents</Link> — the seven LLM administrators that do the work, each shown with its complete system prompt.</li>
-      </ul>
+      <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".84rem" }}>
+        Episteme is open source:{" "}
+        <a href="https://github.com/Episteme-Foundation/episteme">
+          github.com/Episteme-Foundation/episteme
+        </a>
+        .
+      </p>
     </div>
-    </DocLayout>
   );
 }

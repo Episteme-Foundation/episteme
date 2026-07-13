@@ -10,7 +10,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
   const a = getAgent(key);
-  return { title: a ? `${a.name} — Episteme agents` : "Agent — Episteme" };
+  return { title: a ? `${a.name} · Episteme agents` : "Agent · Episteme" };
 }
 
 export default async function AgentPage({ params }: { params: Promise<{ key: string }> }) {
@@ -24,7 +24,7 @@ export default async function AgentPage({ params }: { params: Promise<{ key: str
   return (
     <div>
       <p className="sc" style={{ marginBottom: "1rem" }}>
-        <Link href="/about/agents">← agents</Link>
+        <Link href="/docs/agents">← agents</Link>
       </p>
 
       <div className="claim-eyebrow">
@@ -46,7 +46,7 @@ export default async function AgentPage({ params }: { params: Promise<{ key: str
         <h2>System prompt</h2>
         <p style={{ fontFamily: "var(--sans)", fontSize: ".84rem", color: "var(--muted)" }}>
           Every agent&rsquo;s prompt is layered: <strong>(1)</strong> the full{" "}
-          <Link href="/about/constitution">Constitution</Link> (identical for all agents),{" "}
+          <Link href="/docs/constitution">Constitution</Link> (identical for all agents),{" "}
           <strong>(2)</strong> the role-specific instructions below — including this
           agent&rsquo;s policies — and <strong>(3)</strong> the task context, supplied at
           runtime. What follows is layer 2, verbatim.
