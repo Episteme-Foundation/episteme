@@ -44,6 +44,10 @@ export interface Assessment {
   id: string;
   status: AssessmentStatus;
   confidence: number;
+  // Reader-facing body shown front-and-centre. The API falls back to
+  // reasoning_trace for assessments written before the summary/reasoning split,
+  // so this is always populated.
+  summary: string;
   reasoning_trace: string;
   subclaim_summary: Record<string, number>;
   assessed_at: string;

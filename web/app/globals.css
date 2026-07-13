@@ -283,6 +283,24 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 }
 .reasoning p:last-child { margin-bottom: 0; }
 
+/* Full-reasoning disclosure: the audit chain, secondary to the reader-facing
+   summary above it. Muted, quiet marker — present for anyone who wants it,
+   never competing with the assessment body. */
+.reasoning-detail { margin: -0.6rem 0 1.4rem; }
+.reasoning-detail > summary {
+  cursor: pointer; list-style: none;
+  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
+  padding: 0.15rem 0; user-select: none;
+}
+.reasoning-detail > summary::-webkit-details-marker { display: none; }
+.reasoning-detail > summary::before {
+  content: "▸"; display: inline-block; margin-right: 0.4rem;
+  color: var(--faint); transition: transform 0.15s;
+}
+.reasoning-detail[open] > summary::before { transform: rotate(90deg); }
+.reasoning-detail > summary:hover { color: var(--ink-soft); }
+.reasoning-detail .reasoning { margin-top: 0.6rem; margin-bottom: 0; }
+
 /* subclaim summary chips */
 .summary-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .summary-chip {

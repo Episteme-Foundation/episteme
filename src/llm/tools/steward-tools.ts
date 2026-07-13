@@ -60,12 +60,32 @@ export function getStewardToolDefinitions(): Tool[] {
             type: "number",
             description: "Confidence in this assessment (0.0-1.0)",
           },
+          summary: {
+            type: "string",
+            description:
+              "The reader-facing assessment, shown front-and-centre when someone " +
+              "lands on the claim's page. Write it as a welcoming, self-contained " +
+              "encyclopedia entry on the state of knowledge: what the claim rests " +
+              "on, what the evidence shows, and — for a contested claim — where the " +
+              "credible disagreement actually lies and what would resolve it. Plain " +
+              "prose in the third person; typically 2–5 sentences (a short paragraph " +
+              "or two for a foundational claim). Lead with the bottom line. Do NOT " +
+              "mention the machinery: no tool or edge names (SUPPORTS/CONTRADICTS " +
+              "edge), no importance numbers, no 'per the constitution', no first-" +
+              "person 'I', and no narration of your own bookkeeping (merges, " +
+              "canonical-form edits, importance changes — those go in " +
+              "log_stewardship_decision).",
+          },
           reasoning_trace: {
             type: "string",
-            description: "Detailed reasoning for the assessment",
+            description:
+              "The transparent audit detail behind the verdict, shown secondary to " +
+              "the summary (behind a disclosure). Lay out the specific evidence, " +
+              "source instances, and how the material subclaims weigh. This is about " +
+              "the CLAIM'S TRUTH — keep structural bookkeeping out of it.",
           },
         },
-        required: ["claim_id", "status", "confidence", "reasoning_trace"],
+        required: ["claim_id", "status", "confidence", "summary", "reasoning_trace"],
       },
     },
     {
@@ -334,6 +354,11 @@ export async function executeStewardTool(
         const status = input.status as string;
         const confidence = input.confidence as number;
         const reasoningTrace = input.reasoning_trace as string;
+        // Reader-facing summary. Tolerate an omitted summary (older prompt / model
+        // slip) by falling back to the reasoning trace, so the page never renders
+        // blank — the UI has the same fallback, but keeping the column populated
+        // means a later render never has to.
+        const summary = (input.summary as string | undefined)?.trim() || reasoningTrace;
 
         const db = getDb();
 
@@ -358,6 +383,7 @@ export async function executeStewardTool(
           claimId,
           status,
           confidence,
+          summary,
           reasoningTrace,
           subclaimSummary: prev?.subclaimSummary ?? {},
           isCurrent: true,

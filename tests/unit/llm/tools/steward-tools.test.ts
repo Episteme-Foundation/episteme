@@ -15,8 +15,12 @@ vi.mock("../../../../src/db/client.js", () => {
     const p = Promise.resolve([{ id: NEW_CLAIM_ID }]);
     return Object.assign(p, { returning: () => Promise.resolve([{ id: NEW_CLAIM_ID }]) });
   };
+  // Minimal query-builder stubs so update_claim_assessment's select (prev
+  // subclaim summary → []) and update (mark non-current → noop) chains resolve.
+  const select = () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) });
+  const update = () => ({ set: () => ({ where: async () => undefined }) });
   return {
-    getDb: () => ({ insert: () => ({ values }) }),
+    getDb: () => ({ insert: () => ({ values }), select, update }),
     rawQuery: vi.fn(async () => []),
   };
 });
@@ -103,5 +107,36 @@ describe("steward add_decomposition_edge", () => {
     // Not gated → left at the default steward_state (drain picks it up).
     const claimRow = insertedValues.find((r) => "text" in r);
     expect(claimRow?.stewardState).toBeUndefined();
+  });
+});
+
+describe("steward update_claim_assessment", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    insertedValues.length = 0;
+  });
+
+  it("persists the reader-facing summary distinctly from the reasoning trace", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "contested",
+      confidence: 0.6,
+      summary: "The origin of SARS-CoV-2 remains genuinely disputed among experts.",
+      reasoning_trace: "Instances split 1 affirm / 2 deny; market-origin and lab-leak both credible.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.summary).toBe("The origin of SARS-CoV-2 remains genuinely disputed among experts.");
+    expect(row?.reasoningTrace).toBe("Instances split 1 affirm / 2 deny; market-origin and lab-leak both credible.");
+  });
+
+  it("falls back to the reasoning trace when summary is omitted (never writes blank)", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "verified",
+      confidence: 0.9,
+      reasoning_trace: "Traces to primary sources; no credible challenge.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.summary).toBe("Traces to primary sources; no credible challenge.");
   });
 });
