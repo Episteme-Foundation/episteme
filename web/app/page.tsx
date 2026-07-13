@@ -1,135 +1,103 @@
 import Link from "next/link";
 import { FLAGSHIP_ID } from "@/lib/fixtures";
-import { DecompositionFigure } from "./DecompositionFigure";
+import { loadClaim } from "@/lib/data";
+import { Surfaces } from "@/components/home/Surfaces";
+import styles from "@/components/home/home.module.css";
 
-export default function Home() {
+// The home page (issue #80): show the graph, don't describe it. Hero + search,
+// the corpus counters, the three-surface tabs (live claim map / extension demo /
+// MCP & API), and a closing triptych into the documentation. Explanation lives
+// on the docs pages; the triptych links point at the current /about/* routes
+// until the /docs consolidation lands (#112).
+
+// Placeholder corpus figures, to be replaced by a public stats endpoint; the
+// note below the row says as much on the page.
+const VITALS: { value: string; label: string }[] = [
+  { value: "1,204", label: "claims tracked" },
+  { value: "5,318", label: "decomposition edges" },
+  { value: "342", label: "sources read" },
+  { value: "6", label: "verdicts on the record" },
+];
+
+export default async function Home() {
+  const { detail, source } = await loadClaim(FLAGSHIP_ID);
+
   return (
     <div>
-      <section className="col-wide">
-        <p className="sc" style={{ marginBottom: ".6rem" }}>An open repository of claims</p>
-        <h1 style={{ fontSize: "2.4rem", maxWidth: "32rem" }}>
-          The same claims, investigated over and over.
+      {/* hero: one line, one search box */}
+      <div className={styles.hero}>
+        <p className={`sc ${styles.eyebrow}`}>An open repository of claims</p>
+        <h1 className={styles.heroTitle}>
+          The same claims, investigated over and over. Episteme does that work once.
         </h1>
-        <p className="lede">
-          Across the internet the same claims and subclaims get investigated over and
-          over, and the reasoning is thrown out the moment a session ends. Episteme does
-          that work once. It is an open repository of the world’s claims overseen by an
-          LLM-based bureaucracy. Picture Wikipedia, if its editors were AI administrators
-          bound by a constitution and its pages were not topics but individual claims,
-          each one weighed against the evidence and kept current as the world changes.
+        <p className={styles.heroLede}>
+          Every claim decomposed to its bedrock, weighed against the evidence, and kept
+          current as the world changes, by AI administrators bound by a public
+          constitution.
         </p>
-        <p style={{ maxWidth: "34rem" }}>
-          <Link href={`/claims/${FLAGSHIP_ID}`}>See a worked claim →</Link>
-          <span style={{ color: "var(--faint)" }}> · </span>
-          <Link href="/claims">Browse the graph</Link>
-          <span style={{ color: "var(--faint)" }}> · </span>
-          <Link href="/about">What is Episteme?</Link>
-        </p>
-      </section>
+        <form className={styles.search} role="search" action="/claims" method="get">
+          <input
+            type="search"
+            name="q"
+            placeholder="Search the claim graph: try “inflation” or “minimum wage”"
+            aria-label="Search the claim graph"
+          />
+        </form>
+      </div>
 
-      <hr className="thin" />
+      {/* the state of the corpus */}
+      <div className={styles.vitals} aria-label="Current state of the corpus">
+        {VITALS.map((v) => (
+          <div className={styles.vital} key={v.label}>
+            <b>{v.value}</b>
+            <span className="sc">{v.label}</span>
+          </div>
+        ))}
+      </div>
+      <p className={styles.vitalsNote}>
+        State of the corpus, July 2026. Early days: figures are placeholders to be wired
+        to a public stats endpoint.
+      </p>
 
-      {/* Decomposition, the central method */}
-      <section className="prose">
-        <h2>Decomposition is the method</h2>
-        <p className="dropcap">
-          The atomic unit is the claim, a proposition that can be true or false. A
-          normative claim like “we should raise the minimum wage” counts no less than an
-          empirical one, and two formulations are the same claim exactly when they
-          decompose the same way. Claims decompose into subclaims. “Inflation was high”
-          becomes “US CPI inflation in 2022 exceeded [threshold],” which depends on a
-          verified fact (the Bureau of Labor Statistics reported 6.5%) and a contested
-          definition (what counts as “high”). Follow a claim down to its bedrock and you
-          find exactly where a disagreement actually lives.
-        </p>
-        <p>
-          A claim can rest on several distinct <em>arguments</em>, independent lines of
-          reasoning that each group their own subclaims. “God is real” carries the
-          cosmological argument for and the argument from evil against, among others.
-          Episteme keeps these side by side rather than collapsing them into one verdict.
-          A claim and its denial are one and the same node, and the disagreement belongs
-          on the claim itself.
-        </p>
-        <DecompositionFigure />
-        <p><Link href={`/claims/${FLAGSHIP_ID}`}>Walk through the inflation example →</Link></p>
-      </section>
+      {/* what's built on the graph: 01 map · 02 extension · 03 MCP & API */}
+      <Surfaces detail={detail} source={source} />
 
-      <hr className="thin" />
-
-      {/* The pipeline */}
-      <section className="col-wide">
-        <h2>How a claim enters the graph</h2>
-        <p className="prose" style={{ marginBottom: 0 }}>
-          Claims are processed deliberately by dedicated LLM administrators, not generated
-          ad hoc in response to a query. A source is read for the claims it asserts. Each
-          is matched against what already exists in the graph. Then the claim’s own
-          steward takes over.
+      {/* how it works: the docs triptych closes the page */}
+      <section className={styles.section}>
+        <h2>How Episteme works</h2>
+        <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".92rem", maxWidth: "40rem", marginTop: ".4rem" }}>
+          The graph is maintained by seven LLM administrators. Every decision carries a
+          reasoning trace, and every trace is open to challenge.
         </p>
-        <div className="pipeline">
-          {[
-            ["01", "Extractor", "reads a source for the claims it asserts, in canonical form"],
-            ["02", "Matcher", "same claim, or new? two claims match when they decompose alike, and a claim and its negation count as one"],
-            ["03", "Claim Steward", "owns each claim: decomposes it into subclaims and arguments, then weighs the evidence into one of six verdicts"],
-          ].map(([n, name, desc]) => (
-            <div className="stage" key={n}>
-              <span className="sc">{n}</span>
-              <div className="stage-name">{name}</div>
-              <div className="stage-desc">{desc}</div>
-            </div>
-          ))}
+        <div className={styles.triptych}>
+          <Link className={styles.panelLink} href="/about/constitution">
+            <span className="sc">The constitution</span>
+            <h3>The principles that bind every agent</h3>
+            <p>
+              Twenty-five articles governing evidence, neutrality, decomposition, and
+              appeal, published in full.
+            </p>
+            <span className={styles.go}>Read the constitution →</span>
+          </Link>
+          <Link className={styles.panelLink} href="/about/architecture">
+            <span className="sc">The architecture</span>
+            <h3>How the graph is built and governed</h3>
+            <p>
+              Claims, arguments, and typed edges; the six verdicts; the pipeline from
+              source to assessment; the operating policies.
+            </p>
+            <span className={styles.go}>Read the architecture →</span>
+          </Link>
+          <Link className={styles.panelLink} href="/about/agents">
+            <span className="sc">The agents</span>
+            <h3>Seven administrators, in the open</h3>
+            <p>
+              Extractor, matcher, steward, curator, reviewer, arbitrator, auditor, each
+              with its complete system prompt.
+            </p>
+            <span className={styles.go}>Meet the agents →</span>
+          </Link>
         </div>
-        <p className="prose" style={{ fontSize: ".88rem", color: "var(--muted)" }}>
-          Around them sits a governance layer. A curator tends the structure between
-          claims, a contribution reviewer weighs public submissions, a dispute arbitrator
-          handles escalations, and an auditor checks the work. Together they keep the graph
-          honest as evidence and argument accumulate.
-          <Link href="/about/agents"> Meet the agents, with their full system prompts →</Link>
-        </p>
-      </section>
-
-      <hr className="thin" />
-
-      {/* What it is for */}
-      <section className="prose">
-        <h2>Built to be built on</h2>
-        <p>
-          Like Wikipedia, the claim graph is a public good, and the payoff is what gets
-          built on top of it. The website is one surface, where you can read a claim and
-          follow its arguments out to the claims and sources beneath it. Contributions
-          arrive the same way, through an open protocol, and are handled by rules that
-          develop over time into something like precedent and common law.
-        </p>
-        <p>
-          The same graph can be served over MCP as grounding for AI agents, more efficient
-          and more accurate than sending each agent back out to re-research what the graph
-          has already settled. And the same decomposition that builds the graph can drive a
-          browser extension that checks claims against it live, as you read.
-        </p>
-        <p style={{ fontSize: ".88rem", color: "var(--muted)" }}>
-          None of this is a moonshot. A frontier-quality compilation of the world’s claims
-          runs to high single-digit millions of dollars of inference, because the hard work
-          of decomposing a claim is done once and then applies everywhere that claim
-          appears.
-        </p>
-      </section>
-
-      <hr className="thin" />
-
-      {/* Neutrality without nihilism, and the close */}
-      <section className="prose">
-        <h2>Neutral, not nihilist</h2>
-        <p>
-          Episteme weighs evidence and reaches verdicts. What it will not do is write down a
-          prior for every question, least of all the normative ones, and call that the
-          answer. It organizes the evidence and the arguments so that genuinely open
-          questions stay legible as open. The university is the home and sponsor of critics;
-          it is not itself the critic.
-        </p>
-        <p style={{ color: "var(--ink-soft)" }}>
-          The owl of Minerva spreads its wings only with the falling of the dusk. Episteme
-          aims to change that. With LLMs maintaining the world’s claims, we can understand
-          them as they are made, and not only in retrospect.
-        </p>
       </section>
     </div>
   );
