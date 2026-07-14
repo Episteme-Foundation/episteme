@@ -78,6 +78,7 @@ function formatAssessment(
   a: {
     status: string;
     confidence: number;
+    summary: string | null;
     reasoningTrace: string;
     assessedAt: Date;
   } | null
@@ -86,6 +87,8 @@ function formatAssessment(
   return {
     status: a.status,
     confidence: a.confidence,
+    // Reader-facing body first; fall back to the trace for pre-split rows.
+    summary: a.summary ?? a.reasoningTrace,
     reasoning_trace: a.reasoningTrace,
     assessed_at: a.assessedAt.toISOString(),
   };

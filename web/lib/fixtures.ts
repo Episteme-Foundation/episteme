@@ -24,6 +24,8 @@ const FLAGSHIP: ClaimDetail = {
     id: "a-1",
     status: "supported",
     confidence: 0.78,
+    summary:
+      "US consumer prices rose 6.5% over 2022, so whether inflation was “high” comes down to where you set the bar. Against the Federal Reserve's 2% target — or the looser 5% often used in policy debate — 6.5% is unambiguously high, which is the mainstream reading. The one genuine question is definitional, not factual: a minority reserve “high” for double-digit or hyperinflationary episodes, under which 2022 would not qualify. The underlying figure itself is not in dispute.",
     reasoning_trace:
       "The measured-magnitude leg of this claim is settled: the Bureau of Labor Statistics reported year-over-year CPI growth of 6.5% for 2022, a verified bedrock fact traceable to the primary release. The claim's overall status turns instead on a definitional subclaim — what annual rate constitutes “high” inflation. Under the most common reference point (the Federal Reserve's 2% target, or the looser 5% figure used in policy commentary) 6.5% clearly qualifies; but the threshold is a contested definitional choice rather than an empirical fact, and a minority of sources reserve “high” for double-digit or hyperinflationary regimes. Because the arithmetic is verified but rests on a contested definition, the claim is Supported rather than Verified. It is not Contested overall: no credible source disputes the 6.5% figure, and under any mainstream threshold the conclusion holds.",
     subclaim_summary: { verified: 2, contested: 1, supported: 1 },

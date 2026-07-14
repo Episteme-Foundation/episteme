@@ -7,6 +7,7 @@ describe("formatAssessment", () => {
     id: "11111111-1111-1111-1111-111111111111",
     status: "supported",
     confidence: 0.8,
+    summary: "The evidence favours this claim.",
     reasoningTrace: "because",
     subclaimSummary: { a: 1 } as unknown,
     assessedAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -17,10 +18,15 @@ describe("formatAssessment", () => {
       id: base.id,
       status: "supported",
       confidence: 0.8,
+      summary: "The evidence favours this claim.",
       reasoning_trace: "because",
       subclaim_summary: { a: 1 },
       assessed_at: "2026-01-01T00:00:00.000Z",
     });
+  });
+
+  it("falls back to the reasoning trace when summary is null (pre-split rows)", () => {
+    expect(formatAssessment({ ...base, summary: null }).summary).toBe("because");
   });
 
   it("never emits a null subclaim_summary (issue #17)", () => {

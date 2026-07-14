@@ -14,6 +14,7 @@ describe("claim detail response serialization", () => {
     id: "ecd9425f-8cf0-4057-9b9d-39371ee2ce77",
     status: "supported",
     confidence: 0.72,
+    summary: "The evidence favours this claim; no credible challenge has surfaced.",
     reasoning_trace: "The claim is well supported by sources.",
     subclaim_summary: { supported: 2, contested: 0 },
     assessed_at: "2026-06-21T04:18:43.337Z",
@@ -33,6 +34,7 @@ describe("claim detail response serialization", () => {
     expect(out.status).toBe("supported");
     expect(out.confidence).toBe(0.72);
     expect(out.id).toBe(sampleAssessment.id);
+    expect(out.summary).toBe(sampleAssessment.summary);
     expect(out.reasoning_trace).toBe(sampleAssessment.reasoning_trace);
     expect(out.assessed_at).toBe(sampleAssessment.assessed_at);
     // subclaim_summary is an arbitrary object and must pass through intact.

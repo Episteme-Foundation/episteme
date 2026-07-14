@@ -36,6 +36,7 @@ export const assessmentSchema = {
     id: { type: "string", format: "uuid" },
     status: { type: "string" },
     confidence: { type: "number" },
+    summary: { type: "string" },
     reasoning_trace: { type: "string" },
     subclaim_summary: { type: "object", additionalProperties: true },
     assessed_at: { type: "string", format: "date-time" },
@@ -459,6 +460,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     claim_id: { type: "string", format: "uuid" },
                     status: { type: "string" },
                     confidence: { type: "number" },
+                    summary: { type: "string" },
                     reasoning_trace: { type: "string" },
                     is_current: { type: "boolean" },
                     subclaim_summary: { type: "object", additionalProperties: true },
@@ -680,11 +682,14 @@ function formatClaim(claim: { id: string; text: string; claimType: string; state
   };
 }
 
-export function formatAssessment(a: { id: string; status: string; confidence: number; reasoningTrace: string; subclaimSummary: unknown; assessedAt: Date }) {
+export function formatAssessment(a: { id: string; status: string; confidence: number; summary: string | null; reasoningTrace: string; subclaimSummary: unknown; assessedAt: Date }) {
   return {
     id: a.id,
     status: a.status,
     confidence: a.confidence,
+    // Reader-facing body; fall back to the reasoning trace for assessments
+    // written before the summary/reasoning split (nullable column).
+    summary: a.summary ?? a.reasoningTrace,
     reasoning_trace: a.reasoningTrace,
     // Guarantee a non-null object so clients can safely Object.entries() it (issue #17).
     subclaim_summary: a.subclaimSummary ?? {},
@@ -697,6 +702,7 @@ function formatAssessmentHistory(a: {
   claimId: string;
   status: string;
   confidence: number;
+  summary: string | null;
   reasoningTrace: string;
   isCurrent: boolean;
   subclaimSummary: unknown;
@@ -709,6 +715,7 @@ function formatAssessmentHistory(a: {
     claim_id: a.claimId,
     status: a.status,
     confidence: a.confidence,
+    summary: a.summary ?? a.reasoningTrace,
     reasoning_trace: a.reasoningTrace,
     is_current: a.isCurrent,
     subclaim_summary: a.subclaimSummary ?? {},

@@ -167,6 +167,12 @@ export const assessments = pgTable(
       .references(() => claims.id, { onDelete: "cascade" }),
     status: text("status").notNull(),
     confidence: real("confidence").notNull(),
+    // Reader-facing explanation shown front-and-centre on the claim page: a
+    // welcoming, encyclopedia-style account of the best state of knowledge and
+    // where credible disagreement lies. Distinct from reasoningTrace, which is
+    // the transparent audit detail. Nullable for back-compat: assessments
+    // written before this split fall back to reasoningTrace in the UI.
+    summary: text("summary"),
     reasoningTrace: text("reasoning_trace").notNull(),
     isCurrent: boolean("is_current").notNull().default(true),
     subclaimSummary: jsonb("subclaim_summary").notNull().default({}),
