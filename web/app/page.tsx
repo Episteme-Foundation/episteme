@@ -22,7 +22,7 @@ export default async function Home() {
       <div className={styles.hero}>
         <p className={`sc ${styles.eyebrow}`}>An open repository of claims</p>
         <h1 className={styles.heroTitle}>
-          The same claims, investigated over and over. Episteme does that work once.
+          Knowledge that compounds instead of starting over.
         </h1>
         <p className={styles.heroLede}>
           Every claim decomposed to its bedrock, weighed against the evidence, and kept

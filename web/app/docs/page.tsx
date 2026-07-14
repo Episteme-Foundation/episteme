@@ -35,8 +35,8 @@ export default function DocsPage() {
         <h2 id="the-idea">The idea</h2>
         <p className="dropcap">
           Across the internet the same claims get investigated over and over, and the
-          reasoning is thrown out the moment a session ends. Episteme does that work once.
-          It is an open repository of the world&rsquo;s claims, maintained by LLM
+          reasoning is thrown out the moment a session ends. Episteme keeps that work,
+          and builds on it. It is an open repository of the world&rsquo;s claims, maintained by LLM
           administrators bound by a public constitution. Picture Wikipedia, if its pages
           were not topics but individual claims, each one weighed against the evidence and
           kept current as the world changes.
