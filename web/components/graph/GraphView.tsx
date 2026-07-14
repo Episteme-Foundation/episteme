@@ -69,7 +69,7 @@ function partialFrom(bits: ClaimBits, node?: TreeNode): ClaimDetail {
     assessment: bits.status
       ? {
           id: "", status: bits.status, confidence: bits.confidence ?? 0,
-          reasoning_trace: "", subclaim_summary: {}, assessed_at: "",
+          summary: "", reasoning_trace: "", subclaim_summary: {}, assessed_at: "",
         }
       : null,
     subclaim_count: node?.children.length ?? 0,
