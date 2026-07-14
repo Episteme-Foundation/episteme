@@ -145,7 +145,7 @@ const FLAGSHIP: ClaimDetail = {
       {
         id: "threshold-def",
         text: "The threshold for “high” annual CPI inflation is 5%.",
-        claim_type: "definitional", state: "contested", depth: 1,
+        claim_type: "definitional", state: "active", depth: 1,
         relation_type: "defines",
         reasoning: "Whether 6.5% counts as “high” depends entirely on where the threshold is set. This is a definitional choice, not an empirical finding, and reasonable sources place it differently.",
         confidence: 0.6, assessment_status: "contested", assessment_confidence: 0.55,
@@ -189,7 +189,7 @@ const FLAGSHIP: ClaimDetail = {
 
 const INDEX: SearchResultItem[] = [
   { id: "inflation-2022", text: FLAGSHIP.claim.text, claim_type: "empirical_derived", state: "active", similarity_score: 0.91, importance: 0.9, assessment_status: "supported", assessment_confidence: 0.78 },
-  { id: "min-wage", text: "The federal minimum wage should be raised to $15 per hour.", claim_type: "normative", state: "contested", similarity_score: 0.74, importance: 0.7, assessment_status: "contested", assessment_confidence: 0.62 },
+  { id: "min-wage", text: "The federal minimum wage should be raised to $15 per hour.", claim_type: "normative", state: "active", similarity_score: 0.74, importance: 0.7, assessment_status: "contested", assessment_confidence: 0.62 },
   { id: "universe-age", text: "The universe is approximately 13.8 billion years old.", claim_type: "empirical_derived", state: "active", similarity_score: 0.69, importance: 0.55, assessment_status: "verified", assessment_confidence: 0.94 },
   { id: "mw-employment", text: "Raising the minimum wage to $15 reduces teen employment.", claim_type: "causal", state: "active", similarity_score: 0.66, importance: 0.4, assessment_status: "contested", assessment_confidence: 0.5 },
   // An unassessed, low-importance leaf — left queued under the Steward's budget.

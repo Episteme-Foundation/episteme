@@ -49,12 +49,14 @@ export const claims = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     text: text("text").notNull(),
     claimType: text("claim_type").notNull().default("empirical_derived"),
-    // Claim lifecycle: 'active' (live), 'deprecated' (merge loser — see
-    // mergedInto), 'archived' (retired pipeline-epoch cohort, see
-    // scripts/archive-legacy-claims.ts). Non-active claims stay readable by
-    // direct id but leave search, matching, browse, trees, and the steward
-    // queue — all read paths filter state = 'active' (allowlist, so any new
-    // state defaults to hidden).
+    // Claim lifecycle: 'active' (live), 'merged' (merge loser, aliased to the
+    // survivor via mergedInto), 'deprecated' (reversed curator-created claim,
+    // soft-deleted since downstream rows may reference it), 'archived' (retired
+    // pipeline-epoch cohort, see scripts/archive-legacy-claims.ts). Keep in
+    // sync with claimStateEnum in src/schemas/common.ts. Non-active claims stay
+    // readable by direct id but leave search, matching, browse, trees, and the
+    // steward queue — all read paths filter state = 'active' (allowlist, so any
+    // new state defaults to hidden).
     state: text("state").notNull().default("active"),
     mergedInto: uuid("merged_into").references((): any => claims.id),
     decompositionStatus: text("decomposition_status")

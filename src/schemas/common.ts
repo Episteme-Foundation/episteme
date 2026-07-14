@@ -16,12 +16,16 @@ export const claimTypeEnum = z.enum([
   "normative",
 ]);
 
+// The states the system actually writes (see claims.state in src/db/schema.ts):
+// 'active' (live), 'merged' (merge loser, aliased via merged_into), 'deprecated'
+// (reversed curator-created claim, soft-deleted), 'archived' (retired
+// pipeline-epoch cohort). Contestation is an assessment status, not a lifecycle
+// state.
 export const claimStateEnum = z.enum([
   "active",
-  "under_review",
-  "contested",
   "merged",
   "deprecated",
+  "archived",
 ]);
 
 export const assessmentStatusEnum = z.enum([
