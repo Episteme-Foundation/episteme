@@ -26,7 +26,7 @@ mkdirSync(agentsDir, { recursive: true });
 
 // ---- verbatim docs --------------------------------------------------------
 copyFileSync(resolve(root, "admin_constitution.md"), resolve(contentDir, "constitution.md"));
-copyFileSync(resolve(root, "docs/architecture-plan.md"), resolve(contentDir, "architecture.md"));
+copyFileSync(resolve(root, "docs/architecture.md"), resolve(contentDir, "architecture.md"));
 copyFileSync(resolve(root, "docs/policies.md"), resolve(contentDir, "policies.md"));
 
 // ---- split the assembled prompt into its constitution / role layers -------
@@ -57,7 +57,7 @@ const AGENTS: AgentMeta[] = [
   { key: "extractor", name: "Extractor", stage: 1, group: "processing",
     tagline: "Pulls atomic claims out of a source document, in canonical form.",
     invokedWhen: "A URL or document is submitted for ingestion.",
-    model: "Claude Sonnet 4.6", fn: getExtractorSystemPrompt },
+    model: "Claude Sonnet 5", fn: getExtractorSystemPrompt },
   { key: "matcher", name: "Matcher", stage: 2, group: "processing",
     tagline: "The single decider of claim identity: does this proposition already exist (as itself, a rewording, or its negation)? Searches the graph itself.",
     invokedWhen: "For every new claim and subclaim — at ingestion, and as a tool the Steward and Curator call before creating anything.",
@@ -65,23 +65,23 @@ const AGENTS: AgentMeta[] = [
   { key: "contribution-reviewer", name: "Contribution Reviewer", stage: 3, group: "governance",
     tagline: "Evaluates incoming contributions against policy — accept, reject, or escalate.",
     invokedWhen: "A contributor submits a challenge, support, merge, edit, instance, or argument.",
-    model: "Claude Sonnet 4.6", fn: getContributionReviewerSystemPrompt },
+    model: "Claude Sonnet 5", fn: getContributionReviewerSystemPrompt },
   { key: "claim-steward", name: "Claim Steward", stage: 4, group: "governance",
     tagline: "The owner of a claim: it decomposes the claim, maintains its canonical form, and assesses it over time. Its duty runs to the constitution and the health of the graph, not to any one contributor.",
     invokedWhen: "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
-    model: "Claude Opus 4.8", fn: getClaimStewardSystemPrompt },
+    model: "Claude Fable 5", fn: getClaimStewardSystemPrompt },
   { key: "curator", name: "Curator", stage: 5, group: "governance",
     tagline: "The graph-level counterpart to the Steward. It owns the connective tissue between claims, merging duplicates and counterparts, splitting conflations, and suggesting cross-claim edges for Stewards to adopt.",
     invokedWhen: "When a Steward escalates a structural concern (and, as a follow-up, on new-claim neighborhood sweeps).",
-    model: "Claude Opus 4.8", fn: getCuratorSystemPrompt },
+    model: "Claude Fable 5", fn: getCuratorSystemPrompt },
   { key: "dispute-arbitrator", name: "Dispute Arbitrator", stage: 6, group: "governance",
     tagline: "Resolves escalations and appeals through careful adjudication, the highest-stakes governance call.",
     invokedWhen: "A review is escalated, an appeal is filed, or a claim is persistently contested.",
-    model: "Claude Opus 4.8", fn: getDisputeArbitratorSystemPrompt },
+    model: "Claude Fable 5", fn: getDisputeArbitratorSystemPrompt },
   { key: "audit-agent", name: "Audit Agent", stage: 7, group: "governance",
     tagline: "Quality control over the governance system itself: flags issues, adjusts reputation, suspends bad actors.",
     invokedWhen: "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
-    model: "Claude Opus 4.8", fn: getAuditAgentSystemPrompt },
+    model: "Claude Fable 5", fn: getAuditAgentSystemPrompt },
 ];
 
 const index = AGENTS.map((a) => {
