@@ -143,12 +143,12 @@ describe("steward update_claim_assessment", () => {
     insertedValues.length = 0;
   });
 
-  it("persists the reader-facing summary distinctly from the reasoning trace", async () => {
+  it("persists the reader-facing assessment distinctly from the reasoning trace", async () => {
     await executeStewardTool("update_claim_assessment", {
       claim_id: "22222222-2222-2222-2222-222222222222",
       status: "contested",
       confidence: 0.6,
-      summary: "The origin of SARS-CoV-2 remains genuinely disputed among experts.",
+      assessment: "The origin of SARS-CoV-2 remains genuinely disputed among experts.",
       reasoning_trace: "Instances split 1 affirm / 2 deny; market-origin and lab-leak both credible.",
     });
     const row = insertedValues.find((r) => "reasoningTrace" in r);
@@ -156,19 +156,31 @@ describe("steward update_claim_assessment", () => {
     expect(row?.reasoningTrace).toBe("Instances split 1 affirm / 2 deny; market-origin and lab-leak both credible.");
   });
 
+  it("still accepts the legacy `summary` key from an in-flight older-prompt call", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "supported",
+      confidence: 0.7,
+      summary: "Legacy key still lands in the assessment column.",
+      reasoning_trace: "Trace.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.summary).toBe("Legacy key still lands in the assessment column.");
+  });
+
   it("lowercase-normalizes the status so a prompt-cased VERIFIED can't leave the enum", async () => {
     await executeStewardTool("update_claim_assessment", {
       claim_id: "22222222-2222-2222-2222-222222222222",
       status: "VERIFIED",
       confidence: 0.9,
-      summary: "Well established.",
+      assessment: "Well established.",
       reasoning_trace: "Traces to primary sources.",
     });
     const row = insertedValues.find((r) => "reasoningTrace" in r);
     expect(row?.status).toBe("verified");
   });
 
-  it("falls back to the reasoning trace when summary is omitted (never writes blank)", async () => {
+  it("falls back to the reasoning trace when the assessment is omitted (never writes blank)", async () => {
     await executeStewardTool("update_claim_assessment", {
       claim_id: "22222222-2222-2222-2222-222222222222",
       status: "verified",

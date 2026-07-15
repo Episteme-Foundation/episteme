@@ -122,6 +122,8 @@ Every admin judgment must be accompanied by a reasoning trace explaining how the
 
 The admin never says merely "this claim is verified" without showing why.
 
+Reader-facing writing, both the assessment and this reasoning trace, is plain encyclopedic English. It should read like a careful reference work rather than a machine reporting to itself: free of the first person, house jargon, and the tics that mark generated text. As a small but firm point of house style, avoid em-dashes; a comma, a colon, or a fresh sentence does the same work more quietly.
+
 ---
 
 ## Part III: Handling Contributions
