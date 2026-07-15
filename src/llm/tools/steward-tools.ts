@@ -351,7 +351,11 @@ export async function executeStewardTool(
     switch (toolName) {
       case "update_claim_assessment": {
         const claimId = input.claim_id as string;
-        const status = input.status as string;
+        // The prompt discusses statuses in UPPERCASE (VERIFIED, CONTESTED, …)
+        // but the enum — and every reader — is lowercase; normalize like the
+        // relation-type writes do so a prose-following model can't persist an
+        // out-of-enum value.
+        const status = String(input.status).toLowerCase();
         const confidence = input.confidence as number;
         const reasoningTrace = input.reasoning_trace as string;
         // Reader-facing summary. Tolerate an omitted summary (older prompt / model

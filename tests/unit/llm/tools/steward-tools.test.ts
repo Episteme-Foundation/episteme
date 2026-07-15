@@ -129,6 +129,18 @@ describe("steward update_claim_assessment", () => {
     expect(row?.reasoningTrace).toBe("Instances split 1 affirm / 2 deny; market-origin and lab-leak both credible.");
   });
 
+  it("lowercase-normalizes the status so a prompt-cased VERIFIED can't leave the enum", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "VERIFIED",
+      confidence: 0.9,
+      summary: "Well established.",
+      reasoning_trace: "Traces to primary sources.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.status).toBe("verified");
+  });
+
   it("falls back to the reasoning trace when summary is omitted (never writes blank)", async () => {
     await executeStewardTool("update_claim_assessment", {
       claim_id: "22222222-2222-2222-2222-222222222222",
