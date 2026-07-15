@@ -66,12 +66,12 @@ inventing one. (Constitution §16, §2; Policy 2; Extractor prompt.)
 
 ## C. Matching / canonicalization / dedup — **the core test**
 
-This is the dimension the corpus is built to stress. **Note the two paths — they fail differently:**
-
-- **Top-level claims** retrieve candidates by embedding (cosine ≥ 0.8) then a **Matcher LLM** decides
-  match-vs-new with reasoning. (`url-extraction.ts`)
-- **Subclaims** match by **embedding only** — top-1 above the threshold, **no LLM judgment**.
-  (`claim-pipeline.ts`)
+This is the dimension the corpus is built to stress. All matching — top-level and subclaim — goes through
+the single **agentic Matcher** (`src/llm/agents/matcher.ts`): top-level claims reach it via
+`url-extraction.ts`, subclaims via the Steward's `match_claim` tool. Embedding similarity is retrieval,
+not decision — each search returns the top `MATCHING_TOP_K` candidates above a low 0.4 cosine floor, and
+the Matcher is expected to search multiple framings (including the negation) before the **Matcher LLM**
+decides match-vs-new with reasoning.
 
 **Standard.** Two claims are the same iff they would decompose identically / have the same truth conditions.
 When unsure, create both and map the relationship — liberal creation, rigorous mapping, conservative
@@ -81,14 +81,16 @@ merging. (Constitution §4, §16–18; Policy 4; Matcher prompt.)
 - **Over-merging (the worst failure).** Collapsing claims with different truth conditions into one canonical
   node — e.g. "AGI will kill everyone" merged with "AGI poses serious catastrophic risk," or a claim merged
   with its own negation. This silently *destroys the disagreement the system exists to surface*
-  (§1 clarity, §15 fair representation, §16 individuation). The embedding-only subclaim path is especially
-  exposed here, because negations and polar opposites sit close in vector space with no LLM to catch it.
+  (§1 clarity, §15 fair representation, §16 individuation). Note the design nuance: a claim and its
+  negation are *deliberately* one node with per-source stance recorded — the failure is collapsing claims
+  with genuinely different truth conditions, not counterpart handling.
 - **Fragmentation / under-merging.** The same proposition, stated across several posts, ends up as multiple
   canonical claims because canonical forms diverged (see B) or embeddings fell below threshold. This defeats
   the core scaling premise that redundant claims collapse to one node (README). Watch the
   near-duplicate-canonical-pairs section.
-- **Threshold artifacts.** Matches/non-matches that look arbitrary and would flip with a small change to the
-  0.8 / 0.85 cutoffs. If a merge decision hinges on the threshold rather than the meaning, flag it.
+- **Retrieval artifacts.** Matches/non-matches that hinge on what retrieval happened to surface — the right
+  candidate never appeared within the `MATCHING_TOP_K` window or above the 0.4 similarity floor, so the
+  Matcher never evaluated it. If a merge decision hinges on retrieval rather than the meaning, flag it.
 - **Order sensitivity.** Matching is stateful — the first phrasing ingested becomes the canonical node and
   later phrasings attach to it. Check that the "winning" canonical form is a good one and not an artifact of
   which post happened to be processed first.
@@ -113,8 +115,11 @@ claims. Don't add subclaims that aren't logically necessary. (Constitution §2; 
 
 **Failure modes.**
 - **Shallow decomposition** — stops early, marks a clearly compound claim atomic.
-- **Runaway / filler decomposition** — generates generic boilerplate subclaims, or keeps splitting until it
-  hits the depth cap (`maxDecompositionDepth` = 5) without ever reaching real bedrock.
+- **Runaway / filler decomposition** — generates generic boilerplate subclaims, or keeps splitting without
+  ever reaching real bedrock. There is no depth cap: decomposition is bounded economically — a new subclaim
+  the Steward scores below `STEWARD_ENQUEUE_MIN_IMPORTANCE` (default 0.25) is left an embedded stub rather
+  than recursively decomposed, and total Steward invocations are capped by `STEWARD_MAX_RUNS` — so filler
+  with inflated importance scores burns real run budget.
 - **Evaluation leakage** — the decomposer judges validity instead of structure ("this subclaim is false…"),
   violating neutral decomposition.
 - **Missing definitional / presupposition subclaims** — fails to surface what load-bearing terms mean

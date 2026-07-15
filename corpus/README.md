@@ -146,9 +146,12 @@ dump for deeper digging.
   ok/error, duration) so inter-agent behavior and propagation are observable.
 - `enqueueAudit` has no call site anywhere, so the audit agent never runs even in
   production — the runner drains the audit queue but it stays empty.
-- The matcher retrieves candidates at cosine 0.8 (top-level, in
-  `url-extraction.ts`) while subclaim matching uses
-  `MATCHING_SIMILARITY_THRESHOLD` (0.85) with no LLM. These thresholds are the
-  main disambiguation knobs. Note the asymmetry: only the subclaim threshold is
-  env-configurable (`MATCHING_SIMILARITY_THRESHOLD`); the top-level 0.8 is
-  hardcoded in `url-extraction.ts`, so changing it means editing that file.
+- All claim identity — top-level and subclaim — is decided by the single
+  agentic Matcher (`src/llm/agents/matcher.ts`): top-level claims reach it via
+  `url-extraction.ts`, subclaims via the Steward's `match_claim` tool.
+  Embedding similarity is retrieval, not decision: each search returns the top
+  `MATCHING_TOP_K` candidates (default 20) above a deliberately low 0.4 cosine
+  floor, and the Matcher LLM makes the final match-vs-new call after searching
+  multiple framings (including the negation). The disambiguation knobs are
+  `MATCHING_TOP_K` and `MATCHER_MODEL` (default Haiku); the 0.4 retrieval floor
+  is hardcoded in `matcher.ts`, so changing it means editing that file.
