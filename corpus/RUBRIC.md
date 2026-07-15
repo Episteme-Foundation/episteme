@@ -157,7 +157,7 @@ Secondary for a disambiguation-focused run, but it runs, so sanity-check it.
 **Standard.** Use the six statuses honestly (Verified, Supported, Contested, Unsupported, Contradicted,
 Unknown); never round a genuinely contested claim up to verified or down to contradicted; every assessment
 carries a substantive reasoning trace; assessment is holistic judgment, not mechanical aggregation.
-(Constitution §1, §7, §8, §22; Policy 1, 7, 8; architecture-plan §3.)
+(Constitution §1, §7, §8, §22; Policy 1, 7, 8; architecture doc, "Judgment-based propagation".)
 
 **Failure modes.**
 - **Status collapse** — nearly everything lands on one status (all `contested`, or all `unknown`).
@@ -178,15 +178,15 @@ enough to propagate to dependent claims, and to maintain canonical forms, argume
 proposals. Propagation should be **self-limiting**: most changes absorb within one or two levels, because
 superior claims are not the locus for disputes about their subclaims. The run drains the steward queue (and
 anything it triggers) to quiescence; this dimension judges whether that settling behaves well.
-(Constitution §18, §19, §22; Policy: Claim Steward; architecture-plan §3.)
+(Constitution §18, §19, §22; Policy: Claim Steward; architecture doc, "Judgment-based propagation".)
 
 **Failure modes.**
 - **Non-termination / runaway propagation** — stewardship keeps enqueuing more stewardship work and the
   run hits the safety cap instead of reaching quiescence (the run log prints `CAPPED`). A sign propagation
   isn't self-limiting.
 - **Infectious contestation** — a single contested subclaim deep in the graph propagates upward and flips
-  many ancestors to `contested`, exactly the failure architecture-plan §3 warns about. Watch the assessment
-  distribution before vs. after the steward pass.
+  many ancestors to `contested`, exactly the failure the architecture doc's "Judgment-based propagation"
+  section warns about. Watch the assessment distribution before vs. after the steward pass.
 - **Inert steward** — the steward runs but never changes anything (no reassessments, no canonical-form
   edits, no merge proposals) across the whole corpus, suggesting it's a no-op rather than exercising
   judgment.
@@ -245,8 +245,8 @@ above so it stops being a surprise.
   including definitional/mechanical ones like "outer optimization selects parameters that minimize loss on
   training data" and the DEFINES claim "'capabilities' refers to task-performance competence." These read as
   bedrock/definitional, not genuinely contested. Early sign of the infectious-contestation risk
-  (architecture-plan §3) at the leaf level. Watch across runs; likely an assessor-prompt calibration issue
-  (rubric F). Stage: assessor. _(Persisted in the 2-post run: 25/32 contested.)_
+  (architecture doc, "Judgment-based propagation") at the leaf level. Watch across runs; likely an
+  assessor-prompt calibration issue (rubric F). Stage: assessor. _(Persisted in the 2-post run: 25/32 contested.)_
 
 **Run 2026-06-21, AGI Ruin + Christiano response (caps 5/depth 1/3, governance fixed):**
 
