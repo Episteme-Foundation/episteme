@@ -47,13 +47,6 @@ export interface StewardMessage {
     // and reconcile (re-assess; adopt the suggested edge if apt).
     | "curator_change";
   context: string;
-  /**
-   * How load-bearing the claim is (0..1). The local runner drains higher-
-   * importance Steward messages first, so important claims are processed before
-   * a run budget (stewardMaxRuns) is exhausted. Defaults to the claim's stored
-   * importance at enqueue time.
-   */
-  importance?: number;
 }
 
 export interface AuditMessage {
@@ -174,9 +167,9 @@ export async function enqueueArbitration(
  * "Enqueue" a Steward run by marking the claim pending in the DB — the claim row
  * IS the work queue. Idempotent: re-triggers coalesce into the single pending
  * slot (latest trigger/context wins), which tames the propagation storm where
- * one assessment notifies many dependents. Ordering is by the claim's stored
- * `importance`, so the message's `importance` field is advisory only and unused
- * here. Works identically in dev and prod — there is no SQS path for the Steward.
+ * one assessment notifies many dependents. Ordering is by the persisted
+ * `claims.importance` column, so the message carries no importance of its own.
+ * Works identically in dev and prod — there is no SQS path for the Steward.
  */
 export async function enqueueSteward(
   message: StewardMessage

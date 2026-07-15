@@ -52,6 +52,22 @@ function Node({ node }: { node: TreeNode }) {
             {node.text}
           </span>{" "}
           <Link className="plain" href={`/claims/${node.id}`} title="open this claim" style={{ color: "var(--faint)" }}>↗</Link>
+          {node.subtree_collapsed && (
+            <span
+              title="shared subclaim: its decomposition appears at its first occurrence in this tree"
+              style={{ color: "var(--faint)", fontSize: "0.85em", fontStyle: "italic" }}
+            >
+              {" "}· shown above
+            </span>
+          )}
+          {node.children_truncated && (
+            <span
+              title="this tree response is size-capped; open the claim to see all of its subclaims"
+              style={{ color: "var(--faint)", fontSize: "0.85em", fontStyle: "italic" }}
+            >
+              {" "}· more on its page
+            </span>
+          )}
         </div>
 
         <span className="node-meta">

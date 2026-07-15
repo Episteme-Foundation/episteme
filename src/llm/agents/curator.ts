@@ -13,7 +13,7 @@ import {
   executeGraphTool,
 } from "../tools/graph-tools.js";
 import {
-  getGovernanceToolDefinitions,
+  getClaimContextToolDefinitions,
   executeGovernanceTool,
 } from "../tools/governance-tools.js";
 import {
@@ -45,15 +45,17 @@ async function runCuratorImpl(input: {
   const model = input.model ?? config.curatorModel;
 
   const graphTools = getGraphToolDefinitions();
-  const governanceTools = getGovernanceToolDefinitions();
+  // Claim-scoped subset only: the contribution/contributor/decision tools in
+  // the full governance bundle are never referenced by the Curator's prompt.
+  const claimContextTools = getClaimContextToolDefinitions();
   const curatorTools = getCuratorToolDefinitions();
 
   const graphNames = new Set(graphTools.map((t) => t.name));
-  const governanceNames = new Set(governanceTools.map((t) => t.name));
+  const claimContextNames = new Set(claimContextTools.map((t) => t.name));
 
   const tools = [
     ...graphTools,
-    ...governanceTools,
+    ...claimContextTools,
     getMatcherToolDefinition(),
     ...curatorTools,
   ];
@@ -87,7 +89,7 @@ Proceed:
     executeTool: async (name, toolInput) => {
       if (name === "match_claim") return executeMatcherTool(name, toolInput);
       if (graphNames.has(name)) return executeGraphTool(name, toolInput);
-      if (governanceNames.has(name)) return executeGovernanceTool(name, toolInput);
+      if (claimContextNames.has(name)) return executeGovernanceTool(name, toolInput);
       return executeCuratorTool(name, toolInput);
     },
   });

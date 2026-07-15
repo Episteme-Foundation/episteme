@@ -115,6 +115,22 @@ export function getGovernanceToolDefinitions(): Tool[] {
   ];
 }
 
+// The claim-facing subset of the bundle. The Steward and Curator work on
+// claims, not contributions — their prompts never mention the contribution/
+// contributor/decision tools, so attaching the whole bundle was pure extra
+// context surface (#100). Those agents get just the claim readers; the
+// Reviewer, Arbitrator, and Audit Agent keep the full bundle.
+const CLAIM_CONTEXT_TOOL_NAMES = new Set([
+  "get_claim_with_context",
+  "get_claim_dependents",
+]);
+
+export function getClaimContextToolDefinitions(): Tool[] {
+  return getGovernanceToolDefinitions().filter((t) =>
+    CLAIM_CONTEXT_TOOL_NAMES.has(t.name)
+  );
+}
+
 export async function executeGovernanceTool(
   toolName: string,
   input: Record<string, unknown>

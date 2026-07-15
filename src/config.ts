@@ -278,5 +278,40 @@ export function loadConfig(): Config {
     };
   }
 
+  // The constitution's "strongest model for non-saturating assessment" mandate
+  // (#77) lives entirely in deploy-time env — the code defaults keep tests and
+  // local dev cheap on Sonnet, so out of the box the defaults invert the
+  // mandate (#100). Production must therefore say explicitly which model each
+  // load-bearing agent runs (the CDK stack does; this catches a deploy that
+  // regresses it). Any other environment gets a once-per-process warning so a
+  // new setup — e.g. the corpus harness — doesn't run assessment on the cheap
+  // tier without anyone choosing that.
+  const defaultedModelEnvs = [
+    "STEWARD_MODEL",
+    "CURATOR_MODEL",
+    "AUDIT_MODEL",
+    "ARBITRATION_MODEL",
+  ].filter((k) => !process.env[k]);
+  if (defaultedModelEnvs.length > 0) {
+    if (_config.env === "production") {
+      _config = null;
+      throw new Error(
+        `Missing model env(s) in production: ${defaultedModelEnvs.join(", ")}. ` +
+          "The load-bearing agents (Steward/Curator/Audit/Arbitration) must " +
+          "run an explicitly chosen tier (issue #77) — set the env(s) rather " +
+          "than silently falling back to the cheap default."
+      );
+    }
+    if (!process.env.VITEST) {
+      console.warn(
+        `[config] ${defaultedModelEnvs.join(", ")} not set — the ` +
+          "Steward/Curator/Audit/Arbitration agents will run on the cheap " +
+          `default (${MODELS.sonnet}). Fine for local dev; set the env(s) ` +
+          "(production uses claude-fable-5) if this environment does real " +
+          "assessment work."
+      );
+    }
+  }
+
   return _config;
 }

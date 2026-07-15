@@ -38,6 +38,11 @@ export interface TreeNode {
   argument_name: string | null;
   argument_stance: Stance | null;
   children: TreeNode[];
+  // A repeated occurrence of a shared subclaim: its children are rendered at
+  // the node's first occurrence in the response, not duplicated here.
+  subtree_collapsed?: boolean;
+  // The API's node cap dropped some of this node's children.
+  children_truncated?: boolean;
 }
 
 export interface Assessment {
