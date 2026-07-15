@@ -54,6 +54,86 @@ describe("loadConfig model defaults", () => {
   });
 });
 
+describe("loadConfig load-bearing model env guard (#100)", () => {
+  const MODEL_ENV = ["STEWARD_MODEL", "CURATOR_MODEL", "AUDIT_MODEL", "ARBITRATION_MODEL"];
+  const saved: Record<string, string | undefined> = {};
+  let savedEnvironment: string | undefined;
+
+  beforeEach(() => {
+    for (const k of MODEL_ENV) {
+      saved[k] = process.env[k];
+      delete process.env[k];
+    }
+    savedEnvironment = process.env.ENVIRONMENT;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    for (const k of MODEL_ENV) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+    if (savedEnvironment === undefined) delete process.env.ENVIRONMENT;
+    else process.env.ENVIRONMENT = savedEnvironment;
+    vi.restoreAllMocks();
+  });
+
+  it("throws in production when a load-bearing model env is unset", async () => {
+    process.env.ENVIRONMENT = "production";
+    const { loadConfig } = await import("../../src/config.js");
+    expect(() => loadConfig()).toThrow(/STEWARD_MODEL/);
+  });
+
+  it("names only the missing envs", async () => {
+    process.env.ENVIRONMENT = "production";
+    process.env.STEWARD_MODEL = "claude-fable-5";
+    process.env.CURATOR_MODEL = "claude-fable-5";
+    process.env.AUDIT_MODEL = "claude-fable-5";
+    const { loadConfig } = await import("../../src/config.js");
+    let message = "";
+    try {
+      loadConfig();
+    } catch (err) {
+      message = err instanceof Error ? err.message : String(err);
+    }
+    expect(message).toContain("ARBITRATION_MODEL");
+    expect(message).not.toContain("STEWARD_MODEL");
+  });
+
+  it("loads in production when all load-bearing model envs are set", async () => {
+    process.env.ENVIRONMENT = "production";
+    for (const k of MODEL_ENV) process.env[k] = "claude-fable-5";
+    const { loadConfig } = await import("../../src/config.js");
+    const config = loadConfig();
+    expect(config.stewardModel).toBe("claude-fable-5");
+  });
+
+  it("only warns outside production (and stays quiet under vitest)", async () => {
+    process.env.ENVIRONMENT = "development";
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { loadConfig } = await import("../../src/config.js");
+    expect(() => loadConfig()).not.toThrow();
+    // VITEST is set in this process, so the dev warning is suppressed too.
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("warns in a non-vitest dev process running on the cheap defaults", async () => {
+    process.env.ENVIRONMENT = "development";
+    const savedVitest = process.env.VITEST;
+    delete process.env.VITEST;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { loadConfig } = await import("../../src/config.js");
+      loadConfig();
+      expect(warn).toHaveBeenCalledOnce();
+      expect(String(warn.mock.calls[0]![0])).toContain("STEWARD_MODEL");
+    } finally {
+      if (savedVitest === undefined) delete process.env.VITEST;
+      else process.env.VITEST = savedVitest;
+    }
+  });
+});
+
 describe("loadConfig API key contributor bindings (issue #10)", () => {
   let savedApiKeys: string | undefined;
 
