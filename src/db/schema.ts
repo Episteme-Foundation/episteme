@@ -13,7 +13,7 @@ import {
   check,
   customType,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 
 // Custom pgvector type
 const vector = customType<{ data: number[]; driverParam: string }>({
@@ -33,7 +33,9 @@ const vector = customType<{ data: number[]; driverParam: string }>({
   },
 });
 
-// Custom tsvector type (generated column, read-only)
+// Custom tsvector type. The column is GENERATED ALWAYS from claims.text in
+// the database (so it can never drift or be forgotten on insert) and is
+// therefore read-only from the ORM.
 const tsvector = customType<{ data: string; driverParam: string }>({
   dataType() {
     return "tsvector";
@@ -90,7 +92,9 @@ export const claims = pgTable(
     // outage never permanently strands the graph.
     stewardAttempts: integer("steward_attempts").notNull().default(0),
     embedding: vector("embedding"),
-    textSearch: tsvector("text_search"),
+    textSearch: tsvector("text_search").generatedAlwaysAs(
+      (): SQL => sql`to_tsvector('english', ${claims.text})`
+    ),
     // Which pipeline epoch minted this claim (config.pipelineEpoch at creation).
     // An epoch names a prompt/constitution era; when agent behavior changes
     // materially, the epoch is bumped and the previous cohort can be archived
@@ -113,6 +117,9 @@ export const claims = pgTable(
     index("idx_claims_steward_queue")
       .on(table.importance.desc(), table.updatedAt)
       .where(sql`steward_state = 'pending'`),
+    // Keyword search (`text_search @@ websearch_to_tsquery(...)`) scans this,
+    // not the heap, as the graph grows.
+    index("idx_claims_text_search").using("gin", table.textSearch),
   ]
 );
 

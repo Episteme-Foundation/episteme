@@ -78,6 +78,13 @@
       "when": 1783945808723,
       "tag": "0010_plain_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783993019640,
+      "tag": "0011_text_search_generated",
+      "breakpoints": true
     }
   ]
 }
