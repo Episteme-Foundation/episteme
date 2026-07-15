@@ -8,6 +8,8 @@ import {
   decompositionEffects, effectCounts, groupByArgument, EFFECT, EFFECT_ORDER,
   type ScoredNode, type ArgumentGroup,
 } from "@/lib/ontology";
+import { buildClaimTextMap, hasClaimLinks } from "@/lib/claim-links";
+import { ArgumentText } from "@/components/ArgumentText";
 import styles from "./margins.module.css";
 
 // One subclaim line in the revealed outline.
@@ -31,10 +33,15 @@ function OutlineNode({ scored }: { scored: ScoredNode }) {
 }
 
 // A collapsible argument group, coloured by its NET effect on the main claim.
-function ArgumentBlock({ group, defaultOpen }: { group: ArgumentGroup; defaultOpen: boolean }) {
+function ArgumentBlock({
+  group, defaultOpen, texts,
+}: { group: ArgumentGroup; defaultOpen: boolean; texts: Map<string, string> }) {
   const [open, setOpen] = useState(defaultOpen);
   const present = EFFECT_ORDER.filter((e) => group.counts[e] > 0);
   const n = group.nodes.length;
+  // The written form: how these subclaims combine to bear on the claim, with
+  // the subclaims linked inline. Label-only legacy content is skipped.
+  const written = group.content && hasClaimLinks(group.content) ? group.content : null;
   return (
     <li className={styles.argGroup}>
       <button type="button" className={styles.argHead} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
@@ -50,6 +57,11 @@ function ArgumentBlock({ group, defaultOpen }: { group: ArgumentGroup; defaultOp
       </button>
       {open && (
         <>
+          {written && (
+            <p className={styles.argProse}>
+              <ArgumentText content={written} texts={texts} />
+            </p>
+          )}
           <div className={styles.argBar} title="effect of this argument's subclaims on the claim" aria-hidden>
             {present.map((e) => (
               <span key={e} className={EFFECT[e].cls} style={{ width: `${(group.counts[e] / n) * 100}%` }} />
@@ -93,6 +105,7 @@ export function DecompositionCompass({ tree }: { tree: TreeNode }) {
   }
 
   const groups = groupByArgument(scored);
+  const texts = buildClaimTextMap(tree);
   // The argument primitive is optional: only group when an argument is actually
   // named. Otherwise the outline is a flat list. When there are many arguments,
   // don't open them all at once — keep the first open as a hint, collapse the rest.
@@ -136,7 +149,7 @@ export function DecompositionCompass({ tree }: { tree: TreeNode }) {
         (grouped ? (
           <ul className={styles.argList}>
             {groups.map((g, i) => (
-              <ArgumentBlock key={g.id ?? `g${i}`} group={g} defaultOpen={openAll || i === 0} />
+              <ArgumentBlock key={g.id ?? `g${i}`} group={g} defaultOpen={openAll || i === 0} texts={texts} />
             ))}
           </ul>
         ) : (

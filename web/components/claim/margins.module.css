@@ -236,6 +236,14 @@
   color: var(--faint);
   flex: none;
 }
+/* The argument's written form, revealed with the group: how these subclaims
+   combine to bear on the claim, subclaims linked inline (issue #129). */
+.argProse {
+  margin: 0.3rem 0 0 0.7rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
 .argBar {
   display: flex;
   height: 0.28rem;

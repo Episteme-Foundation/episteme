@@ -69,8 +69,9 @@ export default function DocsPage() {
           </li>
           <li>
             <strong>Arguments</strong>: named, independent lines of reasoning bearing on a
-            claim, each grouping its own subclaims. A claim can carry arguments for and
-            against side by side.
+            claim, each grouping its own subclaims. Each carries a brief written form
+            stating how those subclaims combine, with the subclaims linked inline. A
+            claim can carry arguments for and against side by side.
           </li>
           <li>
             <strong>Decomposition</strong>: typed edges (requires, supports, contradicts,

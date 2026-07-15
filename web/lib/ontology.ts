@@ -260,6 +260,10 @@ export interface ArgumentGroup {
   id: string | null;
   name: string | null;
   stance: Stance | null;
+  // The written form (issue #129): prose with [[claim:<id>]] links stating how
+  // the subclaims combine. Null for the unnamed group and legacy label-only
+  // arguments (render via hasClaimLinks to skip the latter).
+  content: string | null;
   named: boolean;
   nodes: ScoredNode[];
   counts: Record<Effect, number>;
@@ -281,6 +285,7 @@ export function groupByArgument(scored: ScoredNode[]): ArgumentGroup[] {
         id,
         name: s.node.argument_name ?? null,
         stance: s.node.argument_stance ?? null,
+        content: s.node.argument_content ?? null,
         named: Boolean(s.node.argument_name),
         nodes: [],
         counts: { supports: 0, against: 0, uncertain: 0, weak: 0 },

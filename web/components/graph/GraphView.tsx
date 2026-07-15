@@ -12,6 +12,8 @@ import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
 } from "@/lib/ontology";
+import { buildClaimTextMap } from "@/lib/claim-links";
+import { ArgumentText } from "@/components/ArgumentText";
 import {
   BEDROCK, bedrockOf, computeLayout, defaultExpanded,
   type ClaimBits, type LEdge, type LNode, type Layout,
@@ -426,6 +428,9 @@ export function GraphView({
   const impLevel = importanceLevel(d.claim.importance);
   const argDesc = (argId: string | null): string | null =>
     (d.arguments ?? []).find((a) => a.id === argId)?.content ?? null;
+  // Canonical text for every claim in the focus tree, so a written form's
+  // [[claim:<id>]] references render as the claims they name.
+  const treeTexts = buildClaimTextMap(d.tree);
 
   const nodeBody = (n: LNode) => {
     switch (n.kind) {
@@ -752,9 +757,13 @@ export function GraphView({
                   <button type="button" className={styles.previewClose} onClick={() => setPreview(null)} aria-label="Close preview">✕</button>
                 </div>
                 <p className={styles.previewText} style={{ fontWeight: 600 }}>{preview.pill.name}</p>
-                {preview.pill.desc && <div className={styles.previewNote}>{preview.pill.desc}</div>}
+                {preview.pill.desc && (
+                  <div className={styles.previewNote}>
+                    <ArgumentText content={preview.pill.desc} texts={treeTexts} />
+                  </div>
+                )}
                 <div className={styles.previewFoot}>
-                  <span>arguments group the subclaims of one line of reasoning</span>
+                  <span>an argument states how its subclaims combine to bear on the claim</span>
                 </div>
               </>
             ) : preview.claim ? (

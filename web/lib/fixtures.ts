@@ -6,6 +6,17 @@ import type { ClaimDetail, SearchResultItem } from "./types";
 // definitional threshold — which is exactly why the parent lands on SUPPORTED
 // rather than VERIFIED.
 
+// The "Direct measurement" argument's written form (issue #129): brief prose
+// stating how the subclaims combine, each referenced inline so renderers link
+// them. One string, threaded onto every edge in the argument (as the tree API
+// does) and into the argument record itself.
+const ARG_DIRECT_WRITTEN =
+  "Because [[claim:bls-cpi|the BLS measured 6.5% CPI growth for 2022]] and " +
+  "[[claim:arith|that figure exceeds]] [[claim:threshold-def|the 5% threshold " +
+  "for “high” inflation]], the claim follows. [[claim:fed-target|The Federal " +
+  "Reserve's 2% target]] anchors the threshold, though [[claim:hyperinflation-view|a " +
+  "minority usage]] reserves “high” for double-digit regimes.";
+
 const FLAGSHIP: ClaimDetail = {
   claim: {
     id: "inflation-2022",
@@ -46,8 +57,7 @@ const FLAGSHIP: ClaimDetail = {
       id: "arg-direct",
       name: "Direct measurement",
       stance: "for",
-      content:
-        "The official CPI series places 2022 inflation at 6.5%, which exceeds every mainstream threshold for “high” inflation. The only live question is definitional, not empirical.",
+      content: ARG_DIRECT_WRITTEN,
       evidence_urls: ["https://www.bls.gov/news.release/archives/cpi_01122023.htm"],
       created_by: "decomposer",
       created_at: "2024-11-02T14:25:00Z",
@@ -140,6 +150,7 @@ const FLAGSHIP: ClaimDetail = {
         reasoning: "The claim asserts a magnitude of inflation; that magnitude is fixed by the official CPI release. If the reported figure were different, the parent claim's truth would change accordingly.",
         confidence: 0.99, assessment_status: "verified", assessment_confidence: 0.97,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
+        argument_content: ARG_DIRECT_WRITTEN,
         children: [],
       },
       {
@@ -150,6 +161,7 @@ const FLAGSHIP: ClaimDetail = {
         reasoning: "Whether 6.5% counts as “high” depends entirely on where the threshold is set. This is a definitional choice, not an empirical finding, and reasonable sources place it differently.",
         confidence: 0.6, assessment_status: "contested", assessment_confidence: 0.55,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
+        argument_content: ARG_DIRECT_WRITTEN,
         children: [
           {
             id: "fed-target",
@@ -159,6 +171,7 @@ const FLAGSHIP: ClaimDetail = {
             reasoning: "A 2% target is the conventional baseline against which deviations are judged “high”; 6.5% is more than triple it.",
             confidence: 0.95, assessment_status: "verified", assessment_confidence: 0.96,
             argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
+            argument_content: ARG_DIRECT_WRITTEN,
             children: [],
           },
           {
@@ -169,6 +182,7 @@ const FLAGSHIP: ClaimDetail = {
             reasoning: "A minority usage reserves “high” for much larger figures, under which 6.5% would not qualify. Surfacing this keeps the definitional disagreement visible rather than resolved by fiat.",
             confidence: 0.5, assessment_status: "unsupported", assessment_confidence: 0.4,
             argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
+            argument_content: ARG_DIRECT_WRITTEN,
             children: [],
           },
         ],
@@ -181,6 +195,7 @@ const FLAGSHIP: ClaimDetail = {
         reasoning: "Trivial arithmetic linking the measured magnitude to the threshold.",
         confidence: 1.0, assessment_status: "verified", assessment_confidence: 1.0,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
+        argument_content: ARG_DIRECT_WRITTEN,
         children: [],
       },
     ],
