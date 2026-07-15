@@ -109,6 +109,9 @@ export const treeNodeResponse: z.ZodType<TreeNode> = z.lazy(() =>
     argument_id: uuidSchema.nullable(),
     argument_name: z.string().nullable(),
     argument_stance: stanceEnum.nullable(),
+    // The argument's written form (issue #129): brief prose with inline
+    // [[claim:<uuid>]] references, stating how the grouped subclaims combine.
+    argument_content: z.string().nullable(),
     children: z.array(treeNodeResponse),
     // Set (true) only on a repeated occurrence of a shared subclaim: the graph
     // is a DAG, and the node's children are rendered at its first occurrence
@@ -134,6 +137,7 @@ export interface TreeNode {
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: string | null;
+  argument_content: string | null;
   children: TreeNode[];
   subtree_collapsed?: boolean;
   children_truncated?: boolean;

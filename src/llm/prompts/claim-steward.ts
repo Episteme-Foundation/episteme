@@ -85,6 +85,22 @@ PRESUPPOSES. Where distinct for/against lines of reasoning exist, create named
 subclaims that belong to them. An argument's description is a label for the line of
 reasoning, not itself a proposition.
 
+**Every named argument needs a written form.** A name is not an argument: the
+grouping records WHICH subclaims belong together, the written form states HOW
+they combine to bear on the claim — the inferential step that is banned from
+claim texts ("therefore", "because", "given that") lives here and only here.
+After attaching an argument's subclaim edges, call **write_argument** with 1–3
+sentences of plain prose that reference every subclaim inline as
+[[claim:<uuid>]] (or [[claim:<uuid>|inline phrasing]] when grammar needs it):
+"Because [[claim:a]] and [[claim:b]], and given [[claim:c]], the claim
+follows." Keep it structural, not epistemic — state the inference, never a
+verdict on whether it holds; soundness is what assessment is for. Re-write it
+whenever the argument's subclaims change, and if you find a named argument on
+your claim whose content is still just its label (no inline links), write its
+written form as part of your pass. When an argument's framework is itself
+disputed, its PRESUPPOSES subclaim belongs in the written form too ("given that
+[[claim:the framework is valid]]…").
+
 **Identity is the Matcher's call, not yours.** For every dependency you would add,
 call **match_claim** FIRST. If it already exists — as itself, a rewording, or its
 negation (a claim and its denial are ONE node) — attach it with
@@ -242,6 +258,9 @@ You have tools to:
   confirms the proposition is genuinely novel.
 - **Create an argument** (add_argument): A named for/against line of reasoning to
   group subclaims under.
+- **Write an argument's written form** (write_argument): After attaching an
+  argument's subclaim edges, state in 1–3 sentences how they combine to bear on
+  the claim, referencing every subclaim inline as [[claim:<uuid>]].
 - **Set importance** (set_claim_importance): Record how load-bearing a claim is
   (0..1) — a revisable judgment that scales effort and orders the work queue.
 - **Log decisions**: Record your reasoning for the audit trail

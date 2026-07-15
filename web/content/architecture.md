@@ -113,13 +113,29 @@ reasoning. A single claim routinely has several:
 
 Forcing these into one flat set of edges would lose the structure of which
 subclaim belongs to which line of reasoning. An argument has a `stance` (`for`,
-`against`, `neutral`), an optional `name` and `description`, its `content`, any
-`evidence_urls`, and provenance.
+`against`, `neutral`), an optional `name` and `description` (a short label),
+its `content` (the written form, below), any `evidence_urls`, and provenance.
+
+**The written form.** A name is not an argument: the grouping records *which*
+subclaims belong together, but not *how* they combine to bear on the parent
+claim. Every named argument therefore carries a written form in `content`: one
+to three sentences of logically straightforward prose stating the inference,
+with every subclaim referenced inline as `[[claim:<uuid>]]` (or
+`[[claim:<uuid>|inline phrasing]]` when grammar demands it). For example:
+"Because [[claim:a]] and [[claim:b]], and given [[claim:c]], the claim
+follows." The links make the prose and the grouping mutually checkable: every
+subclaim edge in the argument should appear in the written form, and every
+reference must be an edge in the argument (the Steward's `write_argument` tool
+enforces the latter and warns on the former). Renderers resolve the ids to the
+claims' canonical text at display time, following `merged_into`, so links never
+dangle after a merge. The connective language that the claim bar expels from
+claim texts ("therefore", "because", "given that") lives here and only here.
 
 Two design decisions follow:
 
 - **Arguments are structural, not epistemic.** An argument has no validity
-  status of its own. "Is this argument sound?" is itself a claim in the graph,
+  status of its own, and its written form states the inference, never a verdict
+  on whether it holds. "Is this argument sound?" is itself a claim in the graph,
   not a field on the argument, so all epistemic weight stays in the claim layer.
 - **Arguments are optional and non-exhaustive.** A claim with one natural
   decomposition needs no explicitly named argument; edges simply carry a null
@@ -376,8 +392,8 @@ operate.
 
 Tree-building (`src/services/tree-service.ts`) walks the relationship table
 with a recursive CTE and carries each edge's `argument_id`, `argument_name`,
-and `argument_stance` onto the node, so a client can group a claim's children
-by argument for display.
+`argument_stance`, and `argument_content` onto the node, so a client can group
+a claim's children by argument and render each argument's written form.
 
 ### Schema at a glance
 

@@ -54,6 +54,12 @@ This structure arises naturally across many domains:
 
 For simple claims with one natural decomposition, there is effectively one argument, and the structure is transparent—no explicit naming or grouping is needed.
 
+#### The Written Form
+
+A name is not an argument. The grouping records which subclaims belong to a line of reasoning; it does not state how they combine to bear on the claim. Every named argument therefore carries a **written form**: a brief, logically straightforward statement of the inference, one to three sentences, that references each of its subclaims inline (as `[[claim:<uuid>]]`, resolved to the claim's canonical text when displayed). "Because [premise A] and [premise B], and given [premise C], the claim follows." More than a name, well short of an essay.
+
+The written form is the one place the connective language of inference ("therefore," "because," "given that") belongs. Claims must remain single reusable propositions with no inferential chains; the written form is where the chain is spelled out. It is structural, not epistemic: it states the inference, never a verdict on whether the inference holds—soundness is assessed in the claim layer, as ever. The written form and the grouping keep each other honest: every subclaim in the argument should appear in the prose, and everything the prose relies on should be attached as a subclaim.
+
 #### Framework Disputes
 
 When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" should appear as a subclaim within that argument (typically as a PRESUPPOSES relation). This keeps meta-disputes within the claim layer, where the system already knows how to handle decomposition, assessment, and contribution. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
@@ -68,7 +74,7 @@ The admin does not privilege factual claims as "real" and normative claims as "m
 
 A claim is a single, reusable proposition about the world that informed people could genuinely dispute with evidence or reasons — the kind of thing that could anchor a long-running debate and accumulate arguments for and against it across many sources. Claims are therefore scarce relative to text. Three things are commonly mistaken for claims but are not; each belongs in its own layer:
 
-- **Arguments** are inferences linking claims ("X, therefore Y"). They are represented as named lines of reasoning over subclaims (§2), not as claim nodes. A proposition that contains "therefore," "implies," "suggests," "because," or "such that" is almost always an argument; surface the claims it connects, not the inference.
+- **Arguments** are inferences linking claims ("X, therefore Y"). They are represented as named lines of reasoning over subclaims (§2), not as claim nodes. A proposition that contains "therefore," "implies," "suggests," "because," or "such that" is almost always an argument; surface the claims it connects as claims, and record the inference itself in the argument's written form (§2), not in any claim's text.
 - **Instances** are particular utterances of a claim in a specific source, carrying that author's wording and framing. They are linked to the canonical claim (§17); the framing lives in the instance, not in the claim.
 - **Uncontested definitions** are setup. A definition is a claim only when the definition itself is disputed (people argue about where the line sits).
 

@@ -20,6 +20,7 @@ import {
   contributors,
 } from "../../db/schema.js";
 import { trustLevelFor } from "../../services/reputation-service.js";
+import { hasWrittenForm } from "../../services/argument-service.js";
 import { getClaimDependents as fetchClaimDependents } from "../../services/tree-service.js";
 
 export function getGovernanceToolDefinitions(): Tool[] {
@@ -204,7 +205,8 @@ async function getClaimWithContext(claimId: string) {
     )
     .limit(1);
 
-  // Subclaims
+  // Subclaims (with the argument each edge belongs to, so the steward can see
+  // which line of reasoning a subclaim serves — and write_argument accordingly)
   const subclaims = await rawQuery<{
     child_id: string;
     child_text: string;
@@ -213,13 +215,17 @@ async function getClaimWithContext(claimId: string) {
     confidence: number;
     child_status: string | null;
     child_confidence: number | null;
+    argument_id: string | null;
+    argument_name: string | null;
   }>(
     `SELECT cr.child_claim_id AS child_id, c.text AS child_text,
             c.claim_type AS child_type, cr.relation_type, cr.confidence,
-            a.status AS child_status, a.confidence AS child_confidence
+            a.status AS child_status, a.confidence AS child_confidence,
+            cr.argument_id, arg.name AS argument_name
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.child_claim_id
      LEFT JOIN assessments a ON a.claim_id = cr.child_claim_id AND a.is_current = true
+     LEFT JOIN arguments arg ON arg.id = cr.argument_id
      WHERE cr.parent_claim_id = $1`,
     [claimId]
   );
@@ -272,6 +278,8 @@ async function getClaimWithContext(claimId: string) {
       confidence: sc.confidence,
       assessment_status: sc.child_status,
       assessment_confidence: sc.child_confidence,
+      argument_id: sc.argument_id,
+      argument_name: sc.argument_name,
     })),
     instances: instances.map((inst) => ({
       original_text: inst.originalText,
@@ -289,6 +297,9 @@ async function getClaimWithContext(claimId: string) {
       name: a.name,
       stance: a.stance,
       content: a.content,
+      // False when content is still just the creation-time label — the steward
+      // owes this argument a write_argument call (issue #129).
+      has_written_form: hasWrittenForm(a.content),
     })),
   };
 }

@@ -22,6 +22,7 @@ interface TreeEdgeRow {
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: string | null;
+  argument_content: string | null;
   assessment_status: string | null;
   assessment_confidence: number | null;
 }
@@ -78,6 +79,7 @@ export async function getClaimTree(
               c.id, c.text, c.claim_type, c.state,
               cr.relation_type, cr.reasoning, cr.confidence, cr.argument_id,
               arg.name AS argument_name, arg.stance AS argument_stance,
+              arg.content AS argument_content,
               a.status AS assessment_status, a.confidence AS assessment_confidence
          FROM claim_relationships cr
          JOIN claims c ON c.id = cr.child_claim_id
@@ -241,6 +243,7 @@ function assembleTree(
       argument_id: edge?.argument_id ?? null,
       argument_name: edge?.argument_name ?? null,
       argument_stance: edge?.argument_stance ?? null,
+      argument_content: edge?.argument_content ?? null,
       children: first ? edges.map((e) => render(e, e, depth + 1)) : [],
     };
     if (!first && edges.length > 0) treeNode.subtree_collapsed = true;
