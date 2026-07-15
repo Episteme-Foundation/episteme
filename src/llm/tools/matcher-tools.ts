@@ -70,6 +70,11 @@ export async function executeMatcherTool(
       new_canonical_form: decision.new_canonical_form,
       confidence: decision.confidence,
       reasoning: decision.reasoning,
+      // The near-misses the Matcher weighed and its notes on how they relate —
+      // exactly the signal the caller needs to decide link-vs-escalate, so
+      // don't strip them (#100). Inspect candidates with get_claim_details.
+      alternative_matches: decision.alternative_matches ?? [],
+      relationship_notes: decision.relationship_notes ?? null,
     });
   } catch (err) {
     return JSON.stringify({
