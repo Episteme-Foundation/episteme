@@ -110,6 +110,33 @@ describe("steward add_decomposition_edge", () => {
   });
 });
 
+describe("steward log_stewardship_decision", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    insertedValues.length = 0;
+  });
+
+  it("persists a durable audit_log row (not just a bumped timestamp)", async () => {
+    // The regression this guards (#100): the tool used to only touch
+    // claims.updated_at, so the audit trail the constitution promises
+    // ("Log All Changes") never actually existed.
+    const out = await executeStewardTool("log_stewardship_decision", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      action_taken: "reassessed",
+      reasoning: "Two new credible denying instances; moved SUPPORTED -> CONTESTED.",
+    });
+
+    expect(JSON.parse(out).success).toBe(true);
+    const row = insertedValues.find((r) => "action" in r);
+    expect(row).toMatchObject({
+      claimId: "22222222-2222-2222-2222-222222222222",
+      action: "reassessed",
+      reasoning: "Two new credible denying instances; moved SUPPORTED -> CONTESTED.",
+      createdBy: "claim_steward",
+    });
+  });
+});
+
 describe("steward update_claim_assessment", () => {
   beforeEach(() => {
     vi.clearAllMocks();

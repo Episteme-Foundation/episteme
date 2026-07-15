@@ -639,6 +639,37 @@ export const reconciliationEvents = pgTable("reconciliation_events", {
     .defaultNow(),
 });
 
+// ---------------------------------------------------------------------------
+// audit_log
+//
+// The durable stewardship audit trail (#100). The constitution and the
+// Steward's prompt promise one ("Log All Changes", "maintain an accurate audit
+// trail", §8/§11), and log_stewardship_decision is where the Steward records
+// its reasoning — so those records must outlive the tool result. Append-only:
+// one row per logged decision. Distinct from reconciliation_events (the
+// Curator's reversible-surgery snapshots) — this is reasoning, not undo state.
+// ---------------------------------------------------------------------------
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    claimId: uuid("claim_id")
+      .notNull()
+      .references(() => claims.id, { onDelete: "cascade" }),
+    // Free-form action label, e.g. 'reassessed', 'updated_canonical_form',
+    // 'no_action_needed' — the tool schema deliberately leaves this open.
+    action: text("action").notNull(),
+    reasoning: text("reasoning").notNull().default(""),
+    // Which agent logged it. Only the Steward writes today; the column keeps
+    // the trail reusable without a schema change.
+    createdBy: text("created_by").notNull().default("claim_steward"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("idx_audit_log_claim_time").on(table.claimId, table.createdAt)]
+);
+
 // Type exports
 export type Claim = typeof claims.$inferSelect;
 export type NewClaim = typeof claims.$inferInsert;
@@ -672,3 +703,5 @@ export type ReputationEvent = typeof reputationEvents.$inferSelect;
 export type NewReputationEvent = typeof reputationEvents.$inferInsert;
 export type KudosEvent = typeof kudosEvents.$inferSelect;
 export type NewKudosEvent = typeof kudosEvents.$inferInsert;
+export type AuditLogEntry = typeof auditLog.$inferSelect;
+export type NewAuditLogEntry = typeof auditLog.$inferInsert;

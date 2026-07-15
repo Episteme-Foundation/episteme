@@ -12,6 +12,7 @@ import {
   claims,
   assessments,
   claimRelationships,
+  auditLog,
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
 import { addArgument } from "../../services/argument-service.js";
@@ -606,14 +607,19 @@ export async function executeStewardTool(
       }
 
       case "log_stewardship_decision": {
-        // For now, logging goes to the assessment reasoning trace.
-        // A dedicated audit_log table could be added later.
         const claimId = input.claim_id as string;
         const actionTaken = input.action_taken as string;
         const reasoning = input.reasoning as string;
 
-        // Log as a steward note in the claim's updated timestamp
+        // The durable audit trail the constitution promises (#100) — an
+        // append-only row per decision, not just a bumped timestamp.
         const db = getDb();
+        await db.insert(auditLog).values({
+          claimId,
+          action: actionTaken,
+          reasoning,
+          createdBy: "claim_steward",
+        });
         await db
           .update(claims)
           .set({ updatedAt: new Date() })

@@ -394,8 +394,9 @@ claims ──< claim_relationships >── claims     (parent / child adjacency)
 Around that core sit the account and operations tables: `contributors` doubles
 as the account table, `api_keys` holds hashed keys, `llm_usage` meters every
 model call, `reputation_events` and `kudos_events` are the append-only score
-ledgers, `reconciliation_events` is the Curator's reversible audit log, and
-`jobs` tracks queued work.
+ledgers, `reconciliation_events` is the Curator's reversible audit log,
+`audit_log` is the Steward's append-only decision trail, and `jobs` tracks
+queued work.
 
 ### Search: vectors and full text
 
