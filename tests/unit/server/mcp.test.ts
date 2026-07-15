@@ -52,6 +52,7 @@ const mocks = vi.hoisted(() => ({
   getContributorByExternalId: vi.fn(async () => null),
   enqueueContribution: vi.fn(async () => undefined),
   resolveApiKey: vi.fn(async () => null as unknown),
+  resolveAccessToken: vi.fn(async () => null as unknown),
   checkSpend: vi.fn(),
   usageContexts: [] as unknown[],
 }));
@@ -95,6 +96,12 @@ vi.mock("../../../src/services/queue-service.js", () => ({
 }));
 vi.mock("../../../src/services/api-key-service.js", () => ({
   resolveApiKey: mocks.resolveApiKey,
+}));
+vi.mock("../../../src/services/oauth-service.js", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("../../../src/services/oauth-service.js")
+  >()),
+  resolveAccessToken: mocks.resolveAccessToken,
 }));
 vi.mock("../../../src/services/billing-service.js", () => ({
   getBillingProvider: () => ({ checkSpend: mocks.checkSpend }),
@@ -168,6 +175,7 @@ beforeEach(async () => {
     .mockImplementation(async (id: string) =>
       id === CLAIM_ID ? CLAIM_ROW : null
     );
+  mocks.resolveAccessToken.mockReset().mockResolvedValue(null);
   mocks.getCurrentAssessment.mockReset().mockResolvedValue(ASSESSMENT_ROW);
   mocks.getClaimTree.mockReset().mockResolvedValue({
     id: CLAIM_ID,
@@ -257,6 +265,43 @@ describe("MCP endpoint auth", () => {
       headers: { "x-api-key": "boundkey", accept: "text/event-stream" },
     });
     expect(res.status).toBe(405);
+  });
+
+  it("accepts an OAuth access token and resolves the consenting user", async () => {
+    mocks.resolveAccessToken.mockResolvedValue({
+      token: { id: "tok-1", userId: "contrib-1", scope: "mcp" },
+      user: {
+        id: "contrib-1",
+        externalId: "github:42",
+        displayName: "Consenting User",
+        isSuspended: false,
+      },
+    });
+    const client = await connect({ Authorization: "Bearer eoat_test-token" });
+    const { tools } = await client.listTools();
+    expect(tools.length).toBeGreaterThan(0);
+    expect(mocks.resolveAccessToken).toHaveBeenCalledWith("eoat_test-token");
+    await client.close();
+  });
+
+  it("rejects unknown OAuth access tokens without falling back to api keys", async () => {
+    mocks.resolveAccessToken.mockResolvedValue(null);
+    await expect(
+      connect({ Authorization: "Bearer eoat_bogus" })
+    ).rejects.toThrow(/Invalid or expired access token/);
+    expect(mocks.resolveApiKey).not.toHaveBeenCalledWith("eoat_bogus");
+  });
+
+  it("401s carry the RFC 9728 WWW-Authenticate challenge", async () => {
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "ping", id: 1 }),
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("www-authenticate")).toContain(
+      '/.well-known/oauth-protected-resource/mcp"'
+    );
   });
 });
 

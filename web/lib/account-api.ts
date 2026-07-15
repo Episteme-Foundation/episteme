@@ -180,3 +180,44 @@ export async function revokeApiKey(
     actingUser: externalId,
   });
 }
+
+// --- OAuth consent (remote MCP connectors) -----------------------------------
+
+export interface OAuthRequestView {
+  id: string;
+  status: string;
+  expired: boolean;
+  scope: string | null;
+  client: {
+    name: string;
+    uri: string | null;
+    logo_uri: string | null;
+    redirect_host: string;
+  };
+}
+
+export async function fetchOAuthRequest(
+  requestId: string
+): Promise<OAuthRequestView> {
+  return accountFetch(`/oauth/requests/${requestId}`);
+}
+
+/** Approve as the signed-in user; returns the client redirect URL. */
+export async function approveOAuthRequest(
+  externalId: string,
+  requestId: string
+): Promise<string> {
+  const r = await accountFetch<{ redirect_to: string }>(
+    `/oauth/requests/${requestId}/approve`,
+    { method: "POST", actingUser: externalId }
+  );
+  return r.redirect_to;
+}
+
+export async function denyOAuthRequest(requestId: string): Promise<string> {
+  const r = await accountFetch<{ redirect_to: string }>(
+    `/oauth/requests/${requestId}/deny`,
+    { method: "POST" }
+  );
+  return r.redirect_to;
+}

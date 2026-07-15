@@ -85,6 +85,13 @@
       "when": 1783993019640,
       "tag": "0011_text_search_generated",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784080799250,
+      "tag": "0012_easy_the_santerians",
+      "breakpoints": true
     }
   ]
 }

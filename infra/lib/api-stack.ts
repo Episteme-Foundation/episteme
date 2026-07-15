@@ -66,6 +66,10 @@ export class ApiStack extends cdk.Stack {
         // in-memory queues are now drained in prod too (see index.ts).
         SQS_URL_EXTRACTION_QUEUE: props.urlExtractionQueue.queueUrl,
         SQS_CLAIM_PIPELINE_QUEUE: props.claimPipelineQueue.queueUrl,
+        // OAuth issuer identity for the remote MCP server: must match the
+        // public host clients dial, since it's baked into the /.well-known
+        // metadata and token endpoint URLs.
+        PUBLIC_API_BASE_URL: "https://api.claimgraph.io",
         // The Steward assesses/decomposes the main claims — use Fable 5 there
         // (issue #77). The importance-priority drain means Fable only ever runs
         // on the top of the queue; the rest stay embedded stubs until budget

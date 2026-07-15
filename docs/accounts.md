@@ -51,7 +51,11 @@ Order of resolution in `src/server/plugins/auth.ts`:
    `x-acting-user: <externalId>` to act on behalf of a signed-in user.
 2. **Env key** (`API_KEYS` entries) — operator bootstrap keys, service-trusted.
    This is how the web frontend authenticates today.
-3. **Dev bypass** — only when no keys are configured **and** not production.
+3. **OAuth access token** (`Authorization: Bearer eoat_…`) — issued by the
+   OAuth 2.1 flow for hosted MCP clients (see [mcp.md](mcp.md)); resolves to
+   the consenting user, never service-trusted, and only accepted on `/mcp`
+   (audience-bound to the surface the consent page describes).
+4. **Dev bypass** — only when no keys are configured **and** not production.
    Production with no keys fails closed.
 
 Trust levels, enforced by route guards:

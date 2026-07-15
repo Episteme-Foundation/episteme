@@ -14,14 +14,20 @@
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { loadConfig } from "../config.js";
 import { buildMcpServer } from "../mcp/server.js";
+import { isOAuthAccessToken } from "../services/oauth-service.js";
 
-// Hosted MCP clients commonly authenticate with a Bearer token; map it onto
-// the x-api-key header the shared auth plugin resolves.
+// Hosted MCP clients commonly authenticate with a Bearer token; when it's an
+// API key (not an OAuth access token, which the auth plugin resolves from the
+// Authorization header itself), map it onto the x-api-key header.
 async function bearerToApiKey(request: FastifyRequest): Promise<void> {
   const authz = request.headers.authorization;
   if (!request.headers["x-api-key"] && authz?.startsWith("Bearer ")) {
-    request.headers["x-api-key"] = authz.slice("Bearer ".length).trim();
+    const token = authz.slice("Bearer ".length).trim();
+    if (!isOAuthAccessToken(token)) {
+      request.headers["x-api-key"] = token;
+    }
   }
 }
 
@@ -36,6 +42,20 @@ const methodNotAllowed = {
 } as const;
 
 export async function mcpRoutes(app: FastifyInstance): Promise<void> {
+  // MCP authorization (RFC 9728): a 401 must point the client at the
+  // protected-resource metadata so it can discover the OAuth flow. Scoped to
+  // this plugin, so only /mcp responses carry the challenge.
+  const issuer = loadConfig().publicApiBaseUrl.replace(/\/$/, "");
+  app.addHook("onSend", async (_request, reply, payload) => {
+    if (reply.statusCode === 401) {
+      reply.header(
+        "www-authenticate",
+        `Bearer resource_metadata="${issuer}/.well-known/oauth-protected-resource/mcp"`
+      );
+    }
+    return payload;
+  });
+
   app.post(
     "/",
     {
