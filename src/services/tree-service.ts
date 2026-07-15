@@ -1,62 +1,115 @@
 import { rawQuery } from "../db/client.js";
 import type { TreeNode } from "../schemas/claim.js";
 
-interface TreeRow {
+interface TreeRootRow {
   id: string;
   text: string;
   claim_type: string;
   state: string;
-  parent_id: string | null;
-  relation_type: string | null;
-  reasoning: string | null;
-  confidence: number | null;
-  depth: number;
   assessment_status: string | null;
   assessment_confidence: number | null;
+}
+
+interface TreeEdgeRow {
+  parent_id: string;
+  id: string;
+  text: string;
+  claim_type: string;
+  state: string;
+  relation_type: string;
+  reasoning: string | null;
+  confidence: number | null;
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: string | null;
+  assessment_status: string | null;
+  assessment_confidence: number | null;
 }
 
 /**
- * Fetch the full claim tree using a recursive CTE.
- * Returns flat rows which are then assembled into a nested tree.
+ * Cap on distinct claims fetched into one tree response. The graph is a DAG
+ * that densifies as subclaims are shared, so a tree render of it has no
+ * natural size bound; this keeps a hub claim from turning one request into a
+ * multi-megabyte payload. Nodes dropped by the cap are flagged on their
+ * parent (`children_truncated`), never silently.
+ */
+const MAX_TREE_NODES = 500;
+
+/**
+ * Fetch the claim tree by a level-at-a-time walk with a visited set (at most
+ * `maxDepth` queries), then assemble the nested tree.
+ *
+ * The graph is a DAG, not a tree: shared subclaims are the point of the
+ * design. The previous recursive CTE re-expanded a diamond once per *path*,
+ * so a shared node's whole subtree repeated for every route that reached it —
+ * on dense subgraphs a single response carried the same subtree dozens of
+ * times. The visited set fetches every node and edge exactly once, and
+ * `assembleTree` renders a shared node's children only at its first
+ * occurrence (later occurrences are stubs marked `subtree_collapsed`). The
+ * visited set also makes a relationship cycle terminate for free.
  */
 export async function getClaimTree(
   claimId: string,
-  maxDepth: number = 5
+  maxDepth: number = 5,
+  maxNodes: number = MAX_TREE_NODES
 ): Promise<TreeNode | null> {
-  const rows = await rawQuery<TreeRow>(
-    `
-    WITH RECURSIVE tree AS (
-      SELECT c.id, c.text, c.claim_type, c.state,
-        NULL::uuid AS parent_id, NULL::text AS relation_type,
-        NULL::text AS reasoning, NULL::real AS confidence,
-        NULL::uuid AS argument_id, 0 AS depth
-      FROM claims c WHERE c.id = $1
-      UNION ALL
-      SELECT child.id, child.text, child.claim_type, child.state,
-        cr.parent_claim_id, cr.relation_type, cr.reasoning, cr.confidence,
-        cr.argument_id, tree.depth + 1
-      FROM tree
-      JOIN claim_relationships cr ON cr.parent_claim_id = tree.id
-      JOIN claims child ON child.id = cr.child_claim_id
-      WHERE tree.depth < $2
-        AND child.state = 'active'
-    )
-    SELECT t.*,
-      a.status AS assessment_status, a.confidence AS assessment_confidence,
-      arg.name AS argument_name, arg.stance AS argument_stance
-    FROM tree t
-    LEFT JOIN assessments a ON a.claim_id = t.id AND a.is_current = true
-    LEFT JOIN arguments arg ON arg.id = t.argument_id
-    `,
-    [claimId, maxDepth]
+  const [root] = await rawQuery<TreeRootRow>(
+    `SELECT c.id, c.text, c.claim_type, c.state,
+            a.status AS assessment_status, a.confidence AS assessment_confidence
+       FROM claims c
+       LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
+      WHERE c.id = $1`,
+    [claimId]
   );
+  if (!root) return null;
 
-  if (rows.length === 0) return null;
+  // parent id -> its outgoing edges, each carrying the child's node fields.
+  // The (parent, child, relation) unique index plus visiting each parent
+  // exactly once means no edge is fetched twice.
+  const childEdges = new Map<string, TreeEdgeRow[]>();
+  const visited = new Set<string>([root.id]);
+  // Parents that have children the node cap dropped from this response.
+  const truncatedParents = new Set<string>();
+  let frontier = [root.id];
 
-  return assembleTree(rows);
+  for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
+    const rows = await rawQuery<TreeEdgeRow>(
+      `SELECT cr.parent_claim_id AS parent_id,
+              c.id, c.text, c.claim_type, c.state,
+              cr.relation_type, cr.reasoning, cr.confidence, cr.argument_id,
+              arg.name AS argument_name, arg.stance AS argument_stance,
+              a.status AS assessment_status, a.confidence AS assessment_confidence
+         FROM claim_relationships cr
+         JOIN claims c ON c.id = cr.child_claim_id
+         LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
+         LEFT JOIN arguments arg ON arg.id = cr.argument_id
+        WHERE cr.parent_claim_id = ANY($1)
+          AND c.state = 'active'
+        ORDER BY cr.created_at, cr.id`,
+      [frontier]
+    );
+
+    const next: string[] = [];
+    for (const row of rows) {
+      if (!visited.has(row.id)) {
+        if (visited.size >= maxNodes) {
+          truncatedParents.add(row.parent_id);
+          continue;
+        }
+        visited.add(row.id);
+        next.push(row.id);
+      }
+      // Edges into an already-visited node (a diamond, or a cycle back to an
+      // ancestor) are kept — the node shows up under this parent too — but do
+      // not re-enter the frontier, so nothing is expanded twice.
+      const edges = childEdges.get(row.parent_id);
+      if (edges) edges.push(row);
+      else childEdges.set(row.parent_id, [row]);
+    }
+    frontier = next;
+  }
+
+  return assembleTree(root, childEdges, truncatedParents);
 }
 
 export interface DependentClaim {
@@ -150,56 +203,50 @@ export async function getSubclaimCount(claimId: string): Promise<number> {
 }
 
 /**
- * Assemble flat CTE rows into a nested tree structure.
+ * Assemble the fetched edges into a nested tree, depth-first from the root.
+ *
+ * A shared subclaim appears under every parent that links it (each occurrence
+ * carrying that edge's relation/reasoning/argument), but its own children are
+ * rendered only at its first occurrence — later occurrences are stubs with
+ * `subtree_collapsed` set, which is what keeps a diamond from duplicating an
+ * entire subtree in the serialized payload.
  */
-function assembleTree(rows: TreeRow[]): TreeNode {
-  const nodeMap = new Map<string, TreeNode>();
+function assembleTree(
+  root: TreeRootRow,
+  childEdges: Map<string, TreeEdgeRow[]>,
+  truncatedParents: Set<string>
+): TreeNode {
+  const expanded = new Set<string>();
 
-  // Create all nodes
-  for (const row of rows) {
-    // Use the first occurrence of each node (shallowest depth)
-    if (!nodeMap.has(row.id)) {
-      nodeMap.set(row.id, {
-        id: row.id,
-        text: row.text,
-        claim_type: row.claim_type,
-        state: row.state,
-        depth: row.depth,
-        relation_type: row.relation_type,
-        reasoning: row.reasoning,
-        confidence: row.confidence,
-        assessment_status: row.assessment_status,
-        assessment_confidence: row.assessment_confidence,
-        argument_id: row.argument_id,
-        argument_name: row.argument_name,
-        argument_stance: row.argument_stance,
-        children: [],
-      });
-    }
-  }
+  const render = (
+    node: TreeRootRow | TreeEdgeRow,
+    edge: TreeEdgeRow | null,
+    depth: number
+  ): TreeNode => {
+    const first = !expanded.has(node.id);
+    if (first) expanded.add(node.id);
+    const edges = childEdges.get(node.id) ?? [];
 
-  // Build parent-child relationships
-  for (const row of rows) {
-    if (row.parent_id) {
-      const parent = nodeMap.get(row.parent_id);
-      const child = nodeMap.get(row.id);
-      if (parent && child) {
-        // Update child with relationship metadata from this specific edge
-        const childWithEdge: TreeNode = {
-          ...child,
-          relation_type: row.relation_type,
-          reasoning: row.reasoning,
-          confidence: row.confidence,
-          argument_id: row.argument_id,
-          argument_name: row.argument_name,
-          argument_stance: row.argument_stance,
-        };
-        parent.children.push(childWithEdge);
-      }
-    }
-  }
+    const treeNode: TreeNode = {
+      id: node.id,
+      text: node.text,
+      claim_type: node.claim_type,
+      state: node.state,
+      depth,
+      relation_type: edge?.relation_type ?? null,
+      reasoning: edge?.reasoning ?? null,
+      confidence: edge?.confidence ?? null,
+      assessment_status: node.assessment_status,
+      assessment_confidence: node.assessment_confidence,
+      argument_id: edge?.argument_id ?? null,
+      argument_name: edge?.argument_name ?? null,
+      argument_stance: edge?.argument_stance ?? null,
+      children: first ? edges.map((e) => render(e, e, depth + 1)) : [],
+    };
+    if (!first && edges.length > 0) treeNode.subtree_collapsed = true;
+    if (truncatedParents.has(node.id)) treeNode.children_truncated = true;
+    return treeNode;
+  };
 
-  // Root is the node with no parent (depth 0)
-  const root = rows.find((r) => r.depth === 0);
-  return nodeMap.get(root!.id)!;
+  return render(root, null, 0);
 }
