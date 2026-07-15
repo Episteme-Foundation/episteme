@@ -4,22 +4,42 @@ import { useState } from "react";
 import Link from "next/link";
 import type { TreeNode, Stance } from "@/lib/types";
 import { RELATION, STANCE_LABEL } from "@/lib/ontology";
+import { buildClaimTextMap, hasClaimLinks } from "@/lib/claim-links";
+import { ArgumentText } from "./ArgumentText";
 import { Swatch } from "./Assessment";
 
 // Group a node's children by the argument each decomposition edge belongs to,
 // preserving order. A claim's subclaims are organised under the named lines of
 // reasoning (arguments) they serve — the constitution's central structure.
 function groupByArgument(children: TreeNode[]) {
-  const groups: { id: string | null; name: string | null; stance: Stance | null; nodes: TreeNode[] }[] = [];
+  const groups: {
+    id: string | null; name: string | null; stance: Stance | null;
+    content: string | null; nodes: TreeNode[];
+  }[] = [];
   for (const c of children) {
     const last = groups[groups.length - 1];
     if (last && last.id === c.argument_id) last.nodes.push(c);
-    else groups.push({ id: c.argument_id, name: c.argument_name, stance: c.argument_stance, nodes: [c] });
+    else groups.push({
+      id: c.argument_id, name: c.argument_name, stance: c.argument_stance,
+      content: c.argument_content ?? null, nodes: [c],
+    });
   }
   return groups;
 }
 
-function Node({ node }: { node: TreeNode }) {
+// The argument's written form, when it has one: prose with the subclaims
+// linked inline. Legacy label-only content (no links) is not worth repeating
+// under the name, so it is skipped until the backfill upgrades it.
+function ArgumentProse({ content, texts }: { content: string | null; texts: Map<string, string> }) {
+  if (!content || !hasClaimLinks(content)) return null;
+  return (
+    <p className="argform">
+      <ArgumentText content={content} texts={texts} />
+    </p>
+  );
+}
+
+function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
   const [open, setOpen] = useState(node.depth < 2);
   const [showReason, setShowReason] = useState(false);
   const hasChildren = node.children.length > 0;
@@ -91,14 +111,17 @@ function Node({ node }: { node: TreeNode }) {
             return (
               <div className="argblock" key={g.id ?? `g${i}`} style={{ margin: "0.4rem 0" }}>
                 {newArgument && (
-                  <div className="arghead">
-                    <span className="sc">argument</span>
-                    <span className="argname">{g.name}</span>
-                    {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
-                  </div>
+                  <>
+                    <div className="arghead">
+                      <span className="sc">argument</span>
+                      <span className="argname">{g.name}</span>
+                      {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
+                    </div>
+                    <ArgumentProse content={g.content} texts={texts} />
+                  </>
                 )}
                 {g.nodes.map((n) => (
-                  <Node node={n} key={n.id} />
+                  <Node node={n} texts={texts} key={n.id} />
                 ))}
               </div>
             );
@@ -110,6 +133,7 @@ function Node({ node }: { node: TreeNode }) {
 }
 
 export function DecompositionTree({ tree }: { tree: TreeNode }) {
+  const texts = buildClaimTextMap(tree);
   return (
     <div className="tree">
       {tree.children.length === 0 ? (
@@ -121,14 +145,17 @@ export function DecompositionTree({ tree }: { tree: TreeNode }) {
         groupByArgument(tree.children).map((g, i) => (
           <div className="argblock" key={g.id ?? `g${i}`}>
             {g.name && (
-              <div className="arghead">
-                <span className="sc">argument</span>
-                <span className="argname">{g.name}</span>
-                {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
-              </div>
+              <>
+                <div className="arghead">
+                  <span className="sc">argument</span>
+                  <span className="argname">{g.name}</span>
+                  {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
+                </div>
+                <ArgumentProse content={g.content} texts={texts} />
+              </>
             )}
             {g.nodes.map((n) => (
-              <Node node={n} key={n.id} />
+              <Node node={n} texts={texts} key={n.id} />
             ))}
           </div>
         ))

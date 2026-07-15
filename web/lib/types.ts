@@ -37,6 +37,10 @@ export interface TreeNode {
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: Stance | null;
+  // The argument's written form (issue #129): brief prose with inline
+  // [[claim:<uuid>]] references stating how the grouped subclaims combine to
+  // bear on the claim. Optional while API deploys race the frontend.
+  argument_content?: string | null;
   children: TreeNode[];
   // A repeated occurrence of a shared subclaim: its children are rendered at
   // the node's first occurrence in the response, not duplicated here.
