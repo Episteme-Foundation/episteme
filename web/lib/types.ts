@@ -10,7 +10,7 @@ export type ClaimType =
   | "evaluative" | "causal" | "normative";
 
 export type ClaimState =
-  | "active" | "under_review" | "contested" | "merged" | "deprecated";
+  | "active" | "merged" | "deprecated" | "archived";
 
 export type Stance = "for" | "against" | "neutral";
 
