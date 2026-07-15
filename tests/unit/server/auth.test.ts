@@ -34,6 +34,14 @@ async function buildTestApp(
   else process.env.API_KEYS = apiKeysEnv;
   if (environment === undefined) delete process.env.ENVIRONMENT;
   else process.env.ENVIRONMENT = environment;
+  if (environment === "production") {
+    // Production config now asserts the load-bearing model envs are set
+    // (#100); satisfy the invariant so this suite tests auth, not that guard.
+    process.env.STEWARD_MODEL = "claude-fable-5";
+    process.env.CURATOR_MODEL = "claude-fable-5";
+    process.env.AUDIT_MODEL = "claude-fable-5";
+    process.env.ARBITRATION_MODEL = "claude-fable-5";
+  }
   vi.resetModules();
   const { registerAuth } = await import("../../../src/server/plugins/auth.js");
 
@@ -65,13 +73,22 @@ async function buildTestApp(
   return app;
 }
 
+const MODEL_ENVS = [
+  "STEWARD_MODEL",
+  "CURATOR_MODEL",
+  "AUDIT_MODEL",
+  "ARBITRATION_MODEL",
+];
+
 describe("auth plugin", () => {
   let savedApiKeys: string | undefined;
   let savedEnv: string | undefined;
+  const savedModels: Record<string, string | undefined> = {};
 
   beforeEach(() => {
     savedApiKeys = process.env.API_KEYS;
     savedEnv = process.env.ENVIRONMENT;
+    for (const k of MODEL_ENVS) savedModels[k] = process.env[k];
     mocks.resolveApiKey.mockReset().mockResolvedValue(null);
     mocks.getContributorByExternalId.mockReset().mockResolvedValue(null);
   });
@@ -81,6 +98,10 @@ describe("auth plugin", () => {
     else process.env.API_KEYS = savedApiKeys;
     if (savedEnv === undefined) delete process.env.ENVIRONMENT;
     else process.env.ENVIRONMENT = savedEnv;
+    for (const k of MODEL_ENVS) {
+      if (savedModels[k] === undefined) delete process.env[k];
+      else process.env[k] = savedModels[k];
+    }
   });
 
   describe("env-key binding (issue #10)", () => {
