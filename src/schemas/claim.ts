@@ -110,6 +110,13 @@ export const treeNodeResponse: z.ZodType<TreeNode> = z.lazy(() =>
     argument_name: z.string().nullable(),
     argument_stance: stanceEnum.nullable(),
     children: z.array(treeNodeResponse),
+    // Set (true) only on a repeated occurrence of a shared subclaim: the graph
+    // is a DAG, and the node's children are rendered at its first occurrence
+    // in this response rather than duplicated here.
+    subtree_collapsed: z.boolean().optional(),
+    // Set (true) only when the response's node cap dropped some of this
+    // node's children — the tree is bounded, never silently complete-looking.
+    children_truncated: z.boolean().optional(),
   })
 );
 
@@ -128,6 +135,8 @@ export interface TreeNode {
   argument_name: string | null;
   argument_stance: string | null;
   children: TreeNode[];
+  subtree_collapsed?: boolean;
+  children_truncated?: boolean;
 }
 
 export const claimDetailResponse = z.object({
