@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import Fastify from "fastify";
+import formbody from "@fastify/formbody";
 import { loadConfig } from "../config.js";
 import { registerSwagger } from "./plugins/swagger.js";
 import { registerCors } from "./plugins/cors.js";
@@ -17,6 +18,7 @@ import { contributorRoutes } from "../routes/contributors.js";
 import { apiKeyRoutes } from "../routes/api-keys.js";
 import { usageRoutes } from "../routes/usage.js";
 import { mcpRoutes } from "../routes/mcp.js";
+import { oauthRoutes } from "../routes/oauth.js";
 import { extensionRoutes } from "../routes/extension.js";
 
 export async function buildApp() {
@@ -38,6 +40,8 @@ export async function buildApp() {
   });
 
   // Plugins (swagger must be registered before routes)
+  // The OAuth token endpoint speaks application/x-www-form-urlencoded (RFC 6749).
+  await app.register(formbody);
   await registerSwagger(app);
   await registerCors(app);
   await registerAuth(app);
@@ -56,6 +60,8 @@ export async function buildApp() {
   await app.register(apiKeyRoutes, { prefix: "/api-keys" });
   await app.register(usageRoutes, { prefix: "/usage" });
   await app.register(mcpRoutes, { prefix: "/mcp" });
+  // OAuth endpoints live at absolute paths (/.well-known/*, /oauth/*), so no prefix.
+  await app.register(oauthRoutes);
   await app.register(extensionRoutes, { prefix: "/extension" });
 
   return app;

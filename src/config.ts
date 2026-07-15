@@ -61,8 +61,14 @@ const configSchema = z.object({
   corsOrigins: z.string().default(""),
 
   // Public web frontend base URL, used to build human-readable claim-page
-  // links returned by the MCP server (#73).
+  // links returned by the MCP server (#73) and to send OAuth users to the
+  // consent page.
   publicWebBaseUrl: z.string().default("https://episteme.wiki"),
+
+  // This API's own public base URL — the OAuth issuer identifier and the base
+  // for the endpoint URLs advertised in /.well-known metadata. Must match
+  // what MCP clients dial (https://api.claimgraph.io in production).
+  publicApiBaseUrl: z.string().default("http://localhost:3000"),
 
   // OpenAI embeddings
   openaiApiKey: z.string().default(""),
@@ -217,6 +223,7 @@ export function loadConfig(): Config {
     apiKeyContributors: process.env.API_KEYS,
     corsOrigins: process.env.CORS_ORIGINS,
     publicWebBaseUrl: process.env.PUBLIC_WEB_BASE_URL,
+    publicApiBaseUrl: process.env.PUBLIC_API_BASE_URL,
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     awsRegion: process.env.AWS_REGION,

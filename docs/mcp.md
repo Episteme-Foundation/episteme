@@ -18,19 +18,45 @@ transport). There is no SSE resumption stream and no session state: `GET` and
 
 ## Authentication
 
-Every call must authenticate with an Episteme **API key** (minted from the
-account dashboard, see [accounts.md](accounts.md)), passed either way:
+Two ways in; every call is attributed to an account either way.
+
+**OAuth 2.1 (hosted clients — Claude.ai / Cowork connectors).** The API is a
+full authorization server for its own `/mcp` resource: discovery metadata
+(RFC 8414 + RFC 9728), dynamic client registration (RFC 7591), the
+authorization-code grant with mandatory PKCE S256, and refresh-token rotation
+with reuse detection. The interactive login/consent half lives on the web
+frontend (which owns sessions, #70): `GET /oauth/authorize` validates the
+request and parks it, sends the browser to `episteme.wiki/oauth/consent`,
+the user signs in and approves, and the consent page redirects back to the
+client with the code. Unauthenticated `/mcp` calls get a 401 with a
+`WWW-Authenticate: Bearer resource_metadata=...` challenge so spec-compliant
+clients discover the whole flow on their own.
+
+- `GET /.well-known/oauth-authorization-server[/mcp]` · issuer metadata
+- `GET /.well-known/oauth-protected-resource[/mcp]` · resource → issuer
+- `POST /oauth/register` · dynamic client registration
+- `GET /oauth/authorize` → consent page → `POST /oauth/token`
+- Access tokens (`eoat_*`, 1 h) refresh via rotating refresh tokens
+  (`eort_*`, 30 d); a replayed refresh token revokes the whole grant.
+- Tokens are audience-bound to `/mcp` (scope `mcp`): they authenticate only
+  the MCP surface the consent page describes, never the wider REST API —
+  that's what API keys are for. A broader scope would have to be advertised,
+  consented to, and enforced before tokens work elsewhere.
+
+**API key** (minted from the account dashboard, see
+[accounts.md](accounts.md)) — for clients where you can set headers:
 
 - `x-api-key: <key>` header, or
-- `Authorization: Bearer <key>` — for hosted clients that only support a
-  bearer token.
-
-Every call is attributed to the key's owning account. OAuth with dynamic
-client registration (the flow Claude.ai prefers for one-click connectors) is
-a planned follow-up; bearer-token custom connectors work today.
+- `Authorization: Bearer <key>`.
 
 In local development with no `API_KEYS` configured, requests fall back to the
 dev-bypass identity like the REST API.
+
+### Connecting from Claude.ai / Cowork
+
+Settings → Connectors → *Add custom connector* → URL
+`https://<api-host>/mcp`. Leave the OAuth client ID/secret fields empty —
+the connector registers itself and walks the sign-in/consent flow.
 
 ### Connecting from Claude Code
 
@@ -39,11 +65,7 @@ claude mcp add --transport http episteme https://<api-host>/mcp \
   --header "x-api-key: <your-key>"
 ```
 
-### Connecting from Claude.ai / Cowork
-
-Settings → Connectors → *Add custom connector* → URL
-`https://<api-host>/mcp`, and supply the API key as a bearer token in the
-connector's advanced/auth settings.
+(Or omit the header and let `/mcp` trigger the OAuth flow interactively.)
 
 ## Metering
 
@@ -102,6 +124,9 @@ Tool calls follow the same free-vs-metered split as the REST API (#70):
 ## Configuration
 
 - `PUBLIC_WEB_BASE_URL` — base URL used for `page_url` links in tool results
-  (default `https://episteme.wiki`).
+  and for the OAuth consent page (default `https://episteme.wiki`).
+- `PUBLIC_API_BASE_URL` — this API's public base URL: the OAuth issuer and
+  the base for `/.well-known` endpoint URLs (default `http://localhost:3000`,
+  `https://api.claimgraph.io` in production).
 - Quota knobs are shared with the REST API: `AGENTIC_RATE_LIMIT_PER_HOUR`,
   `FREE_TIER_MONTHLY_USD`.

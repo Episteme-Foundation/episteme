@@ -432,6 +432,109 @@ export const llmUsage = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// oauth_clients
+//
+// OAuth 2.1 clients for the remote MCP server (#73 follow-up): hosted MCP
+// clients (Claude.ai / Cowork, etc.) register themselves via RFC 7591 dynamic
+// client registration, then send users through the authorize/consent flow.
+// `clientId` is the public OAuth client_id; the secret (confidential clients
+// only) is stored hashed like API keys — high-entropy random material, so a
+// fast unsalted SHA-256 is the right construction.
+// ---------------------------------------------------------------------------
+export const oauthClients = pgTable("oauth_clients", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: text("client_id").notNull().unique(),
+  // NULL for public clients (token_endpoint_auth_method 'none'), which prove
+  // possession via PKCE instead of a secret.
+  clientSecretHash: text("client_secret_hash"),
+  name: text("name").notNull(),
+  redirectUris: text("redirect_uris").array().notNull(),
+  tokenEndpointAuthMethod: text("token_endpoint_auth_method")
+    .notNull()
+    .default("client_secret_basic"),
+  logoUri: text("logo_uri"),
+  clientUri: text("client_uri"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// oauth_authorization_requests
+//
+// One row per authorize→consent→code round-trip. Created (pending) when the
+// client hits GET /oauth/authorize; the web consent page approves or denies
+// it on behalf of the signed-in user; approval mints the single-use
+// authorization code (stored hashed). The row is the code's audit trail:
+// which client, which user, which PKCE challenge, when it was consumed.
+// ---------------------------------------------------------------------------
+export const oauthAuthorizationRequests = pgTable(
+  "oauth_authorization_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => oauthClients.id, { onDelete: "cascade" }),
+    redirectUri: text("redirect_uri").notNull(),
+    scope: text("scope"),
+    state: text("state"),
+    // PKCE is mandatory (OAuth 2.1); only S256 is accepted.
+    codeChallenge: text("code_challenge").notNull(),
+    codeChallengeMethod: text("code_challenge_method").notNull().default("S256"),
+    // RFC 8707 resource indicator sent by MCP clients; stored for audit.
+    resource: text("resource"),
+    status: text("status").notNull().default("pending"), // pending|approved|denied|consumed
+    // The consenting account; set at approval.
+    userId: uuid("user_id").references(() => contributors.id, {
+      onDelete: "cascade",
+    }),
+    codeHash: text("code_hash").unique(),
+    // The consent window: an unapproved request dies after this.
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // The minted code's own (shorter) lifetime.
+    codeExpiresAt: timestamp("code_expires_at", { withTimezone: true }),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  }
+);
+
+// ---------------------------------------------------------------------------
+// oauth_tokens
+//
+// Access and refresh tokens, stored hashed. `grantId` groups every token ever
+// issued for one user consent (the initial exchange plus each refresh
+// rotation) so refresh-token reuse can revoke the whole grant at once.
+// ---------------------------------------------------------------------------
+export const oauthTokens = pgTable(
+  "oauth_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    grantId: uuid("grant_id").notNull(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => oauthClients.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => contributors.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    tokenType: text("token_type").notNull(), // 'access' | 'refresh'
+    scope: text("scope"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("idx_oauth_tokens_grant").on(table.grantId),
+    index("idx_oauth_tokens_user").on(table.userId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // contributions
 // ---------------------------------------------------------------------------
 export const contributions = pgTable(
@@ -691,6 +794,14 @@ export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
 export type LlmUsage = typeof llmUsage.$inferSelect;
 export type NewLlmUsage = typeof llmUsage.$inferInsert;
+export type OAuthClient = typeof oauthClients.$inferSelect;
+export type NewOAuthClient = typeof oauthClients.$inferInsert;
+export type OAuthAuthorizationRequest =
+  typeof oauthAuthorizationRequests.$inferSelect;
+export type NewOAuthAuthorizationRequest =
+  typeof oauthAuthorizationRequests.$inferInsert;
+export type OAuthToken = typeof oauthTokens.$inferSelect;
+export type NewOAuthToken = typeof oauthTokens.$inferInsert;
 export type Contribution = typeof contributions.$inferSelect;
 export type NewContribution = typeof contributions.$inferInsert;
 export type ContributionReview = typeof contributionReviews.$inferSelect;

@@ -12,9 +12,20 @@ export const metadata: Metadata = { title: "Sign in — Episteme" };
 
 // One account for everything: consuming the API and contributing to the
 // graph. Sessions are cookie-based; OAuth providers hold the credentials.
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+  // Same-site relative paths only — never an open redirect.
+  const redirectTo =
+    callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+      ? callbackUrl
+      : "/account";
+
   const session = await auth();
-  if (session?.externalId) redirect("/account");
+  if (session?.externalId) redirect(redirectTo);
 
   const anyOauth = githubEnabled() || googleEnabled();
   const devLogin = devLoginEnabled();
@@ -34,7 +45,7 @@ export default async function SignInPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("github", { redirectTo: "/account" });
+              await signIn("github", { redirectTo });
             }}
           >
             <button className="signin-button" type="submit">
@@ -46,7 +57,7 @@ export default async function SignInPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/account" });
+              await signIn("google", { redirectTo });
             }}
           >
             <button className="signin-button" type="submit">
@@ -61,7 +72,7 @@ export default async function SignInPage() {
               "use server";
               await signIn("dev", {
                 username: formData.get("username"),
-                redirectTo: "/account",
+                redirectTo,
               });
             }}
           >

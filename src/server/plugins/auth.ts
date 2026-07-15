@@ -13,7 +13,13 @@
  *     trusted: they may also send x-acting-user. This is how the web
  *     frontend authenticates before any DB keys exist.
  *
- *  3. Dev bypass — only when NO keys are configured AND env != production:
+ *  3. OAuth access token (Authorization: Bearer eoat_*) — issued by the
+ *     OAuth flow for hosted MCP clients (Claude.ai connectors). Resolves to
+ *     the consenting user, never service-trusted, and only accepted on the
+ *     MCP surface (tokens are scoped 'mcp' — the capability set the consent
+ *     page describes, not a general-purpose API credential).
+ *
+ *  4. Dev bypass — only when NO keys are configured AND env != production:
  *     acts as the fixed "dev:local" identity with service trust so the whole
  *     dashboard flow works locally with zero setup. In production a missing
  *     API_KEYS now fails closed (401) instead of leaving writes open.
@@ -25,11 +31,15 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { loadConfig } from "../../config.js";
 import { resolveApiKey } from "../../services/api-key-service.js";
 import {
+  isOAuthAccessToken,
+  resolveAccessToken,
+} from "../../services/oauth-service.js";
+import {
   getContributorByExternalId,
   getOrCreateContributor,
 } from "../../services/contributor-service.js";
 
-export type AuthMethod = "api_key" | "env_key" | "dev_bypass";
+export type AuthMethod = "api_key" | "env_key" | "oauth" | "dev_bypass";
 
 export interface RequestAuth {
   method: AuthMethod;
@@ -63,9 +73,56 @@ export async function registerAuth(app: FastifyInstance): Promise<void> {
         config.apiKeys.length > 0 && config.apiKeys[0] !== "";
       const presented = request.headers["x-api-key"] as string | undefined;
 
+      // OAuth access tokens (hosted MCP clients) arrive as a Bearer header
+      // and are recognizable by prefix — resolve them before the key paths.
+      const authz = request.headers.authorization;
+      const bearer = authz?.startsWith("Bearer ")
+        ? authz.slice("Bearer ".length).trim()
+        : undefined;
+
       let auth: RequestAuth | null = null;
 
-      if (presented) {
+      if (bearer && isOAuthAccessToken(bearer)) {
+        const resolved = await resolveAccessToken(bearer);
+        if (!resolved) {
+          return reply
+            .code(401)
+            .send({ error: "Invalid or expired access token" });
+        }
+        if (resolved.user.isSuspended) {
+          return reply.code(403).send({
+            error: "Account suspended",
+            code: "ACCOUNT_SUSPENDED",
+          });
+        }
+        // Audience binding: an OAuth token is what the user consented to on
+        // the consent page — the MCP surface — not a general-purpose API
+        // credential. Tokens are scoped 'mcp' today; a broader scope would
+        // have to be advertised, consented to, and checked here first.
+        const scopes = (resolved.token.scope ?? "mcp").split(" ");
+        const routePath = request.routeOptions.url ?? request.url;
+        if (!routePath.startsWith("/mcp") && !scopes.includes("api")) {
+          return reply
+            .code(403)
+            .header(
+              "www-authenticate",
+              'Bearer error="insufficient_scope", scope="mcp"'
+            )
+            .send({
+              error:
+                "This access token is scoped to the MCP endpoint (/mcp); use an API key for the REST API",
+              code: "INSUFFICIENT_SCOPE",
+            });
+        }
+        auth = {
+          method: "oauth",
+          userId: resolved.user.id,
+          apiKeyId: null,
+          contributorExternalId: resolved.user.externalId,
+          isService: false,
+          isSession: false,
+        };
+      } else if (presented) {
         // 1. DB-backed key
         const resolved = await resolveApiKey(presented);
         if (resolved) {
