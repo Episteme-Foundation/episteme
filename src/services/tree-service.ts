@@ -16,6 +16,7 @@ interface TreeRow {
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: string | null;
+  argument_content: string | null;
 }
 
 /**
@@ -46,7 +47,8 @@ export async function getClaimTree(
     )
     SELECT t.*,
       a.status AS assessment_status, a.confidence AS assessment_confidence,
-      arg.name AS argument_name, arg.stance AS argument_stance
+      arg.name AS argument_name, arg.stance AS argument_stance,
+      arg.content AS argument_content
     FROM tree t
     LEFT JOIN assessments a ON a.claim_id = t.id AND a.is_current = true
     LEFT JOIN arguments arg ON arg.id = t.argument_id
@@ -173,6 +175,7 @@ function assembleTree(rows: TreeRow[]): TreeNode {
         argument_id: row.argument_id,
         argument_name: row.argument_name,
         argument_stance: row.argument_stance,
+        argument_content: row.argument_content,
         children: [],
       });
     }
@@ -193,6 +196,7 @@ function assembleTree(rows: TreeRow[]): TreeNode {
           argument_id: row.argument_id,
           argument_name: row.argument_name,
           argument_stance: row.argument_stance,
+          argument_content: row.argument_content,
         };
         parent.children.push(childWithEdge);
       }

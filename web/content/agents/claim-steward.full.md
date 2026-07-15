@@ -54,6 +54,12 @@ This structure arises naturally across many domains:
 
 For simple claims with one natural decomposition, there is effectively one argument, and the structure is transparent—no explicit naming or grouping is needed.
 
+#### The Written Form
+
+A name is not an argument. The grouping records which subclaims belong to a line of reasoning; it does not state how they combine to bear on the claim. Every named argument therefore carries a **written form**: a brief, logically straightforward statement of the inference, one to three sentences, that references each of its subclaims inline (as `[[claim:<uuid>]]`, resolved to the claim's canonical text when displayed). "Because [premise A] and [premise B], and given [premise C], the claim follows." More than a name, well short of an essay.
+
+The written form is the one place the connective language of inference ("therefore," "because," "given that") belongs. Claims must remain single reusable propositions with no inferential chains; the written form is where the chain is spelled out. It is structural, not epistemic: it states the inference, never a verdict on whether the inference holds—soundness is assessed in the claim layer, as ever. The written form and the grouping keep each other honest: every subclaim in the argument should appear in the prose, and everything the prose relies on should be attached as a subclaim.
+
 #### Framework Disputes
 
 When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" should appear as a subclaim within that argument (typically as a PRESUPPOSES relation). This keeps meta-disputes within the claim layer, where the system already knows how to handle decomposition, assessment, and contribution. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
@@ -68,7 +74,7 @@ The admin does not privilege factual claims as "real" and normative claims as "m
 
 A claim is a single, reusable proposition about the world that informed people could genuinely dispute with evidence or reasons — the kind of thing that could anchor a long-running debate and accumulate arguments for and against it across many sources. Claims are therefore scarce relative to text. Three things are commonly mistaken for claims but are not; each belongs in its own layer:
 
-- **Arguments** are inferences linking claims ("X, therefore Y"). They are represented as named lines of reasoning over subclaims (§2), not as claim nodes. A proposition that contains "therefore," "implies," "suggests," "because," or "such that" is almost always an argument; surface the claims it connects, not the inference.
+- **Arguments** are inferences linking claims ("X, therefore Y"). They are represented as named lines of reasoning over subclaims (§2), not as claim nodes. A proposition that contains "therefore," "implies," "suggests," "because," or "such that" is almost always an argument; surface the claims it connects as claims, and record the inference itself in the argument's written form (§2), not in any claim's text.
 - **Instances** are particular utterances of a claim in a specific source, carrying that author's wording and framing. They are linked to the canonical claim (§17); the framing lives in the instance, not in the claim.
 - **Uncontested definitions** are setup. A definition is a claim only when the definition itself is disputed (people argue about where the line sits).
 
@@ -434,6 +440,22 @@ PRESUPPOSES. Where distinct for/against lines of reasoning exist, create named
 subclaims that belong to them. An argument's description is a label for the line of
 reasoning, not itself a proposition.
 
+**Every named argument needs a written form.** A name is not an argument: the
+grouping records WHICH subclaims belong together, the written form states HOW
+they combine to bear on the claim — the inferential step that is banned from
+claim texts ("therefore", "because", "given that") lives here and only here.
+After attaching an argument's subclaim edges, call **write_argument** with 1–3
+sentences of plain prose that reference every subclaim inline as
+[[claim:<uuid>]] (or [[claim:<uuid>|inline phrasing]] when grammar needs it):
+"Because [[claim:a]] and [[claim:b]], and given [[claim:c]], the claim
+follows." Keep it structural, not epistemic — state the inference, never a
+verdict on whether it holds; soundness is what assessment is for. Re-write it
+whenever the argument's subclaims change, and if you find a named argument on
+your claim whose content is still just its label (no inline links), write its
+written form as part of your pass. When an argument's framework is itself
+disputed, its PRESUPPOSES subclaim belongs in the written form too ("given that
+[[claim:the framework is valid]]…").
+
 **Identity is the Matcher's call, not yours.** For every dependency you would add,
 call **match_claim** FIRST. If it already exists — as itself, a rewording, or its
 negation (a claim and its denial are ONE node) — attach it with
@@ -588,6 +610,9 @@ You have tools to:
   confirms the proposition is genuinely novel.
 - **Create an argument** (add_argument): A named for/against line of reasoning to
   group subclaims under.
+- **Write an argument's written form** (write_argument): After attaching an
+  argument's subclaim edges, state in 1–3 sentences how they combine to bear on
+  the claim, referencing every subclaim inline as [[claim:<uuid>]].
 - **Set importance** (set_claim_importance): Record how load-bearing a claim is
   (0..1) — a revisable judgment that scales effort and orders the work queue.
 - **Log decisions**: Record your reasoning for the audit trail

@@ -14,7 +14,13 @@ import {
   claimRelationships,
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
-import { addArgument } from "../../services/argument-service.js";
+import {
+  addArgument,
+  getArgument,
+  getArgumentSubclaims,
+  parseClaimLinks,
+  setArgumentContent,
+} from "../../services/argument-service.js";
 import { loadConfig } from "../../config.js";
 import {
   enqueueSteward,
@@ -119,7 +125,9 @@ export function getStewardToolDefinitions(): Tool[] {
         "that subclaims attach to. Use when distinct for/against lines of reasoning " +
         "exist; pass the returned argument_id to add_relationship_edge / " +
         "add_decomposition_edge to group subclaims under it. The description is a " +
-        "label for the line of reasoning, not itself a proposition.",
+        "label for the line of reasoning, not itself a proposition. An argument is " +
+        "NOT finished at creation: once its subclaim edges are attached, you MUST " +
+        "give it a written form with write_argument.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -142,6 +150,37 @@ export function getStewardToolDefinitions(): Tool[] {
           },
         },
         required: ["claim_id", "name", "stance", "description"],
+      },
+    },
+    {
+      name: "write_argument",
+      description:
+        "Write (or revise) an argument's written form: a brief, logically " +
+        "straightforward prose statement of HOW its subclaims combine to bear on " +
+        "the claim — the inferential step the grouping alone leaves implicit. " +
+        "1–3 sentences, e.g. 'Because [[claim:<uuid>]] and [[claim:<uuid>]], and " +
+        "given [[claim:<uuid>]], the claim follows.' Reference EVERY subclaim in " +
+        "the argument inline as [[claim:<uuid>]] (or [[claim:<uuid>|inline " +
+        "phrasing]] when grammar needs it) — links resolve to the claims' " +
+        "canonical text at render time. The written form is structural, not " +
+        "epistemic: state the inference, never a verdict on whether it holds. " +
+        "Call this after attaching the argument's subclaim edges; call it again " +
+        "whenever the argument's subclaims change.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          argument_id: {
+            type: "string",
+            description: "The UUID of the argument (from add_argument)",
+          },
+          content: {
+            type: "string",
+            description:
+              "The written form: brief prose with inline [[claim:<uuid>]] " +
+              "references to the argument's subclaims",
+          },
+        },
+        required: ["argument_id", "content"],
       },
     },
     {
@@ -464,8 +503,87 @@ export async function executeStewardTool(
 
         return JSON.stringify({
           success: true,
-          message: `Created argument "${name}" (${stance}) on claim ${claimId}.`,
+          message:
+            `Created argument "${name}" (${stance}) on claim ${claimId}. ` +
+            `Attach its subclaim edges, then give it a written form with write_argument.`,
           argument_id: argument.id,
+        });
+      }
+
+      case "write_argument": {
+        const argumentId = input.argument_id as string;
+        const content = ((input.content as string) ?? "").trim();
+
+        const argument = await getArgument(argumentId);
+        if (!argument) {
+          return JSON.stringify({
+            success: false,
+            message: `Argument not found: ${argumentId}`,
+          });
+        }
+
+        // Brief means brief: uuid links cost ~46 chars each, so the cap is
+        // roomier than the 1–3 sentences it is meant to hold, but it still
+        // stops essays.
+        if (content.length > 1000) {
+          return JSON.stringify({
+            success: false,
+            message:
+              `Written form is ${content.length} chars; keep it under 1000. ` +
+              `State the inference in 1–3 sentences — detail belongs in the ` +
+              `subclaims themselves.`,
+          });
+        }
+
+        const links = parseClaimLinks(content);
+        if (links.length === 0) {
+          return JSON.stringify({
+            success: false,
+            message:
+              "The written form must reference the argument's subclaims inline " +
+              "as [[claim:<uuid>]] — a written form with no links is just a " +
+              "longer label.",
+          });
+        }
+
+        // Mutual checkability: every link must be a subclaim edge of this
+        // argument (or the parent claim itself), and every subclaim should be
+        // referenced. Unknown links fail; unreferenced subclaims only warn, so
+        // a steward mid-restructure is nudged, not wedged.
+        const subclaims = await getArgumentSubclaims(argumentId);
+        const subclaimIds = new Set(subclaims.map((s) => s.id));
+        const linkedIds = new Set(links.map((l) => l.claimId));
+
+        const unknown = [...linkedIds].filter(
+          (id) => !subclaimIds.has(id) && id !== argument.claimId
+        );
+        if (unknown.length > 0) {
+          return JSON.stringify({
+            success: false,
+            message:
+              `These linked claims are not subclaims of this argument: ` +
+              `${unknown.join(", ")}. Link only claims attached to the ` +
+              `argument via add_relationship_edge / add_decomposition_edge ` +
+              `(attach the edge first if it is missing).`,
+          });
+        }
+
+        await setArgumentContent(argumentId, content);
+
+        const unreferenced = subclaims.filter((s) => !linkedIds.has(s.id));
+        return JSON.stringify({
+          success: true,
+          message:
+            `Written form saved for argument "${argument.name ?? argumentId}".` +
+            (unreferenced.length > 0
+              ? ` Note: ${unreferenced.length} subclaim(s) in this argument are ` +
+                `not referenced: ` +
+                unreferenced
+                  .map((s) => `${s.id} ("${s.text.slice(0, 60)}")`)
+                  .join("; ") +
+                `. Reference every subclaim, or detach edges that no longer ` +
+                `belong to this line of reasoning.`
+              : ""),
         });
       }
 

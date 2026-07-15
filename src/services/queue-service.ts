@@ -45,7 +45,10 @@ export interface StewardMessage {
     | "staleness_check"
     // The Curator merged/split this claim, or suggests a structural edge — review
     // and reconcile (re-assess; adopt the suggested edge if apt).
-    | "curator_change";
+    | "curator_change"
+    // One-shot backfill (issue #129): named arguments predating write_argument
+    // lack a written form — write one for each.
+    | "argument_written_form_backfill";
   context: string;
   /**
    * How load-bearing the claim is (0..1). The local runner drains higher-
