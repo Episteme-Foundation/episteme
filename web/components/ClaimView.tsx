@@ -91,12 +91,13 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
           <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".8rem", marginTop: "-.3rem" }}>
             {statusMeta(assessment.status).def}
           </p>
-          {/* Reader-facing body. The fuller reasoning trace stays accessible just
-              below, behind a disclosure, for anyone who wants the full defensible
-              chain — but the welcome comes first. Older assessments have no
-              distinct summary (the API returns the trace as the summary); only
-              show the separate reasoning disclosure when it actually differs. */}
-          <div className="reasoning">
+          {/* Reader-facing assessment — the primary content, styled as lead prose
+              rather than an inset box. The fuller reasoning trace stays accessible
+              just below, behind a disclosure, for anyone who wants the full
+              defensible chain. Older assessments have no distinct summary (the API
+              returns the trace as the summary); only show the separate reasoning
+              disclosure when it actually differs. */}
+          <div className="assessment-body">
             {assessment.summary.split(/\n{2,}/).map((para, i) => (
               <p key={i}>{para}</p>
             ))}
