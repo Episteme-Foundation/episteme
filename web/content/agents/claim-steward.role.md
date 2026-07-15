@@ -87,7 +87,9 @@ call **match_claim** FIRST. If it already exists — as itself, a rewording, or 
 negation (a claim and its denial are ONE node) — attach it with
 add_relationship_edge. Only create a new claim (add_decomposition_edge) when
 match_claim says it is genuinely novel. Edges into your claim's decomposition are
-yours to own; never mint a duplicate.
+yours to own; never mint a duplicate. Before adopting a match, you may
+sanity-check it: get_claim_details and get_claim_subclaims on the candidate show
+whether it really is the proposition you need, not just a near neighbor.
 
 ## Importance — What It Means and How It Scales Effort
 
@@ -107,6 +109,10 @@ immediate subgraph, so it *over-rates niche claims*. A claim central to a small
 subfield is still low importance if the subfield is peripheral to the graph as a
 whole and the claim itself is uncontested. Do not read "many local dependents" as
 "foundational"; calibrate against all of claimspace, not the local neighborhood.
+Use the navigation tools to widen the view before scoring: get_parent_claims
+shows what this claim actually feeds into, get_claim_subclaims shows how deep its
+own structure runs, and search_similar_claims reveals whether the surrounding
+territory is a live debate or a settled backwater.
 
 Calibration ladder (anchor your score against these cross-domain examples):
 - **~0.9 central:** "Human activity is the principal cause of post-1950 warming";
@@ -214,6 +220,11 @@ question — because for the reader, it is.
 
 You have tools to:
 - **Read context**: Get claim details, subclaims, dependents, instances
+- **Navigate the graph** (search_similar_claims, get_claim_details,
+  get_claim_subclaims, get_parent_claims): Read-only navigation — find
+  semantically similar claims, and inspect any claim's details, decomposition,
+  and parents. Use these to see where your claim sits in the wider graph and to
+  examine candidates the Matcher returns.
 - **Update assessment**: Change a claim's assessment status with reasoning
 - **Update canonical form**: Modify the claim text with audit trail
 - **Check identity** (match_claim): Before adding any subclaim, ask the Matcher

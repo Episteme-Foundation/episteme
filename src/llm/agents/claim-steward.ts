@@ -11,6 +11,10 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { toolUseLoop } from "../client.js";
 import { getClaimStewardSystemPrompt } from "../prompts/claim-steward.js";
 import {
+  getGraphToolDefinitions,
+  executeGraphTool,
+} from "../tools/graph-tools.js";
+import {
   getGovernanceToolDefinitions,
   executeGovernanceTool,
 } from "../tools/governance-tools.js";
@@ -50,7 +54,13 @@ async function runClaimStewardImpl(input: {
     max_uses: 5,
   };
 
+  // Same read/navigation set the Curator gets (#69): the Steward owns a claim's
+  // structure, so it must be able to read parents, subclaims, and neighbors.
+  const graphTools = getGraphToolDefinitions();
+  const graphNames = new Set(graphTools.map((t) => t.name));
+
   const tools = [
+    ...graphTools,
     ...getGovernanceToolDefinitions(),
     ...getStewardToolDefinitions(),
     getMatcherToolDefinition(),
@@ -134,6 +144,9 @@ ${structureStep}
     executeTool: async (name, toolInput) => {
       if (name === "match_claim") {
         return executeMatcherTool(name, toolInput);
+      }
+      if (graphNames.has(name)) {
+        return executeGraphTool(name, toolInput);
       }
       const governanceTools = getGovernanceToolDefinitions().map((t) => t.name);
       if (governanceTools.includes(name)) {
