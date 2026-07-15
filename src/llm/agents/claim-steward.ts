@@ -15,7 +15,7 @@ import {
   executeGraphTool,
 } from "../tools/graph-tools.js";
 import {
-  getGovernanceToolDefinitions,
+  getClaimContextToolDefinitions,
   executeGovernanceTool,
 } from "../tools/governance-tools.js";
 import {
@@ -59,9 +59,14 @@ async function runClaimStewardImpl(input: {
   const graphTools = getGraphToolDefinitions();
   const graphNames = new Set(graphTools.map((t) => t.name));
 
+  // Claim-scoped subset only: the contribution/contributor/decision tools in
+  // the full governance bundle are never referenced by the Steward's prompt.
+  const claimContextTools = getClaimContextToolDefinitions();
+  const claimContextNames = new Set(claimContextTools.map((t) => t.name));
+
   const tools = [
     ...graphTools,
-    ...getGovernanceToolDefinitions(),
+    ...claimContextTools,
     ...getStewardToolDefinitions(),
     getMatcherToolDefinition(),
     webSearchTool,
@@ -148,8 +153,7 @@ ${structureStep}
       if (graphNames.has(name)) {
         return executeGraphTool(name, toolInput);
       }
-      const governanceTools = getGovernanceToolDefinitions().map((t) => t.name);
-      if (governanceTools.includes(name)) {
+      if (claimContextNames.has(name)) {
         return executeGovernanceTool(name, toolInput);
       }
       return executeStewardTool(name, toolInput);

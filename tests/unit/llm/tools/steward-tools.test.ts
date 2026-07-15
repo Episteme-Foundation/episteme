@@ -110,6 +110,33 @@ describe("steward add_decomposition_edge", () => {
   });
 });
 
+describe("steward log_stewardship_decision", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    insertedValues.length = 0;
+  });
+
+  it("persists a durable audit_log row (not just a bumped timestamp)", async () => {
+    // The regression this guards (#100): the tool used to only touch
+    // claims.updated_at, so the audit trail the constitution promises
+    // ("Log All Changes") never actually existed.
+    const out = await executeStewardTool("log_stewardship_decision", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      action_taken: "reassessed",
+      reasoning: "Two new credible denying instances; moved SUPPORTED -> CONTESTED.",
+    });
+
+    expect(JSON.parse(out).success).toBe(true);
+    const row = insertedValues.find((r) => "action" in r);
+    expect(row).toMatchObject({
+      claimId: "22222222-2222-2222-2222-222222222222",
+      action: "reassessed",
+      reasoning: "Two new credible denying instances; moved SUPPORTED -> CONTESTED.",
+      createdBy: "claim_steward",
+    });
+  });
+});
+
 describe("steward update_claim_assessment", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -127,6 +154,18 @@ describe("steward update_claim_assessment", () => {
     const row = insertedValues.find((r) => "reasoningTrace" in r);
     expect(row?.summary).toBe("The origin of SARS-CoV-2 remains genuinely disputed among experts.");
     expect(row?.reasoningTrace).toBe("Instances split 1 affirm / 2 deny; market-origin and lab-leak both credible.");
+  });
+
+  it("lowercase-normalizes the status so a prompt-cased VERIFIED can't leave the enum", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "VERIFIED",
+      confidence: 0.9,
+      summary: "Well established.",
+      reasoning_trace: "Traces to primary sources.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.status).toBe("verified");
   });
 
   it("falls back to the reasoning trace when summary is omitted (never writes blank)", async () => {

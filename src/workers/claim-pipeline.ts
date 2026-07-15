@@ -29,7 +29,6 @@ export async function handleClaimPipeline(
     .select({
       id: claims.id,
       decompositionStatus: claims.decompositionStatus,
-      importance: claims.importance,
     })
     .from(claims)
     .where(eq(claims.id, message.claimId))
@@ -52,8 +51,5 @@ export async function handleClaimPipeline(
     context:
       "New claim onboarded. Structure it (decompose, calling match_claim for each " +
       "dependency to link existing claims or create new ones), then assess it.",
-    // Carry the claim's importance so the Steward queue processes the most
-    // load-bearing claims first under a run budget (#56).
-    importance: claim.importance,
   });
 }

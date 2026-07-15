@@ -10,6 +10,40 @@ import { rawQuery } from "../../../src/db/client.js";
 
 const mockRawQuery = vi.mocked(rawQuery);
 
+// Row builders matching the two query shapes getClaimTree issues: one root
+// lookup, then one edge query per level (each edge row carries its child's
+// node fields).
+const rootRow = (id: string, over: Record<string, unknown> = {}) => ({
+  id,
+  text: `Claim ${id}`,
+  claim_type: "empirical_derived",
+  state: "active",
+  assessment_status: null,
+  assessment_confidence: null,
+  ...over,
+});
+
+const edgeRow = (
+  parentId: string,
+  id: string,
+  over: Record<string, unknown> = {}
+) => ({
+  parent_id: parentId,
+  id,
+  text: `Claim ${id}`,
+  claim_type: "empirical_derived",
+  state: "active",
+  relation_type: "requires",
+  reasoning: null,
+  confidence: 1,
+  argument_id: null,
+  argument_name: null,
+  argument_stance: null,
+  assessment_status: null,
+  assessment_confidence: null,
+  ...over,
+});
+
 describe("tree-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -20,24 +54,18 @@ describe("tree-service", () => {
       mockRawQuery.mockResolvedValueOnce([]);
       const result = await getClaimTree("00000000-0000-0000-0000-000000000001");
       expect(result).toBeNull();
+      expect(mockRawQuery).toHaveBeenCalledTimes(1);
     });
 
     it("assembles a single-node tree", async () => {
       mockRawQuery.mockResolvedValueOnce([
-        {
-          id: "claim-1",
+        rootRow("claim-1", {
           text: "Test claim",
-          claim_type: "empirical_derived",
-          state: "active",
-          parent_id: null,
-          relation_type: null,
-          reasoning: null,
-          confidence: null,
-          depth: 0,
           assessment_status: "verified",
           assessment_confidence: 0.9,
-        },
+        }),
       ]);
+      mockRawQuery.mockResolvedValueOnce([]); // level 1: no edges
 
       const tree = await getClaimTree("claim-1");
       expect(tree).not.toBeNull();
@@ -45,50 +73,28 @@ describe("tree-service", () => {
       expect(tree!.text).toBe("Test claim");
       expect(tree!.children).toHaveLength(0);
       expect(tree!.assessment_status).toBe("verified");
+      // The level query is keyed by the frontier (an id array), not a CTE.
+      expect(mockRawQuery.mock.calls[1]![1]).toEqual([["claim-1"]]);
     });
 
-    it("assembles a tree with children", async () => {
+    it("assembles a tree with children, each occurrence carrying its edge", async () => {
+      mockRawQuery.mockResolvedValueOnce([rootRow("parent")]);
       mockRawQuery.mockResolvedValueOnce([
-        {
-          id: "parent",
-          text: "Parent claim",
-          claim_type: "empirical_derived",
-          state: "active",
-          parent_id: null,
-          relation_type: null,
-          reasoning: null,
-          confidence: null,
-          depth: 0,
-          assessment_status: null,
-          assessment_confidence: null,
-        },
-        {
-          id: "child-1",
-          text: "Child claim 1",
-          claim_type: "empirical_derived",
-          state: "active",
-          parent_id: "parent",
+        edgeRow("parent", "child-1", {
           relation_type: "requires",
           reasoning: "Because A",
           confidence: 0.95,
-          depth: 1,
           assessment_status: "verified",
           assessment_confidence: 0.85,
-        },
-        {
-          id: "child-2",
-          text: "Child claim 2",
+        }),
+        edgeRow("parent", "child-2", {
           claim_type: "definitional",
-          state: "active",
-          parent_id: "parent",
           relation_type: "defines",
           reasoning: "Because B",
           confidence: 0.9,
-          depth: 1,
-          assessment_status: null,
-          assessment_confidence: null,
-        },
+        }),
       ]);
+      mockRawQuery.mockResolvedValueOnce([]); // level 2: leaves
 
       const tree = await getClaimTree("parent");
       expect(tree).not.toBeNull();
@@ -96,8 +102,78 @@ describe("tree-service", () => {
       expect(tree!.children).toHaveLength(2);
       expect(tree!.children[0]!.id).toBe("child-1");
       expect(tree!.children[0]!.relation_type).toBe("requires");
+      expect(tree!.children[0]!.depth).toBe(1);
       expect(tree!.children[1]!.id).toBe("child-2");
       expect(tree!.children[1]!.relation_type).toBe("defines");
+    });
+
+    it("expands a shared subclaim (diamond) once, collapsing later occurrences", async () => {
+      // root -> A, root -> B, A -> shared, B -> shared, shared -> leaf.
+      // The old per-path CTE duplicated shared's whole subtree under B.
+      mockRawQuery.mockResolvedValueOnce([rootRow("root")]);
+      mockRawQuery.mockResolvedValueOnce([
+        edgeRow("root", "a"),
+        edgeRow("root", "b"),
+      ]);
+      mockRawQuery.mockResolvedValueOnce([
+        edgeRow("a", "shared", { relation_type: "supports" }),
+        edgeRow("b", "shared", { relation_type: "presupposes" }),
+      ]);
+      mockRawQuery.mockResolvedValueOnce([edgeRow("shared", "leaf")]);
+      mockRawQuery.mockResolvedValueOnce([]); // leaf level
+
+      const tree = await getClaimTree("root");
+      const underA = tree!.children[0]!.children[0]!;
+      const underB = tree!.children[1]!.children[0]!;
+
+      // Both occurrences exist, each with its own edge metadata...
+      expect(underA.id).toBe("shared");
+      expect(underA.relation_type).toBe("supports");
+      expect(underB.id).toBe("shared");
+      expect(underB.relation_type).toBe("presupposes");
+
+      // ...but the subtree is rendered once: the second occurrence is a
+      // flagged stub instead of a duplicate of the whole subtree.
+      expect(underA.children).toHaveLength(1);
+      expect(underA.children[0]!.id).toBe("leaf");
+      expect(underA.subtree_collapsed).toBeUndefined();
+      expect(underB.children).toHaveLength(0);
+      expect(underB.subtree_collapsed).toBe(true);
+
+      // The shared node was fetched (and its children queried) exactly once:
+      // root lookup + 4 level queries, no per-path re-expansion.
+      expect(mockRawQuery).toHaveBeenCalledTimes(5);
+    });
+
+    it("terminates on a relationship cycle instead of expanding to the depth cap", async () => {
+      // root -> a -> root (a cycle the DB's self-reference check can't catch).
+      mockRawQuery.mockResolvedValueOnce([rootRow("root")]);
+      mockRawQuery.mockResolvedValueOnce([edgeRow("root", "a")]);
+      mockRawQuery.mockResolvedValueOnce([edgeRow("a", "root")]);
+
+      const tree = await getClaimTree("root");
+      const backEdge = tree!.children[0]!.children[0]!;
+      expect(backEdge.id).toBe("root");
+      expect(backEdge.children).toHaveLength(0);
+      expect(backEdge.subtree_collapsed).toBe(true);
+      // The walk stopped once every reachable node was visited: root lookup
+      // plus two level queries, not maxDepth's worth.
+      expect(mockRawQuery).toHaveBeenCalledTimes(3);
+    });
+
+    it("caps the node count and flags the parent whose children were dropped", async () => {
+      mockRawQuery.mockResolvedValueOnce([rootRow("root")]);
+      mockRawQuery.mockResolvedValueOnce([
+        edgeRow("root", "c1"),
+        edgeRow("root", "c2"),
+        edgeRow("root", "c3"),
+      ]);
+      mockRawQuery.mockResolvedValueOnce([]); // c1's level
+
+      const tree = await getClaimTree("root", 5, 2); // root + 1 child max
+      expect(tree!.children).toHaveLength(1);
+      expect(tree!.children[0]!.id).toBe("c1");
+      expect(tree!.children_truncated).toBe(true);
     });
   });
 
@@ -172,11 +248,16 @@ describe("tree-service", () => {
   // tree children or dependents. Only the tree ROOT is fetched regardless of
   // state, so an archived claim stays readable by direct id.
   describe("active-only filtering", () => {
-    it("tree CTE only descends into active children", async () => {
+    it("tree walk only descends into active children", async () => {
+      mockRawQuery.mockResolvedValueOnce([rootRow("claim-1")]);
       mockRawQuery.mockResolvedValueOnce([]);
       await getClaimTree("claim-1");
-      const sql = mockRawQuery.mock.calls[0]![0] as string;
-      expect(sql).toContain("child.state = 'active'");
+      // The root lookup has no state filter (an archived claim stays readable
+      // by direct id); the level query filters children to active.
+      const rootSql = mockRawQuery.mock.calls[0]![0] as string;
+      const levelSql = mockRawQuery.mock.calls[1]![0] as string;
+      expect(rootSql).not.toContain("state = 'active'");
+      expect(levelSql).toContain("c.state = 'active'");
     });
 
     it("dependents page and its fallback count both filter to active parents", async () => {

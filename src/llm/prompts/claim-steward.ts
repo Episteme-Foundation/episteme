@@ -231,6 +231,9 @@ update_claim_assessment takes **two** texts, and they are for different readers.
   reasoning behind particular decomposition and validity decisions. Still about
   the CLAIM'S TRUTH — structural bookkeeping stays out of it. This is where a
   reader who wants the full defensible chain goes; the summary is the welcome.
+  **Refer to subclaims and sources by their text, never by bare UUID** — write
+  "the laboratory atomic-clock comparisons subclaim", not "(97ac3b38)". Ids are
+  followable by machines but opaque to the human readers both texts exist for.
 
 Write the summary as if it were the lead of the best possible article on the
 question — because for the reader, it is.

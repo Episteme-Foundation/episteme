@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
 
+# CloudFormation refuses concurrent updates, so parallel deploys fail with
+# UPDATE_IN_PROGRESS (a burst of merges loses every deploy but the first).
+# Queue them serially instead: cancel-in-progress stays false so a running CDK
+# deploy is never killed mid-update, and GitHub keeps only the newest pending
+# run per group, so a merge burst collapses into "current deploy, then latest".
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
