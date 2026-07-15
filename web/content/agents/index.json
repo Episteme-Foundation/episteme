@@ -44,8 +44,8 @@
     "invokedWhen": "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 17619,
-    "fullChars": 51214
+    "roleChars": 18434,
+    "fullChars": 52029
   },
   {
     "key": "curator",
