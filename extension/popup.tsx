@@ -333,7 +333,7 @@ function SettingsPane({
         <input
           value={settings.apiBaseUrl}
           onChange={(e) => void update({ apiBaseUrl: e.target.value })}
-          placeholder="https://api.episteme.wiki"
+          placeholder="https://api.claimgraph.io"
         />
       </label>
       <label>
