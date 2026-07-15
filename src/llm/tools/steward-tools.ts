@@ -82,7 +82,9 @@ export function getStewardToolDefinitions(): Tool[] {
               "The transparent audit detail behind the verdict, shown secondary to " +
               "the summary (behind a disclosure). Lay out the specific evidence, " +
               "source instances, and how the material subclaims weigh. This is about " +
-              "the CLAIM'S TRUTH — keep structural bookkeeping out of it.",
+              "the CLAIM'S TRUTH — keep structural bookkeeping out of it. Refer to " +
+              "subclaims by their text (quoted or paraphrased), never by bare UUID — " +
+              "ids are opaque to the human readers this trace exists for.",
           },
         },
         required: ["claim_id", "status", "confidence", "summary", "reasoning_trace"],
