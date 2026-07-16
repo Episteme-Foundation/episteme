@@ -1,0 +1,321 @@
+{
+  "cluster": "eggs",
+  "generatedAt": "2026-07-16T04:27:48.852Z",
+  "counts": {
+    "sources": 2,
+    "claims": 31,
+    "instances": 10,
+    "assessed": 19,
+    "relationships": 33,
+    "arguments": 16
+  },
+  "sources": [
+    {
+      "title": "Eggs — The Nutrition Source",
+      "url": "https://nutritionsource.hsph.harvard.edu/food-features/eggs/",
+      "source_type": "unknown",
+      "instances": 5
+    },
+    {
+      "title": "Egg as food — nutrition and health effects",
+      "url": "https://en.wikipedia.org/wiki/Egg_as_food",
+      "source_type": "unknown",
+      "instances": 5
+    }
+  ],
+  "extraction": [
+    {
+      "id": "d4dd9fc8-33ca-42cc-8255-575d6c7d5e15",
+      "text": "Consuming up to one egg per day is not associated with increased heart disease risk in healthy individuals.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.55,
+      "original_text": "up to one egg per day is not associated with increased heart disease risk in healthy individuals",
+      "source_title": "Eggs — The Nutrition Source"
+    },
+    {
+      "id": "69590376-2715-4660-87e1-05e7f0ce3208",
+      "text": "Among people with diabetes, eating one or more eggs per day is associated with increased heart disease risk.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.5,
+      "original_text": "heart disease risk was increased among men and women with diabetes who ate one or more eggs a day",
+      "source_title": "Eggs — The Nutrition Source"
+    },
+    {
+      "id": "dcf55fb5-5a7f-49cd-9997-0b6232d6956d",
+      "text": "Dietary cholesterol has a weaker effect on blood cholesterol than saturated and trans fat intake.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.5,
+      "original_text": "dietary cholesterol and blood cholesterol are only weakly related: for most people, the cholesterol eaten has a much smaller effect on blood cholesterol than the amount of saturated and trans fat eaten",
+      "source_title": "Eggs — The Nutrition Source"
+    },
+    {
+      "id": "25cf9dc6-64c6-4e43-8ffd-c12126473bf3",
+      "text": "Consuming more than one egg per day is associated with increased risk of heart failure.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.4,
+      "original_text": "going well beyond one egg a day could be associated with increased risk of heart failure later in life",
+      "source_title": "Eggs — The Nutrition Source"
+    },
+    {
+      "id": "61d57046-848c-46b3-a4a9-6965a1a04cf8",
+      "text": "Plant proteins such as nuts and legumes are associated with lower cardiovascular and overall mortality.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.35,
+      "original_text": "not as protective as plant proteins like nuts and legumes, which are associated with lower cardiovascular and overall mortality",
+      "source_title": "Eggs — The Nutrition Source"
+    },
+    {
+      "id": "cc4ba9ab-9619-498a-9afc-ea9a1a2f9df3",
+      "text": "Egg consumption is associated with increased cardiovascular and all-cause mortality.",
+      "claim_type": "causal",
+      "importance": 0.55,
+      "original_text": "Another systematic review reported that egg consumption was associated with *increased* all-cause and cardiovascular mortality.",
+      "source_title": "Egg as food — nutrition and health effects"
+    }
+  ],
+  "matched": {
+    "claim": {
+      "id": "dcf55fb5-5a7f-49cd-9997-0b6232d6956d",
+      "text": "Dietary cholesterol has a weaker effect on blood cholesterol than saturated and trans fat intake.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.5,
+      "decomposition_status": "complete",
+      "steward_state": "done",
+      "status": "supported",
+      "confidence": 0.86,
+      "summary": "Across nutrition research, dietary cholesterol (the cholesterol eaten in foods such as eggs) is understood to have a weaker effect on blood cholesterol than intake of saturated and trans fats. The body compensates for cholesterol consumed by reducing its own hepatic synthesis and intestinal absorption, which blunts the impact of dietary intake, whereas saturated and trans fats raise LDL more strongly, in part by suppressing LDL-receptor activity in the liver. Quantitatively, added dietary cholesterol raises LDL only modestly (on the order of a few mg/dL per 100 mg consumed per day), an effect smaller than that attributable to saturated fat.\n\nThe comparison is robust in direction and is reflected in guidance from major authorities, which now emphasize saturated and trans fat as the primary dietary drivers of elevated LDL rather than dietary cholesterol itself. The residual uncertainty is about magnitude, not direction: individual response varies, and a substantial minority of people (\"hyper-responders\") show a larger blood-cholesterol rise to dietary cholesterol than average. Even so, no credible body of evidence reverses the comparison for typical intakes.",
+      "reasoning_trace": "The claim is directly affirmed by the Harvard Nutrition Source instance, which states that dietary and blood cholesterol are \"only weakly related\" and that for most people dietary cholesterol has a much smaller effect than the amount of saturated and trans fat eaten.\n\nThe supporting subclaim \"dietary cholesterol has only a modest effect on blood cholesterol in most people\" has been structured and assessed SUPPORTED (0.82), with the quantitative detail that dietary cholesterol raises LDL roughly 2 mg/dL per 100 mg/day, weaker than saturated fat, and that about one-third of people are stronger-responding hyper-responders. This directly reinforces the comparative claim: it not only establishes that the dietary-cholesterol effect is modest but explicitly places it below saturated fat's effect. Note that the comparison would hold even if the absolute dietary-cholesterol effect were larger, provided saturated/trans fat's effect were larger still, so the comparison does not depend on the effect being \"small\" in absolute terms.\n\nExternal evidence corroborates independently: a 2023 review in the Journal of Nutritional Science reports the long-standing consensus that dietary cholesterol exerts a relatively small effect on serum LDL compared with other diet factors, explaining the compensatory mechanism, while noting saturated fat raises LDL by inhibiting LDL-receptor activity; a 2025 randomized crossover trial (AJCN) found saturated fat a more important determinant of LDL-C than dietary cholesterol; and the American Heart Association emphasizes saturated fat as the primary dietary driver of high LDL.\n\nStatus remains SUPPORTED rather than VERIFIED because the strongest chain rests on authoritative secondary syntheses, and the \"for most people\" qualifier reflects genuine individual variation (the ~1/3 hyper-responders) and continuing debate over precise magnitude. The direction of the comparison faces no credible contrary evidence, and the subclaim update marginally increases confidence."
+    },
+    "instances": [
+      {
+        "original_text": "the cholesterol in the yolk is not the main problem, because saturated fat raises blood cholesterol much more than dietary cholesterol does",
+        "context": "Attributed to food scientist Harold McGee, arguing against the dietary-cholesterol-harm position.",
+        "stance": "affirms",
+        "confidence": 0.8,
+        "source_title": "Egg as food — nutrition and health effects",
+        "source_url": "https://en.wikipedia.org/wiki/Egg_as_food",
+        "source_type": "unknown"
+      },
+      {
+        "original_text": "dietary cholesterol and blood cholesterol are only weakly related: for most people, the cholesterol eaten has a much smaller effect on blood cholesterol than the amount of saturated and trans fat eaten",
+        "context": "For decades this drove a recommendation to limit eggs.",
+        "stance": "affirms",
+        "confidence": 0.85,
+        "source_title": "Eggs — The Nutrition Source",
+        "source_url": "https://nutritionsource.hsph.harvard.edu/food-features/eggs/",
+        "source_type": "unknown"
+      }
+    ]
+  },
+  "contested": null,
+  "decomposed": {
+    "claim": {
+      "id": "a48c9595-c500-404e-ac8f-e4a5b0ee9bf9",
+      "text": "Large prospective cohort studies and meta-analyses find moderate egg consumption is not associated with cardiovascular disease risk.",
+      "claim_type": "empirical_derived",
+      "importance": 0.55,
+      "decomposition_status": "complete",
+      "steward_state": "done",
+      "status": "supported",
+      "confidence": 0.7,
+      "summary": "Most large prospective cohort studies and pooled meta-analyses do find that moderate egg consumption, roughly up to one egg per day, carries no measurable increase in cardiovascular disease risk. The largest synthesis to date, combining several U.S. cohorts with a meta-analysis of prospective studies totaling more than 1.7 million participants, reported no association between moderate intake and CVD, coronary heart disease, or stroke. This fits a mechanistic picture in which dietary cholesterol, the trait that long made eggs suspect, influences blood cholesterol only weakly compared with saturated and trans fats.\n\nThe finding is not uncontested. A 2019 pooled analysis of U.S. cohorts reported a dose-dependent positive association between egg intake and cardiovascular risk, and several studies point to elevated risk among people with diabetes eating one or more eggs per day. These results do not overturn the broad null for moderate consumption in general populations, but they show it does not hold uniformly across every analysis or subgroup.\n\nThe evidence is also observational, resting on self-reported diet and subject to residual confounding from overall dietary and lifestyle patterns, which is why the balance of findings supports rather than definitively settles the claim. The disagreement is largely empirical and could be narrowed by better dietary measurement and analyses stratified by health status; a decisive resolution would likely require randomized or Mendelian-randomization evidence that current studies do not provide.",
+      "reasoning_trace": "The claim is a summary of what the epidemiological literature finds, so it is assessed against the weight of that literature rather than a single study. Supporting it: the subclaim that consuming up to one egg per day is not associated with increased heart disease risk in healthy individuals captures the central cohort/meta-analytic result, and web evidence confirms a large synthesis (Harvard-led NHS/HPFS cohorts plus a meta-analysis of prospective studies, ~1.7 million participants) reporting no association with CVD, CHD, or stroke for moderate intake; multiple additional dose-response meta-analyses concur for up to ~1 egg/day. The mechanistic subclaim that dietary cholesterol affects blood cholesterol only weakly relative to saturated/trans fat (assessed supported, high confidence) gives the null plausibility.\n\nWeighing against a blanket null: the subclaim recording the 2019 pooled analysis of US cohorts finding a dose-dependent positive association is a credible dissent from a high-profile source, and the subclaim that people with diabetes eating one-plus eggs/day face elevated risk (assessed supported) shows the null is subgroup-dependent. These qualify but do not reverse the general-population moderate-intake finding.\n\nNet judgment: the preponderance of large cohorts and meta-analyses favors the claim, so SUPPORTED rather than CONTESTED. It falls short of VERIFIED because the evidence is observational (self-reported intake, residual confounding) and because genuine heterogeneity exists across analyses and subgroups. Confidence 0.7."
+    },
+    "instances": [],
+    "arguments": [
+      {
+        "id": "32ac129a-78bd-4686-be90-1cd5ce107b2a",
+        "name": "Preponderance of large cohorts and meta-analyses",
+        "stance": "for",
+        "content": "Because [[claim:d4dd9fc8-33ca-42cc-8255-575d6c7d5e15]], the central cohort and meta-analytic result points to no CVD association at moderate intake, and given [[claim:dcf55fb5-5a7f-49cd-9997-0b6232d6956d]] there is a plausible mechanism for that null, since eggs' distinctive component is dietary cholesterol."
+      },
+      {
+        "id": "6dadbb50-4b67-4b74-8db3-770c57cf43d0",
+        "name": "Dissenting analyses and subgroup risk",
+        "stance": "against",
+        "content": "Against a blanket null, [[claim:658361c4-6158-4ca2-9130-90c764637f95]] reports a positive dose-dependent association in pooled US data, and [[claim:69590376-2715-4660-87e1-05e7f0ce3208]] shows the null does not hold uniformly across subgroups."
+      }
+    ],
+    "children": [
+      {
+        "relation_type": "supports",
+        "reasoning": "The \"up to one egg/day is not associated with increased heart disease risk in healthy individuals\" finding is the core cohort/meta-analytic result that the parent claim summarizes.",
+        "argument_id": "32ac129a-78bd-4686-be90-1cd5ce107b2a",
+        "id": "d4dd9fc8-33ca-42cc-8255-575d6c7d5e15",
+        "text": "Consuming up to one egg per day is not associated with increased heart disease risk in healthy individuals.",
+        "claim_type": "empirical_verifiable",
+        "importance": 0.55,
+        "status": "supported",
+        "confidence": 0.71
+      },
+      {
+        "relation_type": "supports",
+        "reasoning": "Provides mechanistic plausibility for a null CVD association: if dietary cholesterol (eggs' main concern) affects blood cholesterol only weakly relative to saturated/trans fat, moderate egg intake is unlikely to drive CVD risk.",
+        "argument_id": "32ac129a-78bd-4686-be90-1cd5ce107b2a",
+        "id": "dcf55fb5-5a7f-49cd-9997-0b6232d6956d",
+        "text": "Dietary cholesterol has a weaker effect on blood cholesterol than saturated and trans fat intake.",
+        "claim_type": "empirical_verifiable",
+        "importance": 0.5,
+        "status": "supported",
+        "confidence": 0.86
+      },
+      {
+        "relation_type": "contradicts",
+        "reasoning": "A 2019 pooled analysis of US cohorts reporting a dose-dependent positive association directly contradicts a blanket \"no association\" summary of the cohort/meta-analytic literature.",
+        "argument_id": "6dadbb50-4b67-4b74-8db3-770c57cf43d0",
+        "id": "658361c4-6158-4ca2-9130-90c764637f95",
+        "text": "A 2019 pooled analysis of US cohorts found egg consumption dose-dependently associated with higher cardiovascular disease risk.",
+        "claim_type": "empirical_derived",
+        "importance": 0.2,
+        "status": "verified",
+        "confidence": 0.95
+      },
+      {
+        "relation_type": "contradicts",
+        "reasoning": "Elevated risk among people with diabetes at one-plus eggs/day qualifies the null finding: the \"not associated\" summary does not hold uniformly across subgroups.",
+        "argument_id": "6dadbb50-4b67-4b74-8db3-770c57cf43d0",
+        "id": "69590376-2715-4660-87e1-05e7f0ce3208",
+        "text": "Among people with diabetes, eating one or more eggs per day is associated with increased heart disease risk.",
+        "claim_type": "empirical_verifiable",
+        "importance": 0.5,
+        "status": "supported",
+        "confidence": 0.72
+      }
+    ]
+  },
+  "assessments": [
+    {
+      "text": "Large prospective cohort studies and meta-analyses find moderate egg consumption is not associated with cardiovascular disease risk.",
+      "importance": 0.55,
+      "status": "supported",
+      "confidence": 0.7,
+      "summary": "Most large prospective cohort studies and pooled meta-analyses do find that moderate egg consumption, roughly up to one egg per day, carries no measurable increase in cardiovascular disease risk. The largest synthesis to date, combining several U.S. cohorts with a meta-analysis of prospective studies totaling more than 1.7 million participants, reported no association between moderate intake and CVD, coronary heart disease, or stroke. This fits a mechanistic picture in which dietary cholesterol, the trait that long made eggs suspect, influences blood cholesterol only weakly compared with saturated and trans fats.\n\nThe finding is not uncontested. A 2019 pooled analysis of U.S. cohorts reported a dose-dependent positive association between egg intake and cardiovascular risk, and several studies point to elevated risk among people with diabetes eating one or more eggs per day. These results do not overturn the broad null for moderate consumption in general populations, but they show it does not hold uniformly across every analysis or subgroup.\n\nThe evidence is also observational, resting on self-reported diet and subject to residual confounding from overall dietary and lifestyle patterns, which is why the balance of findings supports rather than definitively settles the claim. The disagreement is largely empirical and could be narrowed by better dietary measurement and analyses stratified by health status; a decisive resolution would likely require randomized or Mendelian-randomization evidence that current studies do not provide."
+    },
+    {
+      "text": "Egg consumption is associated with increased cardiovascular and all-cause mortality.",
+      "importance": 0.55,
+      "status": "contested",
+      "confidence": 0.85,
+      "summary": "Whether eating eggs is associated with higher cardiovascular and all-cause mortality remains genuinely disputed, and the disagreement is real rather than a matter of incomplete data. Systematic reviews and dose-response meta-analyses of observational cohorts reach opposing conclusions: some find each additional egg per day associated with modestly higher all-cause mortality, while others find no association or even reduced risk, and the cardiovascular-specific signal is weaker and less consistent than the all-cause one.\n\nThe evidence is strongly moderated by factors that make a single verdict misleading. Associations appear more clearly at high intake (non-linear dose response), in certain populations, and notably among people with diabetes, for whom higher egg intake is more consistently linked to increased heart-disease risk. In the general population, by contrast, large prospective cohorts and pooled analyses often find moderate egg consumption unrelated to cardiovascular risk.\n\nA central unresolved question is whether the associations that do appear reflect eggs themselves or the dietary and lifestyle patterns that accompany higher egg intake. That confounding explanation is itself contested: regional differences and links to hyperlipidemia lend it support, but large meta-analyses report associations that persist after extensive adjustment, and observational data alone cannot settle the point. Resolving the claim would require evidence that observational studies are poorly suited to provide, so it is likely to remain contested absent large-scale randomized or mendelian-randomization evidence."
+    },
+    {
+      "text": "Consuming up to one egg per day is not associated with increased heart disease risk in healthy individuals.",
+      "importance": 0.55,
+      "status": "supported",
+      "confidence": 0.71,
+      "summary": "The evidence favors this claim as stated, with its scope doing much of the work: it concerns healthy individuals consuming up to about one egg per day, not high intake or populations such as people with diabetes. For that moderate range, large prospective cohorts and meta-analyses, including a pooled analysis of roughly 1.4 million individuals and an updated Harvard-led synthesis, find no association between egg consumption and cardiovascular disease. This is biologically plausible because dietary cholesterol has only a modest average effect on blood cholesterol, on the order of a small LDL rise per 100 mg consumed per day and weaker than the effect of saturated fat. That mechanism carries a caveat: roughly a third of people are \"hyper-responders\" whose blood cholesterol rises more sharply, so the population-average null does not guarantee a null effect for every individual.\n\nThe claim falls short of settled because credible high-quality evidence points the other way. A 2019 pooled analysis of US cohorts (Zhong et al., JAMA) reported a dose-dependent association between egg and dietary-cholesterol intake and higher cardiovascular risk and mortality. That finding addresses a broader dose-response relationship, including intakes above one egg per day and across cohorts with differing confounder adjustment, so it does not directly refute the narrowly scoped proposition here, but it is the main reason the question remains live. What would resolve the disagreement is randomized or better-harmonized evidence isolating moderate intake in healthy people, along with clearer treatment of the hyper-responder subgroup."
+    },
+    {
+      "text": "Dietary cholesterol has a weaker effect on blood cholesterol than saturated and trans fat intake.",
+      "importance": 0.5,
+      "status": "supported",
+      "confidence": 0.86,
+      "summary": "Across nutrition research, dietary cholesterol (the cholesterol eaten in foods such as eggs) is understood to have a weaker effect on blood cholesterol than intake of saturated and trans fats. The body compensates for cholesterol consumed by reducing its own hepatic synthesis and intestinal absorption, which blunts the impact of dietary intake, whereas saturated and trans fats raise LDL more strongly, in part by suppressing LDL-receptor activity in the liver. Quantitatively, added dietary cholesterol raises LDL only modestly (on the order of a few mg/dL per 100 mg consumed per day), an effect smaller than that attributable to saturated fat.\n\nThe comparison is robust in direction and is reflected in guidance from major authorities, which now emphasize saturated and trans fat as the primary dietary drivers of elevated LDL rather than dietary cholesterol itself. The residual uncertainty is about magnitude, not direction: individual response varies, and a substantial minority of people (\"hyper-responders\") show a larger blood-cholesterol rise to dietary cholesterol than average. Even so, no credible body of evidence reverses the comparison for typical intakes."
+    },
+    {
+      "text": "Among people with diabetes, eating one or more eggs per day is associated with increased heart disease risk.",
+      "importance": 0.5,
+      "status": "supported",
+      "confidence": 0.72,
+      "summary": "Among people with diabetes, higher egg consumption has been repeatedly associated with an increased risk of cardiovascular disease in large prospective cohort studies. The finding traces to U.S. cohorts such as the Nurses' Health Study and the Health Professionals Follow-up Study, where those with diabetes who ate one or more eggs per day showed elevated heart disease risk, and it has been reproduced in pooled analyses: meta-analyses of prospective cohorts report combined hazard/relative-risk estimates in the range of roughly 1.7 to 1.8 for cardiovascular disease among people with diabetes comparing the highest to the lowest egg intake, with confidence intervals excluding no effect.\n\nTwo qualifications matter. First, this is an observational association, not a demonstrated causal effect; the estimates come from cohort studies, which can be affected by residual confounding (overall diet quality, other lifestyle factors) and reverse causation, and study authors have generally cautioned that the evidence does not by itself justify changing dietary advice. Second, the diabetic-subgroup result stands in notable contrast to the general population, where the same meta-analyses find little or no association between egg intake and cardiovascular disease. The narrower question of whether eggs cause harm in people with diabetes remains more actively debated than the association itself.\n\nOn the specific point asserted here, an association observed among people with diabetes, the epidemiological evidence is consistent and points in one direction, though it rests on observational data rather than experimental confirmation."
+    },
+    {
+      "text": "Dietary cholesterol has only a modest effect on blood cholesterol levels in most people.",
+      "importance": 0.45,
+      "status": "supported",
+      "confidence": 0.82,
+      "summary": "Controlled-feeding evidence supports the view that, for most people, dietary cholesterol changes blood cholesterol only modestly. Pooled feeding-trial data put the average effect of added dietary cholesterol at a small rise in serum LDL, on the order of a few mg/dL at typical intakes and flattening at high doses because the body downregulates its own cholesterol synthesis in response. This modest-average picture underlies the relaxation of longstanding intake limits in recent dietary guidance, which now treats saturated and trans fats as the larger dietary drivers of blood cholesterol.\n\nThe claim is scoped rather than universal, and deliberately so. A substantial minority, often estimated at around a third of people, are \"hyper-responders\" whose blood cholesterol rises more sharply with dietary cholesterol. Their existence is why the average effect is described as modest \"in most people\" rather than in everyone, and it is the main reason the claim is well-supported rather than fully settled: the response is genuinely heterogeneous, and \"modest\" is a qualitative threshold on which reasonable interpretations differ. What is not in credible dispute is the direction and rough size of the average effect, which is small and positive rather than large or negligible."
+    },
+    {
+      "text": "Dietary cholesterol produces only a small increase in serum LDL cholesterol on average.",
+      "importance": 0.45,
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "Controlled-feeding evidence indicates that dietary cholesterol raises serum LDL cholesterol by a modest amount on average. Meta-regression of 55 controlled trials estimates that each additional 100 mg per day of dietary cholesterol raises LDL by roughly 2 mg/dL under a linear model and about 4.5 mg/dL under nonlinear models, and a separate systematic review reports a net LDL increase of about 6.7 mg/dL across the intakes tested. Because a typical day's intake or a single egg falls in the low-hundreds of milligrams, these effects are real but small relative to the influence of saturated and trans fat, which is the main reason many guidelines have de-emphasized a strict dietary cholesterol limit.\n\nThe effect is small because of homeostatic regulation: as dietary cholesterol rises, the body reduces its own endogenous synthesis and absorption efficiency, buffering the amount that reaches the bloodstream. The chief qualification is that the population average conceals wide individual variation. A substantial subgroup often described as \"hyper-responders\" shows markedly larger LDL increases, so \"only a small increase\" is an accurate statement about the mean while understating the effect for these individuals.\n\nThe main residual uncertainty is definitional rather than empirical: reasonable people can disagree about whether an average rise of a few milligrams per deciliter is \"small\" in a clinically meaningful sense, and the size depends on the intake range and background diet studied. On the magnitude of the average effect itself, the controlled-trial evidence is consistent."
+    },
+    {
+      "text": "The TMAO–cardiovascular disease association is substantially confounded by impaired kidney function.",
+      "importance": 0.45,
+      "status": "contested",
+      "confidence": 0.7,
+      "summary": "Whether impaired kidney function substantially confounds the association between TMAO and cardiovascular disease is an open and actively debated question. The structural basis for confounding is not in dispute: TMAO is cleared by the kidneys, so falling renal function raises circulating TMAO, and reduced kidney function is itself an independent driver of cardiovascular risk. Kidney function is therefore a genuine common cause of both the marker and the outcome, which is exactly the condition under which confounding can arise.\n\nWhat remains contested is the magnitude, whether kidney function accounts for enough of the association to undermine it. Evidence points both ways. Some studies and reviews treat renal function as an important confounder, and at least one coronary-angiography cohort found that TMAO's apparent relationship to coronary disease did not survive adjustment for kidney function and metabolic control. Against this, numerous prospective cohorts and pooled meta-analyses report that higher TMAO continues to predict cardiovascular events and mortality after multivariable adjustment that includes measures of renal function, with associations often persisting even within chronic-kidney-disease subgroups. The disagreement turns on study population, how thoroughly renal function is measured and modelled, and residual confounding.\n\nThe question would be resolved by analyses that measure kidney function precisely (rather than with a single creatinine-based estimate), by Mendelian randomization or interventional designs that break the marker's dependence on renal clearance, and by consistent replication across populations with differing renal profiles. As it stands, the \"substantial confounding\" reading is credible but not established, and the competing \"independent association\" reading has broad observational support."
+    },
+    {
+      "text": "Dietary cholesterol intake worsens the blood total-to-HDL cholesterol ratio.",
+      "importance": 0.45,
+      "status": "supported",
+      "confidence": 0.7,
+      "summary": "On average, adding dietary cholesterol to the diet shifts the blood total-to-HDL cholesterol ratio modestly upward, which is the unfavourable direction. The strongest evidence is a meta-analysis of controlled metabolic-ward feeding trials, in which weight-stable diets were used and cholesterol intake was varied directly: an extra 100 mg per day raised total cholesterol proportionally more than it raised HDL, so the ratio rose slightly. Because the trials measured exactly the quantity in question under controlled conditions, the average direction of the effect is well grounded.\n\nTwo qualifications keep the claim short of settled. First, dietary cholesterol also raises HDL, the denominator of the ratio, which partially offsets the rise in total cholesterol and makes the net shift small. Second, and now firmly established, individuals differ substantially in how their blood cholesterol responds: hyper-responders show clear increases while hypo-responders show little or none, and some controlled subgroups (for example carbohydrate-restricted or older subjects in egg-feeding studies) show no change in the ratio at all. The effect is therefore real on average but small, heterogeneous, and absent in a meaningful fraction of people.\n\nThe direction of the average effect is not itself the main locus of controversy; no credible synthesis finds that dietary cholesterol leaves the ratio unchanged or improves it on average. The louder public debate concerns whether this small lipid shift translates into cardiovascular risk, which is a separate question. What would move this claim toward fully settled is confirmation that the average ratio effect is robust across populations; what tempers it is the growing evidence on individual variability."
+    },
+    {
+      "text": "Consuming more than one egg per day is associated with increased risk of heart failure.",
+      "importance": 0.4,
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "Observational evidence consistently links high egg intake to a higher rate of heart failure. The finding originates with the Physicians' Health Study (2008), which followed 21,275 male physicians for about 20 years and found no association up to six eggs per week but an elevated heart-failure rate at seven or more per week (roughly one or more per day). A later pooled analysis of four prospective cohorts (about 106,000 people, 5,059 heart-failure cases) put the risk in the highest intake category (one or more per day) at about 25 percent above the lowest, with no heterogeneity across studies, and dose-response work has traced risk rising further at higher intakes. Broader analyses of egg intake and total cardiovascular disease show a similar upward gradient at high consumption, consistent with this outcome.\n\nThe evidence is observational, so it establishes association rather than causation, and formal certainty ratings for the heart-failure outcome are low: residual confounding by overall diet and lifestyle cannot be excluded, and moderate intake (up to about one egg per day) is generally not associated with elevated risk. The association at high intake is nonetheless robust and directionally consistent across cohorts and pooled analyses, which is why it stands as supported rather than merely reported. The threshold matters: the data are strongest for intake at or above one egg per day, so \"more than one per day\" sits at the upper, higher-risk end of the observed gradient."
+    },
+    {
+      "text": "Observed associations between egg consumption and mortality are largely explained by confounding dietary and lifestyle patterns.",
+      "importance": 0.4,
+      "status": "contested",
+      "confidence": 0.8,
+      "summary": "This claim stakes out one interpretive pole in the long-running debate over eggs and mortality: that where cohort studies find higher mortality among egg eaters, the link reflects the company eggs keep, the poorer overall diet and lifestyle of egg consumers in Western populations, rather than any effect of eggs themselves. Several strands of evidence fit this reading. The direction of the association is not stable across populations, tending to be inverse in Asian cohorts and positive in US cohorts, which is what one would expect if the association tracks local dietary and lifestyle context rather than eggs. Diagnosed hyperlipidemia and other health-driven diet changes appear to confound the relationship, and substitution analyses suggest much of the signal reflects what eggs are eaten instead of, rather than eggs as such.\n\nThe claim is contested because comparably credible evidence cuts the other way. Large cohort analyses and meta-analyses report that egg and dietary-cholesterol associations with mortality remain substantially unchanged after extensive adjustment for dietary and lifestyle factors, and even after propensity-score control and stratification, which is difficult to reconcile with the association being an artifact of measured confounding. The core of the disagreement is not about the raw associations, which most sources agree are heterogeneous, but about their causal interpretation, and it is structurally hard to resolve: observational nutrition studies can never fully exclude residual, unmeasured confounding, yet the persistence of associations under careful adjustment is genuine evidence against the confounding account. No randomized trial with mortality endpoints exists to settle it. The question would move toward resolution with better measurement of diet quality, negative-control and quasi-experimental designs, and consistent findings across populations with differing lifestyle correlates of egg consumption."
+    },
+    {
+      "text": "Prospective cohort meta-analyses show higher circulating TMAO predicts increased cardiovascular events and mortality.",
+      "importance": 0.4,
+      "status": "verified",
+      "confidence": 0.9,
+      "summary": "Multiple independent meta-analyses of prospective cohort studies consistently report that higher circulating trimethylamine N-oxide (TMAO) is associated with an increased risk of cardiovascular events and death, often in a dose-dependent fashion. A 2017 dose-response meta-analysis in the European Heart Journal (17 studies, roughly 26,000 subjects) found elevated plasma TMAO associated with markedly higher all-cause mortality, and a separate meta-analysis of 11 prospective cohorts found higher TMAO associated with about a 23% higher risk of cardiovascular events and a 55% higher risk of all-cause mortality. Because the claim asserts only that this predictive association is what the meta-analyses show, and it maps closely to the reported hazard ratios, it is well established.\n\nThe claim should be read as descriptive of the observational evidence rather than as a statement about causation. The pooled mortality estimates carry substantial between-study heterogeneity and some risk of publication bias, and a live debate remains over how much of the association reflects confounding, particularly by impaired kidney function, which both raises TMAO and independently worsens cardiovascular outcomes. Those caveats bear on whether elevated TMAO causes cardiovascular disease, not on the narrower fact that prospective cohort meta-analyses report the predictive association described here."
+    },
+    {
+      "text": "Elevated TMAO levels are associated with increased cardiovascular disease risk.",
+      "importance": 0.4,
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "At the population level, elevated circulating trimethylamine N-oxide (TMAO) is consistently associated with a higher risk of cardiovascular events and mortality. Several systematic reviews and meta-analyses of prospective cohort studies report a dose-dependent relationship: pooled estimates find roughly a 20 to 40 percent higher rate of major adverse cardiovascular events and a larger increase in all-cause mortality among people with higher TMAO, and the pattern recurs across coronary artery disease, heart failure, chronic kidney disease, and diabetic populations. On the strength of this observational evidence, the association as stated is well supported.\n\nWhat remains genuinely contested is whether the association reflects TMAO itself. TMAO is cleared by the kidneys, and impaired kidney function independently raises both TMAO levels and cardiovascular risk, so kidney function is a strong potential confounder; diet, age, and comorbidities complicate interpretation further, and reverse causation cannot be ruled out in observational data. At least one prospective cohort found no association with coronary heart disease once kidney function and metabolic control were accounted for. These caveats bear mainly on causation and on TMAO's usefulness as an independent biomarker rather than on the existence of the raw association. The question would be resolved by evidence that isolates TMAO from confounders, such as consistent findings after full adjustment, Mendelian randomization, or interventional trials showing that lowering TMAO reduces cardiovascular events."
+    },
+    {
+      "text": "Egg-mortality associations attenuate substantially after adjustment for dietary and lifestyle confounders.",
+      "importance": 0.4,
+      "status": "contested",
+      "confidence": 0.75,
+      "summary": "Whether adjusting for dietary and lifestyle confounders substantially weakens the observed relationship between egg consumption and mortality is genuinely disputed within nutritional epidemiology, and the high-quality evidence divides.\n\nSeveral analyses behave as the attenuation thesis predicts. In Western cohorts, eggs are typically eaten alongside processed and red meat, refined grains, and by people with lower physical activity and poorer overall diet quality, so crude positive associations weaken once these factors are controlled. A large United States cohort found that hypothetically replacing eggs with other protein sources was associated with lower mortality, consistent with the signal reflecting the surrounding dietary pattern rather than eggs themselves, and analyses tying the mortality signal to hyperlipidemia point the same way. The reversal of the association between Asian cohorts (where it tends to be inverse) and United States cohorts (where it tends to be positive) is a further pattern that confounding by co-consumed foods and lifestyle would predict.\n\nAgainst this, a 2022 systematic review and updated meta-analysis reported that associations of egg and dietary cholesterol with overall and cause-specific mortality remained largely unchanged after careful adjustment for a wide range of confounders, including propensity-score control and stratified analyses, and a long-running Finnish cohort found a modest but significant increase in mortality risk that persisted independent of other risk factors. Persistence under that level of adjustment is direct evidence against substantial attenuation.\n\nBecause the degree of attenuation varies markedly across cohorts, populations, and adjustment strategies, and because residual confounding can never be fully ruled out from observational data, the strong general form of the claim is neither established nor refuted. What would sharpen it is standardized adjustment and reporting of crude-versus-adjusted estimates across comparable cohorts, and pooled analyses that quantify how much of the association adjustment actually removes."
+    },
+    {
+      "text": "Plant proteins such as nuts and legumes are associated with lower cardiovascular and overall mortality.",
+      "importance": 0.35,
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "Large prospective cohort studies and their pooled meta-analyses consistently link higher intake of plant proteins such as nuts and legumes with lower mortality. The evidence is strongest for nuts: across meta-analyses of prospective studies, the highest intake categories show roughly 15 to 23 percent lower all-cause mortality and 25 to 29 percent lower cardiovascular mortality than the lowest, a pattern reinforced by the PREDIMED trial, in which a Mediterranean diet supplemented with nuts lowered cardiovascular events. For legumes the picture is more uneven: pooled analyses find a modest but significant reduction in all-cause mortality (on the order of a 6 percent lower risk per additional 50 grams per day), while the association specifically with cardiovascular mortality is weaker and in several analyses not statistically significant.\n\nThe claim is framed as an association rather than a causal effect, which is the appropriate register for this body of observational evidence. The main standing caveat is common to nutritional epidemiology: these are observational findings subject to residual confounding and healthy-user effects, so they establish association more securely than causation. Taken together, the evidence clearly favors the claim for nuts and for the all-cause component of legumes, with the legume–cardiovascular-mortality link being the softest part."
+    },
+    {
+      "text": "Individuals vary substantially in their blood cholesterol response to dietary cholesterol.",
+      "importance": 0.35,
+      "status": "verified",
+      "confidence": 0.9,
+      "summary": "Substantial person-to-person variation in the blood cholesterol response to dietary cholesterol is a well-established finding in nutrition science. Controlled feeding studies have long distinguished \"hyper-responders,\" whose serum cholesterol rises markedly when dietary cholesterol is increased, from \"hypo-responders\" (or minimal responders), who show little or no change. A common operational cut point classifies people as hyper-responders when total cholesterol rises by more than about 2.2 mg/dL per additional 100 mg of dietary cholesterol, and as hypo-responders below that. Proposed mechanisms for the difference include variation in intestinal cholesterol absorption and in the feedback suppression of endogenous cholesterol synthesis, and the response is partly heritable. The existence and rough magnitude of this variability is not in serious dispute; what remains actively debated is a separate question, namely how much dietary cholesterol matters for cardiovascular risk in the general population."
+    },
+    {
+      "text": "Nut consumption is associated with lower cardiovascular and all-cause mortality.",
+      "importance": 0.35,
+      "status": "verified",
+      "confidence": 0.88,
+      "summary": "Large prospective cohort studies and the dose-response meta-analyses that pool them consistently find that people who eat more nuts have lower rates of both cardiovascular and all-cause mortality. A widely cited 2016 synthesis of prospective studies reported that an intake of roughly one serving (about 28 grams) of nuts per day was associated with markedly lower cardiovascular mortality and a meaningful reduction in death from any cause, and more recent meta-analyses of dozens of cohorts reach the same conclusion in the same direction. The association is graded (more intake tracks with lower risk) and reproduces across populations, which is why it is treated as well established.\n\nAn important distinction underlies the wording: the claim asserts an association, not that nuts cause the reduction in mortality. Because the evidence is observational, the inverse association could be inflated by residual confounding and healthy-user effects, since people who eat more nuts tend to have healthier diets and lifestyles overall. Whether the relationship is causal, and how large any causal effect is, is a separate and more contested question. As a statement about association, however, the finding rests on a clear chain of peer-reviewed evidence and faces no credible contradiction."
+    },
+    {
+      "text": "Some dose-response meta-analyses find each additional egg per day associated with higher all-cause mortality.",
+      "importance": 0.3,
+      "status": "verified",
+      "confidence": 0.9,
+      "summary": "At least some dose-response meta-analyses of prospective cohort studies do report that each additional egg consumed per day is associated with higher all-cause mortality. A 2022 systematic review and dose-response meta-analysis found that one extra egg per day carried roughly a 7% higher risk of all-cause mortality (pooled relative risk about 1.07, 95% CI 1.02–1.12), and other analyses have reported similar dose-dependent increases on the order of 8% per additional daily egg.\n\nThe claim is deliberately narrow: it asserts only that such findings exist, not that eggs raise mortality in general. That existential statement is well established. It should not be read as settling the wider question, which remains genuinely contested. Other meta-analyses, including large pooled analyses, find no association between low-to-moderate egg intake and mortality, and observed associations are frequently sensitive to dietary cholesterol adjustment, study population, and baseline diet. The evidence base is observational and marked by high statistical heterogeneity, so it supports association rather than causation."
+    },
+    {
+      "text": "A 2019 pooled analysis of US cohorts found egg consumption dose-dependently associated with higher cardiovascular disease risk.",
+      "importance": 0.2,
+      "status": "verified",
+      "confidence": 0.95,
+      "summary": "This claim accurately reports the findings of Zhong et al., \"Associations of Dietary Cholesterol or Egg Consumption With Incident Cardiovascular Disease and Mortality,\" published in JAMA in March 2019. The authors pooled individual participant data from six prospective United States cohorts, followed over roughly three decades, and reported that higher egg consumption was associated with higher risk of incident cardiovascular disease in a dose-response pattern: each additional half egg per day corresponded to a modestly higher CVD risk (adjusted hazard ratio about 1.06), with a parallel association for all-cause mortality and for dietary cholesterol intake more broadly.\n\nThe claim is a faithful description of what the study reported, and on that narrow point it is not in dispute. It should not be read as establishing that eggs cause cardiovascular disease. The study was observational and could not establish causation, its cholesterol association weakened after further adjustment, and its conclusions run counter to other large analyses that found no significant egg-CVD link. That wider question of whether egg consumption meaningfully affects cardiovascular risk remains genuinely contested; this claim speaks only to the content of one 2019 analysis."
+    }
+  ]
+}
