@@ -395,11 +395,21 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
             job_id: { type: "string", format: "uuid" },
           },
         },
+        403: {
+          type: "object",
+          properties: {
+            error: { type: "string" },
+            code: { type: "string" },
+          },
+        },
       },
     },
-    // Proposing a claim triggers LLM work (matching + stewarding), so it is
-    // a metered agentic surface (#70).
-    preHandler: [app.authenticate, app.requireAgenticQuota],
+    // Proposing a claim writes an unreviewed claim straight into the live
+    // graph and enqueues its Steward, so until intake goes through the review
+    // pipeline it is restricted to internal seeding (#157). It also triggers
+    // LLM work (matching + stewarding), so it remains a metered agentic
+    // surface (#70).
+    preHandler: [app.authenticate, app.requireDirectService, app.requireAgenticQuota],
     handler: async (request, reply) => {
       const body = claimProposeBody.parse(request.body);
       const result = await proposeClaim({

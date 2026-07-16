@@ -26,11 +26,20 @@ export async function sourceRoutes(app: FastifyInstance): Promise<void> {
             status: { type: "string", enum: ["queued"] },
           },
         },
+        403: {
+          type: "object",
+          properties: {
+            error: { type: "string" },
+            code: { type: "string" },
+          },
+        },
       },
     },
-    // Source ingestion drives the extractor + matcher (LLM work), so it is a
-    // metered agentic surface (#70).
-    preHandler: [app.authenticate, app.requireAgenticQuota],
+    // Source ingestion mints live claims and instances with no review gate,
+    // so until intake goes through the review pipeline it is restricted to
+    // internal seeding (#157). It also drives the extractor + matcher (LLM
+    // work), so it remains a metered agentic surface (#70).
+    preHandler: [app.authenticate, app.requireDirectService, app.requireAgenticQuota],
     handler: async (request, reply) => {
       const body = sourceSubmitBody.parse(request.body);
       const result = await submitSource(body, {
