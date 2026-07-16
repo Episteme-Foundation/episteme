@@ -4,44 +4,26 @@ import { sources } from "../db/schema.js";
 import { createJob, type JobAttribution } from "./job-service.js";
 import { enqueueUrlExtraction } from "./queue-service.js";
 
-export async function submitSource(
-  input: {
-    url: string;
-    title?: string;
-    content?: string;
-  },
-  attribution?: JobAttribution
-) {
+/**
+ * Find or create the source row for a URL, without enqueueing extraction.
+ * The row is inert on its own (no read path reaches a source except through
+ * claim instances), so intake review (#157) can store a submission verbatim
+ * before deciding whether to process it.
+ */
+export async function getOrCreateSource(input: {
+  url: string;
+  title?: string;
+  content?: string;
+}) {
   const db = getDb();
 
-  // Check for existing source with same URL
   const [existing] = await db
     .select()
     .from(sources)
     .where(eq(sources.url, input.url))
     .limit(1);
+  if (existing) return existing;
 
-  if (existing) {
-    // Re-process existing source
-    const job = await createJob(
-      "url_extraction",
-      {
-        sourceId: existing.id,
-        url: input.url,
-      },
-      attribution
-    );
-
-    await enqueueUrlExtraction({
-      sourceId: existing.id,
-      jobId: job.id,
-      url: input.url,
-    });
-
-    return { sourceId: existing.id, jobId: job.id };
-  }
-
-  // Create new source
   const [source] = await db
     .insert(sources)
     .values({
@@ -50,21 +32,33 @@ export async function submitSource(
       rawContent: input.content,
     })
     .returning();
+  return source!;
+}
+
+export async function submitSource(
+  input: {
+    url: string;
+    title?: string;
+    content?: string;
+  },
+  attribution?: JobAttribution
+) {
+  const source = await getOrCreateSource(input);
 
   const job = await createJob(
     "url_extraction",
     {
-      sourceId: source!.id,
+      sourceId: source.id,
       url: input.url,
     },
     attribution
   );
 
   await enqueueUrlExtraction({
-    sourceId: source!.id,
+    sourceId: source.id,
     jobId: job.id,
     url: input.url,
   });
 
-  return { sourceId: source!.id, jobId: job.id };
+  return { sourceId: source.id, jobId: job.id };
 }

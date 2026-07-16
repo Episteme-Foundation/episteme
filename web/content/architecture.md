@@ -199,11 +199,25 @@ node without losing track of who said which.
 
 ### Contributions and governance
 
-Anyone can contribute. A **contribution** targets a claim with a type
-(`challenge`, `support`, `propose_merge`, `propose_split`, `propose_edit`,
-`add_instance`, or `propose_argument`) plus content and evidence. Contributions
-flow through review (`contribution_reviews`), can be appealed (`appeals`), and
-escalated to arbitration (`arbitration_results`).
+Anyone can contribute — but the graph is a governed space: open to
+*suggestions*, never to direct writes. A **contribution** targets a claim with
+a type (`challenge`, `support`, `propose_merge`, `propose_split`,
+`propose_edit`, `add_instance`, or `propose_argument`) plus content and
+evidence. Contributions flow through review (`contribution_reviews`), can be
+appealed (`appeals`), and escalated to arbitration (`arbitration_results`).
+
+Two **intake** types extend the same machinery to brand-new content:
+`propose_claim` (a suggested claim plus its supporting argument) and
+`propose_source` (a document submitted for extraction). These have no target
+claim while pending — nothing touches the claims table — and only an accepted
+review materializes them: a proposed claim is canonicalized through the
+Matcher (so a duplicate or a negation lands on the existing node) and only
+then created live and handed to its Steward, with a deliberately conservative
+importance prior; a proposed source is only then queued for extraction. The
+review gate judges good faith and claim quality (is this a single, disputable,
+canonical-formable proposition?), never subject matter. Internal seeding by
+direct service callers (corpus runs, case studies) is the one path that
+writes without review.
 
 **Contributors** are the account layer as well as the reputation layer; there
 is one account table, and everyone on it is a potential contributor. Reputation
@@ -283,9 +297,13 @@ Ingestion runs three steps before governance takes over:
 ```
 
 - **Extractor**: reads a source and emits the discrete, reusable claims it
-  asserts, in canonical form, each with a provisional importance prior. It is a
+  asserts, in canonical form, each with a provisional importance prior and a
+  confidence that the proposition is a well-formed claim at all. It is a
   structured extraction call rather than a tool-use loop, and it is deliberately
-  selective: the claims a reader would want checked, not every sentence.
+  selective: the claims a reader would want checked, not every sentence. A low
+  confidence floor drops obvious non-claims before they enter the graph — a
+  backstop against garbage, not a quality judgment, which stays with the
+  agents.
 - **Matcher**: the single decider of claim identity. For each proposition it
   searches the graph itself, under multiple framings including the negation,
   and decides match-or-create, recording the stance of the new appearance. It
@@ -315,7 +333,8 @@ These act through tools over the life of a claim and the graph:
   contested claims get deeper search (including bounded web search) and an
   adversarial second pass, minor settled ones a light touch. Decomposition
   terminates without a depth cap because shared ancestors get linked, not
-  re-created.
+  re-created; recursion is bounded economically by the importance brake, and a
+  per-run cap on newly minted subclaims backstops a single runaway pass.
 - **Curator** is the graph-level counterpart: it owns the connective tissue
   *between* claims, merging duplicates and counterparts the Matcher missed,
   splitting conflated claims (§18), and suggesting cross-claim edges for the
@@ -325,7 +344,11 @@ These act through tools over the life of a claim and the graph:
   reverse it, and the Curator never overrides a Steward's verdict.
 - **Contribution Reviewer** evaluates each incoming contribution against policy
   (accept, reject, or escalate), including `propose_argument` contributions,
-  and flags suspected bad faith.
+  and flags suspected bad faith. It is also the graph's **admission gate**:
+  user-proposed claims and sources arrive as intake contributions, and its
+  accept — judged on good faith and claim quality, never topic — is what
+  admits them (materialization itself is mechanical: Matcher first, then
+  claim creation or extraction).
 - **Dispute Arbitrator** resolves escalations and appeals through careful
   adjudication, the highest-stakes governance call.
 - **Audit Agent** is quality control over the governance system itself: it
@@ -410,8 +433,9 @@ claims ──< claim_relationships >── claims     (parent / child adjacency)
 Around that core sit the account and operations tables: `contributors` doubles
 as the account table, `api_keys` holds hashed keys, `llm_usage` meters every
 model call, `reputation_events` and `kudos_events` are the append-only score
-ledgers, `reconciliation_events` is the Curator's reversible audit log, and
-`jobs` tracks queued work.
+ledgers, `reconciliation_events` is the Curator's reversible audit log,
+`audit_log` is the Steward's append-only decision trail, and `jobs` tracks
+queued work.
 
 ### Search: vectors and full text
 
@@ -435,8 +459,11 @@ before making its final judgment.
 A Fastify service at `api.claimgraph.io`. Reads are public and unauthenticated:
 claim lookup and search, decomposition trees, dependents, assessment history,
 contributor profiles. Anything that writes or spends model tokens
-(`POST /sources`, contributions, appeals, the extension and MCP endpoints)
-requires a key. Interactive OpenAPI documentation is served at `/docs` on the
+(`POST /sources`, `POST /claims/propose`, contributions, appeals, the
+extension and MCP endpoints) requires a key. No user surface writes to the
+graph directly: proposed claims and submitted sources become pending intake
+contributions (HTTP 202) for the Contribution Reviewer, and only direct
+service callers — internal seeding — keep the immediate path. Interactive OpenAPI documentation is served at `/docs` on the
 API host.
 
 ### The web app

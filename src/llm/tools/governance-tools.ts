@@ -330,12 +330,36 @@ async function getContributionDetails(contributionId: string) {
     .where(eq(contributionReviews.contributionId, contributionId))
     .limit(1);
 
-  // Target claim
-  const [claim] = await db
-    .select({ id: claims.id, text: claims.text, claimType: claims.claimType })
-    .from(claims)
-    .where(eq(claims.id, contribution.claimId))
-    .limit(1);
+  // Target claim — null for pending intake contributions (#157), which
+  // propose NEW content and have no claim until accepted and materialized.
+  const [claim] = contribution.claimId
+    ? await db
+        .select({
+          id: claims.id,
+          text: claims.text,
+          claimType: claims.claimType,
+        })
+        .from(claims)
+        .where(eq(claims.id, contribution.claimId))
+        .limit(1)
+    : [undefined];
+
+  // Proposed source for 'propose_source' intake: the stored document under
+  // review. Only a bounded excerpt of the raw content — enough to judge good
+  // faith and whether the document plausibly carries claims.
+  const [source] = contribution.sourceId
+    ? await db
+        .select({
+          id: sources.id,
+          url: sources.url,
+          title: sources.title,
+          sourceType: sources.sourceType,
+          rawContent: sources.rawContent,
+        })
+        .from(sources)
+        .where(eq(sources.id, contribution.sourceId))
+        .limit(1)
+    : [undefined];
 
   return {
     contribution: {
@@ -348,6 +372,19 @@ async function getContributionDetails(contributionId: string) {
       proposed_canonical_form: contribution.proposedCanonicalForm,
       merge_target_claim_id: contribution.mergeTargetClaimId,
     },
+    ...(source
+      ? {
+          proposed_source: {
+            id: source.id,
+            url: source.url,
+            title: source.title,
+            source_type: source.sourceType,
+            content_excerpt: source.rawContent
+              ? source.rawContent.slice(0, 4000)
+              : null,
+          },
+        }
+      : {}),
     contributor: contributor
       ? {
           id: contributor.id,

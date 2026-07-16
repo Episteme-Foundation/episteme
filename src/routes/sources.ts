@@ -1,13 +1,32 @@
 import type { FastifyInstance } from "fastify";
 import { sourceSubmitBody } from "../schemas/source.js";
 import { submitSource } from "../services/source-service.js";
+import { createSourceProposal } from "../services/intake-service.js";
+import { gateContributor } from "../server/contributor-gate.js";
+import { isDirectService } from "../server/plugins/auth.js";
+
+// Contributor-gate errors ({error: {code, message}}), shared with
+// POST /contributions.
+const errorEnvelopeSchema = {
+  type: "object",
+  properties: {
+    error: {
+      type: "object",
+      properties: {
+        code: { type: "string" },
+        message: { type: "string" },
+      },
+    },
+  },
+} as const;
 
 export async function sourceRoutes(app: FastifyInstance): Promise<void> {
   // POST /sources
   app.post("/", {
     schema: {
       tags: ["sources"],
-      summary: "Submit a source URL for claim extraction",
+      summary:
+        "Submit a source URL for claim extraction (user submissions enter the review queue)",
       body: {
         type: "object",
         required: ["url"],
@@ -23,34 +42,56 @@ export async function sourceRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             source_id: { type: "string", format: "uuid" },
             job_id: { type: "string", format: "uuid" },
-            status: { type: "string", enum: ["queued"] },
+            contribution_id: { type: "string", format: "uuid" },
+            status: { type: "string", enum: ["queued", "pending_review"] },
           },
         },
-        403: {
-          type: "object",
-          properties: {
-            error: { type: "string" },
-            code: { type: "string" },
-          },
-        },
+        402: errorEnvelopeSchema,
+        403: errorEnvelopeSchema,
+        429: errorEnvelopeSchema,
       },
     },
-    // Source ingestion mints live claims and instances with no review gate,
-    // so until intake goes through the review pipeline it is restricted to
-    // internal seeding (#157). It also drives the extractor + matcher (LLM
-    // work), so it remains a metered agentic surface (#70).
-    preHandler: [app.authenticate, app.requireDirectService, app.requireAgenticQuota],
+    // Source ingestion drives the extractor + matcher (LLM work), so it is a
+    // metered agentic surface (#70).
+    preHandler: [app.authenticate, app.requireAgenticQuota],
     handler: async (request, reply) => {
       const body = sourceSubmitBody.parse(request.body);
-      const result = await submitSource(body, {
-        userId: request.auth?.userId ?? null,
-        apiKeyId: request.auth?.apiKeyId ?? null,
+      const auth = request.auth;
+
+      // Internal seeding fast path (#157): a direct service caller (corpus,
+      // FLF case studies) goes straight to extraction. Everything else —
+      // including the web BFF acting for a signed-in user — takes the intake
+      // path below.
+      if (isDirectService(auth)) {
+        const result = await submitSource(body, {
+          userId: auth.userId ?? null,
+          apiKeyId: auth.apiKeyId ?? null,
+        });
+
+        return reply.code(202).send({
+          source_id: result.sourceId,
+          job_id: result.jobId,
+          status: "queued" as const,
+        });
+      }
+
+      // Governed intake (#157): the source is stored verbatim but nothing is
+      // extracted — no claims, no instances — until the Contribution Reviewer
+      // accepts the submission.
+      const contributor = await gateContributor(request, reply);
+      if (!contributor) return;
+
+      const { contribution, sourceId } = await createSourceProposal({
+        url: body.url,
+        title: body.title,
+        content: body.content,
+        contributorId: contributor.id,
       });
 
       return reply.code(202).send({
-        source_id: result.sourceId,
-        job_id: result.jobId,
-        status: "queued" as const,
+        source_id: sourceId,
+        contribution_id: contribution.id,
+        status: "pending_review" as const,
       });
     },
   });

@@ -80,8 +80,24 @@ async function processUrlExtraction(
 
     let claimsCreated = 0;
     let claimsMatched = 0;
+    let claimsDroppedLowConfidence = 0;
 
     for (const claim of extracted) {
+      // Validity floor (#157 phase 3): the Extractor scores each proposition
+      // with a confidence that it IS a well-formed claim; previously this was
+      // stored and ignored, so a non-claim could enter the graph verbatim.
+      // A low backstop, not a quality judgment (Judgment over Mechanism) —
+      // well-formedness is judged upstream by intake review and downstream
+      // by the Steward.
+      const { extractionMinConfidence } = loadConfig();
+      if (
+        extractionMinConfidence > 0 &&
+        typeof claim.confidence === "number" &&
+        claim.confidence < extractionMinConfidence
+      ) {
+        claimsDroppedLowConfidence++;
+        continue;
+      }
       // The agentic Matcher is the single decider of claim identity: it does
       // its own (multi-framing, ungated) search, so we no longer pre-fetch
       // candidates here (#25).
@@ -171,6 +187,9 @@ async function processUrlExtraction(
         claims_extracted: extracted.length,
         claims_created: claimsCreated,
         claims_matched: claimsMatched,
+        // Never truncate silently: dropped extractions are visible in the
+        // job result so a low floor misconfiguration is diagnosable.
+        claims_dropped_low_confidence: claimsDroppedLowConfidence,
       },
     });
   } catch (err) {

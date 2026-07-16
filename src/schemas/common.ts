@@ -48,6 +48,8 @@ export const decompositionRelationEnum = z.enum([
 
 export const stanceEnum = z.enum(["for", "against", "neutral"]);
 
+// The types a caller may submit against an EXISTING claim via
+// POST /contributions.
 export const contributionTypeEnum = z.enum([
   "challenge",
   "support",
@@ -56,6 +58,21 @@ export const contributionTypeEnum = z.enum([
   "propose_edit",
   "add_instance",
   "propose_argument",
+]);
+
+// Intake types (#157): suggestions that would mint NEW graph content. They are
+// created internally by POST /claims/propose and POST /sources (never through
+// the /contributions body, which requires a target claim) and have a null
+// claim_id until review accepts and materializes them.
+export const intakeContributionTypeEnum = z.enum([
+  "propose_claim",
+  "propose_source",
+]);
+
+// Every type a contribution row can carry — for list filters and display.
+export const anyContributionTypeEnum = z.enum([
+  ...contributionTypeEnum.options,
+  ...intakeContributionTypeEnum.options,
 ]);
 
 export const reviewDecisionEnum = z.enum([

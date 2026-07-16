@@ -126,6 +126,22 @@ const configSchema = z.object({
   // Quantity caps to bound graph fan-out (0 = unlimited). The dominant cost
   // driver is extraction count, since each extracted claim seeds a tree.
   extractionMaxClaims: z.coerce.number().default(0),
+  // Validity floor on extracted claims (#157 phase 3). The Extractor scores
+  // each proposition with a confidence that it IS a well-formed claim; below
+  // this floor the extraction is dropped (and counted in the job result)
+  // instead of entering the graph. Deliberately a low BACKSTOP against
+  // obvious non-claims ("i am"), not a quality judgment — judging claim
+  // well-formedness belongs to agents (the intake reviewer, the Steward),
+  // per the constitution's "Judgment over Mechanism". 0 disables.
+  extractionMinConfidence: z.coerce.number().default(0.3),
+  // Importance prior for user-proposed claims admitted through intake review
+  // (#157). Deliberately below the 0.5 default: an approved suggestion enters
+  // the importance-ordered steward queue behind corpus work rather than ahead
+  // of it, and Steward effort (including decomposition depth) scales with
+  // importance, so a typed-in seed can no longer command a full contested-
+  // debate subtree by default. The Steward revises it with a considered
+  // judgment like any other prior.
+  proposedClaimImportancePrior: z.coerce.number().default(0.3),
 
   // The Steward owns decomposition + assessment in one tool-use loop, so its
   // iteration cap is a pure runaway backstop, NOT a work budget — set it high.
@@ -147,6 +163,14 @@ const configSchema = z.object({
   // without a blunt depth cap. 0.25 = the ontology's "peripheral" ceiling, so
   // only genuinely peripheral subclaims are gated; set 0 to disable.
   stewardEnqueueMinImportance: z.coerce.number().default(0.25),
+  // Blast-radius backstop on a single Steward run (#157 phase 3): the maximum
+  // number of NEW subclaims one run may mint (add_decomposition_edge). This is
+  // a runaway guard in the constitution's "mechanism as backstop" sense — the
+  // judgment about how far to decompose stays with the Steward and the
+  // importance brake above; a run that hits this cap is told to link existing
+  // claims or stop, and the recursion (child runs) is bounded economically by
+  // stewardEnqueueMinImportance, not by this. 0 disables.
+  stewardMaxNewSubclaimsPerRun: z.coerce.number().default(20),
   // Cap the total number of Curator invocations per process (0 = unlimited),
   // mirroring stewardMaxRuns for predictable test/deploy spend.
   curatorMaxRuns: z.coerce.number().default(0),
@@ -242,9 +266,14 @@ export function loadConfig(): Config {
     pipelineEpoch: process.env.PIPELINE_EPOCH,
     matchingTopK: process.env.MATCHING_TOP_K,
     extractionMaxClaims: process.env.EXTRACTION_MAX_CLAIMS,
+    extractionMinConfidence: process.env.EXTRACTION_MIN_CONFIDENCE,
+    proposedClaimImportancePrior:
+      process.env.PROPOSED_CLAIM_IMPORTANCE_PRIOR,
     stewardMaxIterations: process.env.STEWARD_MAX_ITERATIONS,
     stewardMaxRuns: process.env.STEWARD_MAX_RUNS,
     stewardEnqueueMinImportance: process.env.STEWARD_ENQUEUE_MIN_IMPORTANCE,
+    stewardMaxNewSubclaimsPerRun:
+      process.env.STEWARD_MAX_NEW_SUBCLAIMS_PER_RUN,
     curatorMaxRuns: process.env.CURATOR_MAX_RUNS,
     curatorSweepRate: process.env.CURATOR_SWEEP_RATE,
     matcherModel: process.env.MATCHER_MODEL,

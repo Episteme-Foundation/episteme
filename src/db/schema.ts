@@ -541,9 +541,14 @@ export const contributions = pgTable(
   "contributions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    claimId: uuid("claim_id")
-      .notNull()
-      .references(() => claims.id, { onDelete: "cascade" }),
+    // Nullable for intake contributions (#157): a 'propose_claim' or
+    // 'propose_source' suggestion has no target claim while pending — nothing
+    // touches the claims table until review accepts it. On acceptance the
+    // materialized (or matched) claim id is written here, so accepted intake
+    // rows read like any other contribution on their claim's page.
+    claimId: uuid("claim_id").references(() => claims.id, {
+      onDelete: "cascade",
+    }),
     contributorId: uuid("contributor_id")
       .notNull()
       .references(() => contributors.id),
@@ -558,6 +563,11 @@ export const contributions = pgTable(
       () => claims.id
     ),
     proposedCanonicalForm: text("proposed_canonical_form"),
+    // 'propose_source' intake (#157): the stored document awaiting review. A
+    // source row is inert until extraction runs — it appears in no read path
+    // except through claim instances — so storing the submission verbatim
+    // before review is safe.
+    sourceId: uuid("source_id").references(() => sources.id),
   },
   (table) => [
     index("idx_contributions_claim").on(table.claimId),

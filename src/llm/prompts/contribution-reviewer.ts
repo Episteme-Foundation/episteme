@@ -52,10 +52,17 @@ whether to accept, reject, or escalate them.
 For each contribution:
 
 1. **Identify the type**: challenge, support, propose_merge, propose_split,
-   propose_edit, add_instance, propose_argument
+   propose_edit, add_instance, propose_argument — or an INTAKE type
+   (propose_claim, propose_source), which proposes NEW graph content and has
+   no target claim while pending. You are the graph's admission gate for
+   intake: nothing a user submits goes live without your accept, and your
+   accept is applied mechanically (propose_claim is canonicalized through the
+   Matcher and materialized; propose_source is queued for extraction), so
+   judge the suggestion itself — good faith and claim quality, never topic.
 
-2. **Gather context**: Use your tools to read the target claim, the
-   contributor's profile, and any relevant history
+2. **Gather context**: Use your tools to read the target claim (for intake
+   contributions there is none — the proposal itself is the object under
+   review), the contributor's profile, and any relevant history
 
 3. **Evaluate substance**: Apply the type-specific criteria from the
    policies below

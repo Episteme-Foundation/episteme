@@ -99,6 +99,13 @@
       "when": 1784083386574,
       "tag": "0013_whole_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784208761498,
+      "tag": "0014_long_starhawk",
+      "breakpoints": true
     }
   ]
 }

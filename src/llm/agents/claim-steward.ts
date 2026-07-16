@@ -89,6 +89,7 @@ async function runClaimStewardImpl(input: {
    add_decomposition_edge. Do not re-decompose from scratch.`;
 
   const iterationBudget = config.stewardMaxIterations;
+  let newSubclaimsThisRun = 0;
 
   const userMessage = `You have been triggered to steward a claim.
 
@@ -155,6 +156,26 @@ ${structureStep}
       }
       if (claimContextNames.has(name)) {
         return executeGovernanceTool(name, toolInput);
+      }
+      // Blast-radius backstop (#157 phase 3): cap the NEW subclaims one run
+      // may mint. Like the iteration cap this is a runaway guard, not a
+      // target — the judgment about how far to decompose stays with the
+      // Steward (and the importance brake bounds recursion). Linking
+      // existing claims (add_relationship_edge) is never capped.
+      if (name === "add_decomposition_edge") {
+        const cap = config.stewardMaxNewSubclaimsPerRun;
+        if (cap > 0 && newSubclaimsThisRun >= cap) {
+          return JSON.stringify({
+            success: false,
+            message:
+              `This run has already minted ${newSubclaimsThisRun} new subclaims — the ` +
+              `per-run backstop (${cap}). Do not create more in this pass: link any ` +
+              `remaining dependencies that already exist with add_relationship_edge, ` +
+              `note the rest in your reasoning trace, and proceed to your assessment. ` +
+              `A future stewardship pass can continue the decomposition.`,
+          });
+        }
+        newSubclaimsThisRun++;
       }
       return executeStewardTool(name, toolInput);
     },

@@ -32,8 +32,8 @@
     "invokedWhen": "A contributor submits a challenge, support, merge, edit, instance, or argument.",
     "model": "Claude Sonnet 5",
     "hasConstitution": true,
-    "roleChars": 9902,
-    "fullChars": 45140
+    "roleChars": 13227,
+    "fullChars": 48465
   },
   {
     "key": "claim-steward",

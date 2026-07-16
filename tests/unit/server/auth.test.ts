@@ -61,11 +61,6 @@ async function buildTestApp(
     async () => ({ ok: true })
   );
   app.get(
-    "/direct-service-only",
-    { preHandler: [app.authenticate, app.requireDirectService] },
-    async () => ({ ok: true })
-  );
-  app.get(
     "/session-only",
     { preHandler: [app.authenticate, app.requireSession] },
     async () => ({ ok: true })
@@ -283,51 +278,30 @@ describe("auth plugin", () => {
       expect(service.statusCode).toBe(200);
     });
 
-    it("requireDirectService rejects consumer keys and acting-user sessions, allows direct service callers (#157)", async () => {
-      mocks.resolveApiKey.mockResolvedValue({
-        key: { id: "key-1", scope: "user" },
-        user: { id: "user-1", externalId: "github:42", isSuspended: false },
-      });
-      const app = await buildTestApp("svc:ops");
-      const consumer = await app.inject({
-        method: "GET",
-        url: "/direct-service-only",
-        headers: { "x-api-key": "epk_x" },
-      });
-      expect(consumer.statusCode).toBe(403);
-      expect(consumer.json().code).toBe("DIRECT_SERVICE_REQUIRED");
-
-      // A service key forwarding a signed-in user (the web BFF path) is user
-      // traffic, not internal seeding — it must not pass the direct gate.
-      mocks.resolveApiKey.mockResolvedValue(null);
-      mocks.getContributorByExternalId.mockResolvedValue({
-        id: "user-9",
-        externalId: "github:9",
-        isSuspended: false,
-      });
-      const session = await app.inject({
-        method: "GET",
-        url: "/direct-service-only",
-        headers: { "x-api-key": "svc", "x-acting-user": "github:9" },
-      });
-      expect(session.statusCode).toBe(403);
-      expect(session.json().code).toBe("DIRECT_SERVICE_REQUIRED");
-
-      const direct = await app.inject({
-        method: "GET",
-        url: "/direct-service-only",
-        headers: { "x-api-key": "svc" },
-      });
-      expect(direct.statusCode).toBe(200);
-    });
-
-    it("requireDirectService allows the dev bypass (local DX)", async () => {
-      const app = await buildTestApp(undefined);
-      const res = await app.inject({
-        method: "GET",
-        url: "/direct-service-only",
-      });
-      expect(res.statusCode).toBe(200);
+    it("isDirectService is service trust WITHOUT acting-user forwarding (#157)", async () => {
+      vi.resetModules();
+      const { isDirectService } = await import(
+        "../../../src/server/plugins/auth.js"
+      );
+      const base = {
+        method: "api_key" as const,
+        userId: null,
+        apiKeyId: null,
+        contributorExternalId: null,
+      };
+      expect(isDirectService(null)).toBe(false);
+      // consumer key
+      expect(
+        isDirectService({ ...base, isService: false, isSession: false })
+      ).toBe(false);
+      // service key forwarding a signed-in user (web BFF) is user traffic
+      expect(
+        isDirectService({ ...base, isService: true, isSession: true })
+      ).toBe(false);
+      // direct service caller (internal seeding, dev bypass)
+      expect(
+        isDirectService({ ...base, isService: true, isSession: false })
+      ).toBe(true);
     });
 
     it("requireSession rejects plain key auth, allows acting-user sessions", async () => {

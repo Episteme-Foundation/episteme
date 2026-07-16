@@ -50,7 +50,8 @@ GET  https://api.claimgraph.io/claims/search/inflation
 GET  https://api.claimgraph.io/claims/inflation-2022
 GET  https://api.claimgraph.io/claims/inflation-2022/trajectory
 
-# Agentic calls & writes authenticate with your key:
+# Agentic calls & writes authenticate with your key.
+# Proposals are reviewed before they join the graph:
 POST https://api.claimgraph.io/claims/propose
      x-api-key: YOUR_KEY
 

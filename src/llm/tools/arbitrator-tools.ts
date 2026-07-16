@@ -15,6 +15,12 @@ import {
 } from "../../db/schema.js";
 import { enqueueSteward } from "../../services/queue-service.js";
 import { reverseReviewOutcome } from "../../services/reputation-service.js";
+import {
+  isIntakeContributionType,
+  materializeAcceptedIntake,
+  type IntakeMaterializationResult,
+} from "../../services/intake-service.js";
+import { getContributionById } from "../../services/contribution-service.js";
 
 export function getArbitratorToolDefinitions(): Tool[] {
   return [
@@ -130,6 +136,22 @@ export async function executeArbitratorTool(
         const db = getDb();
         const policyCitations = (input.policy_citations as string[] | undefined) ?? [];
 
+        // An overturn that ACCEPTS an intake contribution (#157) must
+        // materialize it, exactly as the reviewer's accept does — otherwise
+        // an escalated proposal arbitrated in the contributor's favor would
+        // read 'accepted' with nothing in the graph. Runs first so a failure
+        // surfaces to the arbitrator; the call is idempotent.
+        let materialization: IntakeMaterializationResult | null = null;
+        if (outcome === "overturn") {
+          const contribution = await getContributionById(contributionId);
+          if (
+            contribution &&
+            isIntakeContributionType(contribution.contributionType)
+          ) {
+            materialization = await materializeAcceptedIntake(contributionId);
+          }
+        }
+
         await db.insert(arbitrationResults).values({
           contributionId,
           appealId: appealId ?? null,
@@ -180,6 +202,7 @@ export async function executeArbitratorTool(
         return JSON.stringify({
           success: true,
           message: `Arbitration decision recorded: ${outcome} for contribution ${contributionId}`,
+          ...(materialization ? { materialization } : {}),
           ...(restoration
             ? {
                 contributor_restored: {
