@@ -3,6 +3,7 @@ import {
   uuidSchema,
   paginationSchema,
   contributionTypeEnum,
+  anyContributionTypeEnum,
 } from "./common.js";
 
 // ---- Request schemas ----
@@ -23,7 +24,7 @@ export const createContributionBody = z.object({
 export const listContributionsParams = paginationSchema.extend({
   claim_id: uuidSchema.optional(),
   status: z.string().optional(),
-  type: contributionTypeEnum.optional(),
+  type: anyContributionTypeEnum.optional(),
 });
 
 export const createAppealBody = z.object({
@@ -36,7 +37,9 @@ export const createAppealBody = z.object({
 
 export const contributionResponse = z.object({
   id: uuidSchema,
-  claim_id: uuidSchema,
+  // Null while an intake contribution (propose_claim / propose_source) is
+  // pending; set to the materialized or matched claim on acceptance (#157).
+  claim_id: uuidSchema.nullable(),
   contributor_id: uuidSchema,
   contribution_type: z.string(),
   content: z.string(),

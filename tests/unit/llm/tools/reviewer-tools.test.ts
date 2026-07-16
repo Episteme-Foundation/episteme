@@ -44,6 +44,21 @@ vi.mock("../../../../src/services/reputation-service.js", async (importOriginal)
   return { ...original, applyReviewOutcome: mocks.applyReviewOutcome };
 });
 
+// An accept now checks whether the contribution is an intake type (#157);
+// these are ordinary contributions, so the intake path stays cold (covered in
+// tests/unit/llm/reviewer-intake.test.ts).
+vi.mock("../../../../src/services/contribution-service.js", () => ({
+  getContributionById: vi.fn(async () => ({
+    id: CONTRIBUTION_ID,
+    contributionType: "challenge",
+  })),
+}));
+vi.mock("../../../../src/services/intake-service.js", () => ({
+  isIntakeContributionType: (t: string) =>
+    t === "propose_claim" || t === "propose_source",
+  materializeAcceptedIntake: vi.fn(),
+}));
+
 import { executeReviewerTool } from "../../../../src/llm/tools/reviewer-tools.js";
 
 beforeEach(() => {

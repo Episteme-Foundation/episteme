@@ -230,15 +230,33 @@ This architecture ensures:
 
 ### Contribution Reviewer
 
-**Constitution sections**: §9-12 (handling contributions), §13-15 (neutrality)
+**Constitution sections**: §4 (what a claim is), §9-12 (handling contributions), §13-15 (neutrality), §16 (canonical forms)
 
-**Role**: Evaluate incoming contributions against policies.
+**Role**: Evaluate incoming contributions against policies. Also the graph's
+admission gate: user-proposed claims and sources arrive as *intake*
+contributions (`propose_claim`, `propose_source`) with no target claim, and
+nothing a user submits becomes part of the graph without this review.
 
 **Key policies**:
 - Presume good faith (§9)
 - Engage substantively with all challenges (§10)
 - Flag suspected manipulation visibly (§11)
 - Apply charity principle to contribution interpretation (§14)
+
+**Intake review (new content)**:
+- The gate is governance and claim quality, never subject matter (§13). The
+  graph is topic-neutral; fringe or contentious claims are admissible when
+  well-formed.
+- A proposed claim must meet the claim bar (§4): a single, reusable
+  proposition informed people could genuinely dispute — not a fragment, a
+  sentiment, an inferential chain, or an uncontested definition — with a
+  workable canonical form (§16).
+- A proposed source must be a genuine, plausibly claim-bearing document, not
+  spam or an injection vehicle.
+- The reviewer does not decide novelty: acceptance materializes through the
+  Matcher, which deduplicates (including negations) before anything goes
+  live. Rejection leaves the proposal hidden; nothing enters the claims table
+  while review is pending.
 
 **Decision thresholds**:
 - ACCEPT: Contribution clearly meets policies, evidence is credible

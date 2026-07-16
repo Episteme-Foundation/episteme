@@ -12,6 +12,24 @@ import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount, getClaimDependents, listClaimDependents } from "../services/tree-service.js";
 import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
 import { addArgument, getArgumentsForClaim } from "../services/argument-service.js";
+import { createClaimProposal } from "../services/intake-service.js";
+import { gateContributor } from "../server/contributor-gate.js";
+import { isDirectService } from "../server/plugins/auth.js";
+
+// Contributor-gate errors ({error: {code, message}}), shared with
+// POST /contributions.
+const errorEnvelopeSchema = {
+  type: "object",
+  properties: {
+    error: {
+      type: "object",
+      properties: {
+        code: { type: "string" },
+        message: { type: "string" },
+      },
+    },
+  },
+} as const;
 
 export const claimSchema = {
   type: "object",
@@ -368,7 +386,8 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
   app.post("/propose", {
     schema: {
       tags: ["claims"],
-      summary: "Propose a new claim with an initial argument",
+      summary:
+        "Propose a new claim with an initial argument (user proposals enter the review queue)",
       body: {
         type: "object",
         required: ["claim", "argument"],
@@ -395,42 +414,89 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
             job_id: { type: "string", format: "uuid" },
           },
         },
-        403: {
+        202: {
           type: "object",
           properties: {
-            error: { type: "string" },
-            code: { type: "string" },
+            contribution: {
+              type: "object",
+              properties: {
+                id: { type: "string", format: "uuid" },
+                contribution_type: { type: "string" },
+                review_status: { type: "string" },
+                submitted_at: { type: "string", format: "date-time" },
+              },
+            },
+            message: { type: "string" },
           },
         },
+        402: errorEnvelopeSchema,
+        403: errorEnvelopeSchema,
+        429: errorEnvelopeSchema,
       },
     },
-    // Proposing a claim writes an unreviewed claim straight into the live
-    // graph and enqueues its Steward, so until intake goes through the review
-    // pipeline it is restricted to internal seeding (#157). It also triggers
-    // LLM work (matching + stewarding), so it remains a metered agentic
-    // surface (#70).
-    preHandler: [app.authenticate, app.requireDirectService, app.requireAgenticQuota],
+    // Proposing a claim triggers LLM work (review or matching + stewarding),
+    // so it is a metered agentic surface (#70).
+    preHandler: [app.authenticate, app.requireAgenticQuota],
     handler: async (request, reply) => {
       const body = claimProposeBody.parse(request.body);
-      const result = await proposeClaim({
-        claim: body.claim,
-        argument: body.argument,
-        attribution: {
-          userId: request.auth?.userId ?? null,
-          apiKeyId: request.auth?.apiKeyId ?? null,
-        },
+      const auth = request.auth;
+
+      // Internal seeding fast path (#157): a direct service caller (corpus,
+      // FLF case studies) writes live and enqueues the Steward immediately.
+      // Everything else — including the web BFF acting for a signed-in user —
+      // takes the intake path below.
+      if (isDirectService(auth)) {
+        const result = await proposeClaim({
+          claim: body.claim,
+          argument: body.argument,
+          // Provenance: after #157, created_by='user' means "user-proposed,
+          // review-approved" — the unreviewed fast path is service seeding
+          // and says so.
+          createdBy: "service",
+          attribution: {
+            userId: auth.userId ?? null,
+            apiKeyId: auth.apiKeyId ?? null,
+          },
+        });
+
+        return reply.code(201).send({
+          claim: formatClaim(result.claim),
+          argument: {
+            id: result.argument.id,
+            stance: result.argument.stance,
+            content: result.argument.content,
+            created_by: result.argument.createdBy,
+            created_at: result.argument.createdAt.toISOString(),
+          },
+          job_id: result.jobId,
+        });
+      }
+
+      // Governed intake (#157): the proposal is a suggestion, not a write. It
+      // is stored as a pending contribution — nothing enters the claims table
+      // — and the Contribution Reviewer decides; acceptance canonicalizes
+      // through the Matcher and only then materializes a live claim.
+      const contributor = await gateContributor(request, reply);
+      if (!contributor) return;
+
+      const contribution = await createClaimProposal({
+        claimText: body.claim,
+        argumentText: body.argument,
+        contributorId: contributor.id,
       });
 
-      return reply.code(201).send({
-        claim: formatClaim(result.claim),
-        argument: {
-          id: result.argument.id,
-          stance: result.argument.stance,
-          content: result.argument.content,
-          created_by: result.argument.createdBy,
-          created_at: result.argument.createdAt.toISOString(),
+      return reply.code(202).send({
+        contribution: {
+          id: contribution.id,
+          contribution_type: contribution.contributionType,
+          review_status: contribution.reviewStatus,
+          submitted_at: contribution.submittedAt.toISOString(),
         },
-        job_id: result.jobId,
+        message:
+          "Proposal queued for review. If accepted, it will be matched " +
+          "against existing claims and materialized into the graph; track it " +
+          "via GET /contributions/" +
+          contribution.id,
       });
     },
   });

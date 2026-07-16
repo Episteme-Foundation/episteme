@@ -61,6 +61,19 @@ export interface RequestAuth {
 
 export const DEV_EXTERNAL_ID = "dev:local";
 
+/**
+ * Direct trusted first-party caller: service scope with no acting-user
+ * forwarding. The surfaces that can write claim content into the live graph
+ * without review (POST /claims/propose, POST /sources) reserve their fast
+ * path for these callers — internal seeding (corpus, FLF case studies) —
+ * while everything else, including a service key acting on behalf of a
+ * signed-in user (the web BFF path), is user traffic and goes through intake
+ * review (#157).
+ */
+export function isDirectService(auth: RequestAuth | null): auth is RequestAuth {
+  return auth?.isService === true && !auth.isSession;
+}
+
 export async function registerAuth(app: FastifyInstance): Promise<void> {
   app.decorateRequest("contributorExternalId", null);
   app.decorateRequest("auth", null);
@@ -228,25 +241,6 @@ export async function registerAuth(app: FastifyInstance): Promise<void> {
     }
   );
 
-  // Route guard: direct trusted first-party callers ONLY — service scope with
-  // no acting-user forwarding. This is the gate on surfaces that write claim
-  // content into the live graph without review (issue #157): internal seeding
-  // (corpus, FLF case studies) is the one fast path, and a service key acting
-  // on behalf of a signed-in user (the web BFF path) counts as user traffic,
-  // not as internal seeding. Run AFTER app.authenticate.
-  app.decorate(
-    "requireDirectService",
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      if (!request.auth?.isService || request.auth.isSession) {
-        return reply.code(403).send({
-          error:
-            "Direct graph writes are restricted to internal service callers; user submissions go through contribution review (see POST /contributions)",
-          code: "DIRECT_SERVICE_REQUIRED",
-        });
-      }
-    }
-  );
-
   // Route guard: a resolved user account (own key, bound env key resolved
   // upstream, or a session acting user). Run AFTER app.authenticate.
   app.decorate(
@@ -288,10 +282,6 @@ declare module "fastify" {
       reply: FastifyReply
     ) => Promise<void>;
     requireService: (
-      request: FastifyRequest,
-      reply: FastifyReply
-    ) => Promise<void>;
-    requireDirectService: (
       request: FastifyRequest,
       reply: FastifyReply
     ) => Promise<void>;

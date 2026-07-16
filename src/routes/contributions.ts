@@ -9,10 +9,9 @@ import {
   listContributions,
   getReviewForContribution,
 } from "../services/contribution-service.js";
-import { getOrCreateContributor } from "../services/contributor-service.js";
 import { getClaimById } from "../services/claim-service.js";
 import { enqueueContribution } from "../services/queue-service.js";
-import { checkContributionRateLimit } from "../services/reputation-service.js";
+import { gateContributor } from "../server/contributor-gate.js";
 
 export async function contributionRoutes(app: FastifyInstance): Promise<void> {
   // POST /contributions
@@ -41,7 +40,7 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
               type: "object",
               properties: {
                 id: { type: "string", format: "uuid" },
-                claim_id: { type: "string", format: "uuid" },
+                claim_id: { type: "string", format: "uuid", nullable: true },
                 contributor_id: { type: "string", format: "uuid" },
                 contribution_type: { type: "string" },
                 content: { type: "string" },
@@ -114,63 +113,11 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      // The acting contributor comes from the authenticated API key (issue
-      // #10) — never from the request body, which would let any caller act as
-      // any contributor.
-      const externalId = request.contributorExternalId;
-      if (!externalId) {
-        return reply.code(403).send({
-          error: {
-            code: "NO_CONTRIBUTOR_IDENTITY",
-            message: "API key is not bound to a contributor identity",
-          },
-        });
-      }
-
-      const contributor = await getOrCreateContributor({
-        externalId,
-        displayName: body.contributor_display_name ?? externalId,
+      // Shared gate (#71/#157): identity, suspension, standing, rate limit.
+      const contributor = await gateContributor(request, reply, {
+        displayName: body.contributor_display_name,
       });
-
-      // Check if contributor is suspended
-      if (contributor.isSuspended) {
-        return reply.code(403).send({
-          error: {
-            code: "CONTRIBUTOR_SUSPENDED",
-            message: `Contributor is suspended: ${contributor.suspensionReason ?? "No reason provided"}`,
-          },
-        });
-      }
-
-      // Good-faith-free / bad-faith-pay (#71): a suspected-bad-faith flag put
-      // this contributor in must-pay standing. The deposit rail doesn't exist
-      // yet (mirrors the consumer credits seam), so contributing is blocked
-      // with 402 until the flag is overturned on appeal — which stays open.
-      if (contributor.contributionStanding === "must_pay") {
-        return reply.code(402).send({
-          error: {
-            code: "DEPOSIT_REQUIRED",
-            message:
-              "A suspected bad-faith contribution moved this account to " +
-              "pay-to-contribute standing. Deposits are not yet available; " +
-              "you can appeal the flag via POST /appeals.",
-          },
-        });
-      }
-
-      // Sybil / flood sandbox (#71): low-reputation and brand-new accounts
-      // get a tighter hourly cap.
-      const rate = checkContributionRateLimit(contributor);
-      if (rate.limited) {
-        return reply.code(429).send({
-          error: {
-            code: "CONTRIBUTION_RATE_LIMITED",
-            message: rate.sandboxed
-              ? `New and low-reputation accounts are limited to ${rate.limitPerHour} contributions per hour; retry later`
-              : `Contribution rate limit (${rate.limitPerHour}/hour) exceeded; retry later`,
-          },
-        });
-      }
+      if (!contributor) return;
 
       // Create contribution
       const contribution = await createContribution({
@@ -217,7 +164,7 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
                 type: "object",
                 properties: {
                   id: { type: "string", format: "uuid" },
-                  claim_id: { type: "string", format: "uuid" },
+                  claim_id: { type: "string", format: "uuid", nullable: true },
                   contributor_id: { type: "string", format: "uuid" },
                   contribution_type: { type: "string" },
                   content: { type: "string" },
@@ -311,7 +258,8 @@ export async function contributionRoutes(app: FastifyInstance): Promise<void> {
 
 function formatContribution(c: {
   id: string;
-  claimId: string;
+  // Null while an intake contribution is pending review (#157).
+  claimId: string | null;
   contributorId: string;
   contributionType: string;
   content: string;

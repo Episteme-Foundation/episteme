@@ -20,6 +20,12 @@ import {
   applyReviewOutcome,
   BAD_FAITH_CATEGORIES,
 } from "../../services/reputation-service.js";
+import {
+  isIntakeContributionType,
+  materializeAcceptedIntake,
+  type IntakeMaterializationResult,
+} from "../../services/intake-service.js";
+import { getContributionById } from "../../services/contribution-service.js";
 
 export function getReviewerToolDefinitions(): Tool[] {
   return [
@@ -152,6 +158,25 @@ export async function executeReviewerTool(
 
         const db = getDb();
 
+        // Intake contributions (#157): an accept is what admits the content
+        // into the graph, so materialize FIRST — the Matcher decides identity
+        // (dedup/canonicalization), then the claim goes live or the source is
+        // extracted. Deliberately mechanical: the reviewer judged the
+        // suggestion; code applies it. Runs before the review is recorded so
+        // a failure surfaces to the reviewer instead of stranding an
+        // "accepted" contribution that never materialized (the call is
+        // idempotent, so a retry after partial failure is safe).
+        let materialization: IntakeMaterializationResult | null = null;
+        if (decision === "accept") {
+          const contribution = await getContributionById(contributionId);
+          if (
+            contribution &&
+            isIntakeContributionType(contribution.contributionType)
+          ) {
+            materialization = await materializeAcceptedIntake(contributionId);
+          }
+        }
+
         // Write review record
         const [review] = await db
           .insert(contributionReviews)
@@ -186,6 +211,7 @@ export async function executeReviewerTool(
         return JSON.stringify({
           success: true,
           message: `Review decision '${decision}' recorded for contribution ${contributionId}`,
+          ...(materialization ? { materialization } : {}),
           ...(input.suspected_bad_faith === true && !suspectedBadFaith
             ? {
                 note: "suspected_bad_faith was ignored because the decision is not 'reject'",
