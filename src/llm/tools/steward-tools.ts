@@ -67,34 +67,34 @@ export function getStewardToolDefinitions(): Tool[] {
             type: "number",
             description: "Confidence in this assessment (0.0-1.0)",
           },
-          summary: {
+          assessment: {
             type: "string",
             description:
-              "The reader-facing assessment, shown front-and-centre when someone " +
-              "lands on the claim's page. Write it as a welcoming, self-contained " +
-              "encyclopedia entry on the state of knowledge: what the claim rests " +
-              "on, what the evidence shows, and — for a contested claim — where the " +
-              "credible disagreement actually lies and what would resolve it. Plain " +
-              "prose in the third person; typically 2–5 sentences (a short paragraph " +
-              "or two for a foundational claim). Lead with the bottom line. Do NOT " +
-              "mention the machinery: no tool or edge names (SUPPORTS/CONTRADICTS " +
+              "The reader-facing account of where the claim stands, shown first when " +
+              "someone lands on its page. Self-contained prose in the third person, " +
+              "like the opening of a good encyclopedia entry: what the claim rests " +
+              "on, what the evidence shows, and for a contested claim where the " +
+              "credible disagreement lies and what would resolve it. Let the length " +
+              "follow the claim: a settled one may be two or three sentences, a " +
+              "genuinely contested or foundational one a few short paragraphs. Keep " +
+              "the machinery out of it: no tool or edge names (SUPPORTS/CONTRADICTS " +
               "edge), no importance numbers, no 'per the constitution', no first-" +
               "person 'I', and no narration of your own bookkeeping (merges, " +
-              "canonical-form edits, importance changes — those go in " +
+              "canonical-form edits, importance changes go in " +
               "log_stewardship_decision).",
           },
           reasoning_trace: {
             type: "string",
             description:
               "The transparent audit detail behind the verdict, shown secondary to " +
-              "the summary (behind a disclosure). Lay out the specific evidence, " +
+              "the assessment (behind a disclosure). Lay out the specific evidence, " +
               "source instances, and how the material subclaims weigh. This is about " +
               "the CLAIM'S TRUTH — keep structural bookkeeping out of it. Refer to " +
               "subclaims by their text (quoted or paraphrased), never by bare UUID — " +
               "ids are opaque to the human readers this trace exists for.",
           },
         },
-        required: ["claim_id", "status", "confidence", "summary", "reasoning_trace"],
+        required: ["claim_id", "status", "confidence", "assessment", "reasoning_trace"],
       },
     },
     {
@@ -400,11 +400,13 @@ export async function executeStewardTool(
         const status = String(input.status).toLowerCase();
         const confidence = input.confidence as number;
         const reasoningTrace = input.reasoning_trace as string;
-        // Reader-facing summary. Tolerate an omitted summary (older prompt / model
-        // slip) by falling back to the reasoning trace, so the page never renders
-        // blank — the UI has the same fallback, but keeping the column populated
-        // means a later render never has to.
-        const summary = (input.summary as string | undefined)?.trim() || reasoningTrace;
+        // Reader-facing assessment (still persisted to the `summary` column). Also
+        // accept the legacy `summary` key so an in-flight tool call from the older
+        // prompt still lands, and fall back to the reasoning trace when neither is
+        // given, so the page never renders blank — the UI has the same fallback, but
+        // keeping the column populated means a later render never has to.
+        const summary =
+          ((input.assessment ?? input.summary) as string | undefined)?.trim() || reasoningTrace;
 
         const db = getDb();
 

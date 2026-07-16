@@ -120,8 +120,8 @@ ${structureStep}
    Credible instances that BOTH affirm and deny the claim are a strong signal
    toward CONTESTED.
 5. Record it with update_claim_assessment. Provide BOTH texts: a reader-facing
-   **summary** (a welcoming, encyclopedia-style account of the state of knowledge,
-   no internal machinery or bookkeeping) and the **reasoning_trace** (the audit
+   **assessment** (an encyclopedia-style account of where the claim stands, no
+   internal machinery or bookkeeping) and the **reasoning_trace** (the audit
    detail behind the verdict). See "Writing the Assessment: Two Audiences".
 6. If the canonical form needs improving, use update_canonical_form.
 7. Log your decision with log_stewardship_decision.
