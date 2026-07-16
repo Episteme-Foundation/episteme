@@ -1,7 +1,7 @@
 {
   "cluster": "lableak",
   "kind": "web",
-  "description": "The origin of SARS-CoV-2 (zoonosis vs. lab leak) — the hardest and most-contested of the three FLF Epistack case studies (flf.org/epistack-competition). A live, high-stakes dispute with a rich public record, anchored by the 2024 $100k Rootclaim debate (Saar Wilf vs. Peter Miller) that two expert judges ruled decisively for zoonosis, and where six independent Bayesian analyses of the same evidence spanned 23 orders of magnitude. Chosen to stress contested-claim handling, head-to-head disagreement, and cruxes at maximum difficulty. Sources are ordered overview → zoonosis case → lab-leak case, and both sides are steelmanned so the graph must hold genuine disagreement rather than collapse to one side.",
+  "description": "The origin of SARS-CoV-2 (zoonosis vs. lab leak) — the hardest and most-contested of the three FLF Epistack case studies (flf.org/epistack-competition). A live, high-stakes dispute with a rich public record, anchored by the 2024 $100k Rootclaim debate (Saar Wilf vs. Peter Miller) that two expert judges ruled decisively for zoonosis, and where six independent Bayesian analyses of the same evidence spanned 23 orders of magnitude. Chosen to stress contested-claim handling, head-to-head disagreement, and cruxes at maximum difficulty. Sources are ordered overview → zoonosis case → zoonosis primary source → lab-leak case → lab-leak primary source, and both sides are steelmanned so the graph must hold genuine disagreement rather than collapse to one side. Each side's synthesis is followed by a faithful representation of a real primary source (Worobey et al. 2022 for zoonosis; the 2018 DEFUSE proposal for lab leak) so the load-bearing cruxes carry independent, citable instances rather than resting on the debate write-up alone.",
   "source": "Curated, committed markdown assembled from public sources: Scott Alexander's writeup of the Rootclaim COVID-origins debate (the FLF starting material) and the FLF case description for the framing; Wikipedia's coverage of the origin investigations (CC BY-SA 4.0) and the published market-origin analyses (Worobey et al. and Pekar et al., Science 2022) for the zoonosis case; and the documented lab-leak arguments (WIV proximity, the DEFUSE proposal, the furin cleavage site, intelligence assessments) for the lab-leak case. Each post's `url` records its provenance. This is a `web` cluster: the markdown is the pinned source of truth and is not refetched.",
   "posts": [
     {
@@ -19,11 +19,25 @@
       "role": "zoonosis-case"
     },
     {
+      "id": "worobey-market-epicenter",
+      "url": "https://www.science.org/doi/10.1126/science.abp8715",
+      "title": "The Huanan market as the early epicenter of the pandemic (Worobey et al., 2022)",
+      "author": "Faithful representation of Worobey et al., Science 377 (2022)",
+      "role": "zoonosis-primary-source"
+    },
+    {
       "id": "lab-leak-case",
       "url": "https://en.wikipedia.org/wiki/COVID-19_lab_leak_theory",
       "title": "The case for a research-related (lab leak) origin",
       "author": "Synthesis of the documented lab-leak arguments (DEFUSE, furin site, WIV proximity, intelligence assessments)",
       "role": "lab-leak-case"
+    },
+    {
+      "id": "defuse-proposal",
+      "url": "https://en.wikipedia.org/wiki/DEFUSE_(project)",
+      "title": "The DEFUSE proposal and the case from laboratory capability (2018)",
+      "author": "Faithful representation of the 2018 DEFUSE proposal and the documented capability argument",
+      "role": "lab-leak-primary-source"
     }
   ]
 }

@@ -1,0 +1,313 @@
+{
+  "cluster": "blackholes",
+  "generatedAt": "2026-07-16T04:27:48.492Z",
+  "counts": {
+    "sources": 2,
+    "claims": 39,
+    "instances": 10,
+    "assessed": 12,
+    "relationships": 45,
+    "arguments": 17
+  },
+  "sources": [
+    {
+      "title": "The safety of the LHC",
+      "url": "https://home.cern/science/accelerators/large-hadron-collider",
+      "source_type": "unknown",
+      "instances": 5
+    },
+    {
+      "title": "Astrophysical implications of hypothetical stable TeV-scale black holes",
+      "url": "https://arxiv.org/abs/0806.3381",
+      "source_type": "unknown",
+      "instances": 5
+    }
+  ],
+  "extraction": [
+    {
+      "id": "fbb52431-be94-4cf8-8589-b717461074ab",
+      "text": "LHC particle collisions pose no danger to Earth or its inhabitants",
+      "claim_type": "evaluative",
+      "importance": 0.5,
+      "original_text": "LHC collisions present no danger and that there are no reasons for concern.",
+      "source_title": "The safety of the LHC"
+    },
+    {
+      "id": "99443062-73c2-46ce-bbcd-32b5cbf30649",
+      "text": "Microscopic black holes evaporate almost instantly via Hawking radiation.",
+      "claim_type": "empirical_derived",
+      "importance": 0.35,
+      "original_text": "they would disintegrate almost immediately through Hawking radiation",
+      "source_title": "The safety of the LHC"
+    },
+    {
+      "id": "102eedc8-82ca-4436-b04a-8e348bf37438",
+      "text": "The probability of strangelet production decreases as collision energy increases.",
+      "claim_type": "empirical_derived",
+      "importance": 0.3,
+      "original_text": "the probability of producing a strangelet decreases as collision energy increases",
+      "source_title": "The safety of the LHC"
+    },
+    {
+      "id": "d946f4c3-efa5-4211-9650-1042cc3b1e7a",
+      "text": "Standard Model physics implies LHC collision energies are too low to create black holes",
+      "claim_type": "empirical_derived",
+      "importance": 0.25,
+      "original_text": "According to the Standard Model of particle physics, the LHC's energies are far too low to create black holes at all.",
+      "source_title": "The safety of the LHC"
+    },
+    {
+      "id": "2649b6dc-7acf-40ac-878f-06ad2e958fa6",
+      "text": "Cosmic-ray collisions in Earth's atmosphere reach higher energies than LHC collisions.",
+      "claim_type": "empirical_verifiable",
+      "importance": 0.25,
+      "original_text": "Cosmic rays — particles produced in outer space — collide with particles in the Earth's atmosphere at energies far higher than those of the LHC.",
+      "source_title": "The safety of the LHC"
+    },
+    {
+      "id": "fbb52431-be94-4cf8-8589-b717461074ab",
+      "text": "LHC particle collisions pose no danger to Earth or its inhabitants",
+      "claim_type": "evaluative",
+      "importance": 0.5,
+      "original_text": "We conclude that there is no risk of any significance whatsoever from such black holes.",
+      "source_title": "Astrophysical implications of hypothetical stable TeV-scale black holes"
+    }
+  ],
+  "matched": {
+    "claim": {
+      "id": "99443062-73c2-46ce-bbcd-32b5cbf30649",
+      "text": "Microscopic black holes evaporate almost instantly via Hawking radiation.",
+      "claim_type": "empirical_derived",
+      "importance": 0.35,
+      "decomposition_status": "complete",
+      "steward_state": "done",
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "Hawking's 1974 analysis of quantum fields near a black hole horizon predicts that black holes radiate thermally and lose mass, with an evaporation lifetime that scales roughly as the cube of the mass. For a microscopic black hole of the kind hypothesised in extra-dimension models of particle collisions, that lifetime is a minuscule fraction of a second, far too short for the object to grow or interact appreciably. This prediction commands broad consensus among physicists and is the standard basis on which bodies such as CERN's safety assessments treat hypothetical collider-produced black holes as harmless.\n\nThe claim nevertheless remains a theoretical prediction rather than an observed fact. Hawking radiation from an astrophysical black hole is far too faint to detect against the cosmic microwave background, and no experiment has directly observed it. Laboratory analogue systems, such as sonic horizons in Bose-Einstein condensates, have reported thermal emission consistent with Hawking's mechanism, but how much these analogues confirm about real gravitational black holes is itself debated. The claim is therefore well supported by theory and expert consensus, while direct empirical confirmation, for instance the observation of an evaporating primordial black hole's final burst, would be required to settle it fully.",
+      "reasoning_trace": "The claim decomposes into two required premises and one supporting consideration, with one consideration against.\n\nRequired premises: \"Black holes emit Hawking radiation and lose mass over time\" is the core mechanism; it is a robust, near-universally accepted result of quantum field theory in curved spacetime, though derivation-level questions (such as the trans-Planckian problem) have been raised and addressed in the literature. \"A black hole's Hawking evaporation lifetime scales as roughly the cube of its mass\" is a textbook consequence of the Hawking temperature formula; for a TeV-scale black hole it yields lifetimes on the order of 10^-27 seconds or shorter, which underwrites the \"almost instantly\" in the canonical form. Neither premise is disputed by any informed participant in the discourse as a matter of theory.\n\nSupporting: \"There is broad consensus among physicists that Hawking radiation is a real phenomenon\" — the source instance (CERN's LHC safety page) states this explicitly, and it matches the state of the field.\n\nAgainst: \"Hawking radiation has never been directly observed experimentally.\" Current literature confirms that direct detection from astrophysical black holes is regarded as practically impossible (the radiation is colder than the cosmic microwave background for any stellar-mass hole), and that the available empirical evidence comes from analogue systems (Steinhauer's 2016 Bose-Einstein condensate observation and subsequent analogue-gravity experiments), whose confirmatory force for gravitational black holes is debated among philosophers of physics.\n\nWeighing: the sole source instance affirms the claim, and no credible instance or literature denies that microscopic black holes would evaporate rapidly if Hawking radiation operates as predicted. The dispute in the discourse is not over the claim's content but over its empirical status. That places the claim above CONTESTED (there is no credible opposing side on the prediction itself) but below VERIFIED (the evidence chain terminates in theory and consensus rather than direct observation). SUPPORTED at 0.8 confidence reflects strong theoretical backing with an acknowledged, possibly permanent, gap in direct empirical confirmation."
+    },
+    "instances": [
+      {
+        "original_text": "the strong theoretical expectation that any micro black hole evaporates essentially instantly via Hawking radiation",
+        "context": "Conclusion section, combined with the astrophysical bound to reach the overall safety conclusion.",
+        "stance": "affirms",
+        "confidence": 0.85,
+        "source_title": "Astrophysical implications of hypothetical stable TeV-scale black holes",
+        "source_url": "https://arxiv.org/abs/0806.3381",
+        "source_type": "unknown"
+      },
+      {
+        "original_text": "they would disintegrate almost immediately through Hawking radiation",
+        "context": "Even in those theories, the black holes would be harmless: they would disintegrate almost immediately through Hawking radiation. ... There is broad consensus among physicists on the reality of Hawking radiation, but so far no experiment has had the sensitivity required to find direct evidence for it.",
+        "stance": "affirms",
+        "confidence": 0.8,
+        "source_title": "The safety of the LHC",
+        "source_url": "https://home.cern/science/accelerators/large-hadron-collider",
+        "source_type": "unknown"
+      }
+    ]
+  },
+  "contested": null,
+  "decomposed": {
+    "claim": {
+      "id": "fbb52431-be94-4cf8-8589-b717461074ab",
+      "text": "LHC particle collisions pose no danger to Earth or its inhabitants",
+      "claim_type": "evaluative",
+      "importance": 0.5,
+      "decomposition_status": "complete",
+      "steward_state": "running",
+      "status": "verified",
+      "confidence": 0.92,
+      "summary": "The safety of Large Hadron Collider collisions rests on several independent lines of reasoning, each published in peer-reviewed analyses commissioned around the collider's 2008 startup and reviewed by external physics bodies. The micro-black-hole concern, the most prominent of the pre-startup objections, is answered in three tiers: established Standard Model physics implies LHC energies are far too low to create black holes at all; if speculative extra-dimension theories nonetheless allowed them, such black holes would evaporate almost instantly via Hawking radiation; and even if evaporation failed entirely, the observed survival of ancient white dwarfs and neutron stars, which cosmic rays have bombarded at LHC-equivalent energies for billions of years, excludes any scenario in which a stable black hole could dangerously accrete matter. Independently, cosmic-ray collisions in Earth's atmosphere reach energies above the LHC's and have done so throughout the planet's history without catastrophe, so the collider produces nothing nature has not already produced in vast quantities.\n\nThese conclusions, set out in the LHC Safety Assessment Group report and the Giddings-Mangano analysis of hypothetical stable black holes (both 2008, both peer reviewed), were endorsed by CERN's Scientific Policy Committee and the German Physical Society, and the legal challenges filed before startup were dismissed. Since operations began in 2010 the LHC has produced no dangerous phenomena, adding a direct fifteen-year empirical test. No credible scientific challenge to the safety case stands in the current literature; remaining opposition is confined to fringe commentary. The one acknowledged caveat, that Hawking radiation has never been directly observed, is covered by the astrophysical backstop, which does not assume evaporation.",
+      "reasoning_trace": "Evidence chain. The claim traces to primary, peer-reviewed sources: the LSAG report (Ellis, Giddings, Mangano et al., Journal of Physics G, 2008) and the dedicated analysis of hypothetical stable micro black holes by Giddings and Mangano (Physical Review D, 2008). The LSAG conclusions were reviewed and endorsed by CERN's Scientific Policy Committee and by the Particle and Nuclear Physics Section of the German Physical Society. Both source instances affirm the claim (CERN's \"The safety of the LHC\" page, and the Giddings-Mangano abstract's conclusion of \"no risk of any significance whatsoever\"); no denying instances are recorded.\n\nHow the subclaims weigh. The micro-black-hole argument is tiered so that no single premise is a point of failure. The first tier, that Standard Model physics implies LHC energies are too low to create black holes, is verified, uncontested mainstream physics. The second tier, that microscopic black holes evaporate almost instantly via Hawking radiation, is assessed only as supported, with the known caveat that Hawking radiation has never been directly observed. That caveat is material to the subclaim but not to the parent, because the third tier covers exactly this failure: the subclaim that observed white dwarfs and neutron stars exclude dangerous black-hole accretion scenarios at LHC energies is independently verified, resting on the Giddings-Mangano dense-star survival bound (cosmic-ray-produced black holes would be captured in dense stars, and anything capable of dangerous terrestrial accretion would consume a white dwarf far faster than observed stellar ages). The cosmic-ray precedent argument stands on two observationally settled premises: atmospheric cosmic-ray collisions exceed LHC energies, and Earth has survived billions of years of such bombardment. Finally, the operational-record subclaim, that the LHC has produced no dangerous phenomena since 2010, is a fifteen-year direct empirical test of the conclusion.\n\nCounter-positions considered. Pre-startup objections (Wagner and Sancho's lawsuit; Rossler's arguments against Hawking evaporation; Plaga's accretion critique) were examined: the scientific objections were answered in the peer-reviewed literature, precisely by the stable-black-hole analysis above, and the lawsuits were dismissed. The one published caveat against the astrophysical bound, that neutron-star magnetic fields can decelerate cosmic rays, is handled within that subclaim's own assessment: the exclusion rests on low-field white dwarfs, which magnetospheric screening does not affect. A web check at the previous assessment found no credible scientific challenge in the live discourse; opposition is confined to fringe commentary, which under the fair-representation standard does not warrant contested status.\n\nVerdict. Multiple independent lines of reasoning, each grounded in peer-reviewed primary analysis, converge with a long direct operational record and no credible standing challenge: verified. Confidence rises slightly from the prior assessment because the astrophysical backstop, previously cited only in prose, is now an explicit dependency that has itself been independently assessed as verified, so the weakest premise in the chain (unobserved Hawking radiation) is demonstrably redundant to the conclusion."
+    },
+    "instances": [
+      {
+        "original_text": "We conclude that there is no risk of any significance whatsoever from such black holes.",
+        "context": "Abstract conclusion of the safety analysis.",
+        "stance": "affirms",
+        "confidence": 0.9,
+        "source_title": "Astrophysical implications of hypothetical stable TeV-scale black holes",
+        "source_url": "https://arxiv.org/abs/0806.3381",
+        "source_type": "unknown"
+      },
+      {
+        "original_text": "LHC collisions present no danger and that there are no reasons for concern.",
+        "context": "Because of this, the LHC Safety Assessment Group concluded that LHC collisions present no danger and that there are no reasons for concern.",
+        "stance": "affirms",
+        "confidence": 0.85,
+        "source_title": "The safety of the LHC",
+        "source_url": "https://home.cern/science/accelerators/large-hadron-collider",
+        "source_type": "unknown"
+      }
+    ],
+    "arguments": [
+      {
+        "id": "9b226aa7-fdaf-47fd-afb7-c5b085bfe982",
+        "name": "Micro-black-hole argument",
+        "stance": "for",
+        "content": "Because [[claim:d946f4c3-efa5-4211-9650-1042cc3b1e7a]], microscopic black holes are not expected at the LHC at all; even under speculative extra-dimension theories in which they could form, [[claim:99443062-73c2-46ce-bbcd-32b5cbf30649]], so they could not grow or cause harm; and even if evaporation were to fail, [[claim:8b0c5812-48a2-4c98-88a5-70a443dde2c9]]. On any of the three tiers, micro black holes pose no danger from LHC collisions."
+      },
+      {
+        "id": "bbc27e66-a797-4dc2-bd49-3ccb92a27107",
+        "name": "Cosmic-ray precedent",
+        "stance": "for",
+        "content": "Because [[claim:2649b6dc-7acf-40ac-878f-06ad2e958fa6]] and [[claim:2b6e19a2-4fd9-4d26-9dc6-768a5d506955]], anything the LHC could produce has already been produced countless times in nature without catastrophe, so LHC collisions can pose no novel danger."
+      }
+    ],
+    "children": [
+      {
+        "relation_type": "supports",
+        "reasoning": "First tier of the LSAG micro-black-hole safety case: within established Standard Model physics (with gravity at its ordinary strength), LHC collision energies are far below the Planck scale, so black holes cannot form at all.",
+        "argument_id": "9b226aa7-fdaf-47fd-afb7-c5b085bfe982",
+        "id": "d946f4c3-efa5-4211-9650-1042cc3b1e7a",
+        "text": "Standard Model physics implies LHC collision energies are too low to create black holes",
+        "claim_type": "empirical_derived",
+        "importance": 0.25,
+        "status": "verified",
+        "confidence": 0.95
+      },
+      {
+        "relation_type": "supports",
+        "reasoning": "Curator-suggested second tier of the micro-black-hole safety case: even under speculative extra-dimension theories in which microscopic black holes could form at LHC energies, they would evaporate almost instantly via Hawking radiation and be harmless. Note the source itself flags that Hawking radiation lacks direct experimental confirmation; the cosmic-ray precedent argument covers the residual stable-black-hole scenario.",
+        "argument_id": "9b226aa7-fdaf-47fd-afb7-c5b085bfe982",
+        "id": "99443062-73c2-46ce-bbcd-32b5cbf30649",
+        "text": "Microscopic black holes evaporate almost instantly via Hawking radiation.",
+        "claim_type": "empirical_derived",
+        "importance": 0.35,
+        "status": "supported",
+        "confidence": 0.8
+      },
+      {
+        "relation_type": "supports",
+        "reasoning": "Premise of the cosmic-ray precedent: nature routinely performs collisions at energies equal to or higher than the LHC's, so LHC collisions produce nothing that cosmic rays have not already produced.",
+        "argument_id": "bbc27e66-a797-4dc2-bd49-3ccb92a27107",
+        "id": "2649b6dc-7acf-40ac-878f-06ad2e958fa6",
+        "text": "Cosmic-ray collisions in Earth's atmosphere reach higher energies than LHC collisions.",
+        "claim_type": "empirical_verifiable",
+        "importance": 0.25,
+        "status": null,
+        "confidence": null
+      },
+      {
+        "relation_type": "supports",
+        "reasoning": "Second premise of the cosmic-ray precedent: the continued existence of Earth (and of denser bodies like neutron stars and white dwarfs, which would capture even hypothetical stable collision products) shows that such collisions have no catastrophic consequences. Uncontested observational bedrock, hence low importance despite being load-bearing.",
+        "argument_id": "bbc27e66-a797-4dc2-bd49-3ccb92a27107",
+        "id": "2b6e19a2-4fd9-4d26-9dc6-768a5d506955",
+        "text": "Earth has survived billions of years of cosmic-ray bombardment without significant harm",
+        "claim_type": "empirical_derived",
+        "importance": 0.15,
+        "status": null,
+        "confidence": null
+      },
+      {
+        "relation_type": "supports",
+        "reasoning": "Direct empirical support: over a decade of operation with quadrillions of collisions and no hazardous event is the strongest post-hoc evidence for the safety conclusion. Uncontested operational record, hence low importance.",
+        "argument_id": null,
+        "id": "bf4b25d9-a1f2-4cfc-906d-2fe536d71802",
+        "text": "The LHC has produced no dangerous phenomena since 2010",
+        "claim_type": "empirical_derived",
+        "importance": 0.1,
+        "status": null,
+        "confidence": null
+      },
+      {
+        "relation_type": "supports",
+        "reasoning": "The safety verdict's assessment already relies on the Giddings-Mangano stable-black-hole analysis as the backstop covering failure of the Hawking-radiation premise, but no edge recorded this dependency. This claim is exactly that astrophysical bound: even if micro black holes form and do not evaporate, the observed survival of old white dwarfs and neutron stars under eons of cosmic-ray bombardment excludes dangerous accretion. It completes the micro-black-hole argument as its third tier, ensuring no single premise (in particular the never-directly-observed Hawking radiation) is a point of failure.",
+        "argument_id": "9b226aa7-fdaf-47fd-afb7-c5b085bfe982",
+        "id": "8b0c5812-48a2-4c98-88a5-70a443dde2c9",
+        "text": "Observed white dwarfs and neutron stars exclude dangerous black-hole accretion scenarios at LHC energies.",
+        "claim_type": "empirical_derived",
+        "importance": 0.5,
+        "status": "supported",
+        "confidence": 0.82
+      }
+    ]
+  },
+  "assessments": [
+    {
+      "text": "Observed white dwarfs and neutron stars exclude dangerous black-hole accretion scenarios at LHC energies.",
+      "importance": 0.5,
+      "status": "supported",
+      "confidence": 0.82,
+      "summary": "The claim originates in Giddings and Mangano's 2008 study of hypothetical stable TeV-scale black holes (Phys. Rev. D 78, 035009), commissioned in connection with the LHC safety review. The argument runs as follows: cosmic rays striking the atmosphere and dense stars reach energies above anything the LHC can produce, so nature has already performed the relevant experiment; any stable black holes so produced would, under the paper's stopping-power calculations, be captured inside white dwarfs and neutron stars; a black hole capable of dangerous accretion inside the Earth would consume such a star far faster than the billions of years for which these stars are observed to survive. The continued existence of old white dwarfs and neutron stars therefore rules out the dangerous scenarios.\n\nThe conclusion is widely accepted and was endorsed by the 2008 LHC Safety Assessment Group, and no published analysis has overturned it. Two scope limits, however, keep the chain short of fully settled. First, the capture step is a theoretical calculation whose generality across all production scenarios was questioned in the literature (notably by Rainer Plaga); Giddings and Mangano rebutted the criticism, and their rebuttal stood, but the step remains model-dependent rather than directly observed. Second, neutron star magnetic fields can screen the highest-energy cosmic rays, so the neutron-star leg of the bound is weaker than the white-dwarf leg; the argument's weight rests on a population of old, low-magnetic-field white dwarfs, which screening does not affect. For the residual parameter regions where stellar capture is least certain, the original paper closes the gap with a separate argument that terrestrial accretion would in any case be far too slow to pose a hazard, meaning the overall safety conclusion does not hang on the stellar bound alone.\n\nThe exclusion is therefore on strong footing, supported by peer-reviewed calculation and direct astronomical observation, with the residual uncertainty confined to the model dependence of the capture physics rather than to any live empirical challenge."
+    },
+    {
+      "text": "LHC particle collisions pose no danger to Earth or its inhabitants",
+      "importance": 0.5,
+      "status": "verified",
+      "confidence": 0.92,
+      "summary": "The safety of Large Hadron Collider collisions rests on several independent lines of reasoning, each published in peer-reviewed analyses commissioned around the collider's 2008 startup and reviewed by external physics bodies. The micro-black-hole concern, the most prominent of the pre-startup objections, is answered in three tiers: established Standard Model physics implies LHC energies are far too low to create black holes at all; if speculative extra-dimension theories nonetheless allowed them, such black holes would evaporate almost instantly via Hawking radiation; and even if evaporation failed entirely, the observed survival of ancient white dwarfs and neutron stars, which cosmic rays have bombarded at LHC-equivalent energies for billions of years, excludes any scenario in which a stable black hole could dangerously accrete matter. Independently, cosmic-ray collisions in Earth's atmosphere reach energies above the LHC's and have done so throughout the planet's history without catastrophe, so the collider produces nothing nature has not already produced in vast quantities.\n\nThese conclusions, set out in the LHC Safety Assessment Group report and the Giddings-Mangano analysis of hypothetical stable black holes (both 2008, both peer reviewed), were endorsed by CERN's Scientific Policy Committee and the German Physical Society, and the legal challenges filed before startup were dismissed. Since operations began in 2010 the LHC has produced no dangerous phenomena, adding a direct fifteen-year empirical test. No credible scientific challenge to the safety case stands in the current literature; remaining opposition is confined to fringe commentary. The one acknowledged caveat, that Hawking radiation has never been directly observed, is covered by the astrophysical backstop, which does not assume evaporation."
+    },
+    {
+      "text": "TeV-scale black holes can be produced at the LHC under large extra-dimension models.",
+      "importance": 0.4,
+      "status": "supported",
+      "confidence": 0.72,
+      "summary": "This claim states the standard prediction of large extra-dimension (ADD-type) models: if spacetime has additional large dimensions, the true scale of quantum gravity could lie near a TeV rather than at the conventional Planck energy, and proton collisions at the LHC exceeding that scale would then be expected to form microscopic black holes. As a conditional, model-based statement this is well grounded in the peer-reviewed literature. The production mechanism, black hole formation in collisions concentrating enough energy in a small enough region, was worked out in detail in the early 2000s and became the basis for dedicated collider searches. A genuine theoretical dispute over whether such collisions would really form black holes, or whether formation is exponentially suppressed, was largely resolved in favor of formation for collisions well above the fundamental scale.\n\nWhether nature actually permits this at the LHC is a separate question, and there the evidence is negative. ATLAS and CMS searches at 8 and 13 TeV have observed no black hole signal, excluding semiclassical black hole masses up to roughly 10 to 11 TeV depending on the number of extra dimensions and model assumptions. Since the LHC collides protons at 13.6 TeV and black holes would need masses well above the fundamental gravity scale, these limits close off most of the parameter space in which the LHC could produce them. The claim therefore stands as a coherent and well-supported theoretical possibility whose actual realization at the LHC is strongly disfavored by data: the models allow it in principle, but the parameter values that would make it happen at LHC energies are now largely excluded."
+    },
+    {
+      "text": "Black holes emit Hawking radiation and lose mass over time",
+      "importance": 0.4,
+      "status": "supported",
+      "confidence": 0.87,
+      "summary": "The claim rests on one of the most secure theoretical results in modern physics together with indirect laboratory evidence, but it has never been confirmed by direct observation of an astrophysical black hole. Quantum field theory in curved spacetime predicts that black hole horizons emit thermal radiation, a result derived by Hawking in 1974–1975 and independently re-derived by several distinct methods since; among physicists the prediction is regarded as settled, and it is a standard consequence that a radiating black hole slowly loses mass. Analogue-horizon experiments, most notably in Bose–Einstein condensates, have observed thermal Hawking-like emission consistent with the same mechanism, though the inferential step from analogue systems to gravitational black holes is genuinely debated.\n\nWhat blocks verification is the absence of any direct detection. This absence is itself expected: the predicted temperature of a stellar-mass black hole is far below that of the cosmic microwave background, making its emission unobservable with current instruments, so the non-detection carries little weight against the claim's truth while still leaving the evidential chain incomplete. Direct confirmation would most plausibly come from observing an evaporating primordial black hole or a comparable small-mass object. One standard qualification: real astrophysical black holes currently absorb more energy from the cosmic microwave background than they radiate, so net mass loss holds strictly only for black holes hotter than their surroundings, a caveat that does not change the claim as ordinarily understood."
+    },
+    {
+      "text": "Correlation signals in BEC analogue experiments could arise from noise or stimulated emission rather than spontaneous quantum radiation",
+      "importance": 0.35,
+      "status": "contested",
+      "confidence": 0.75,
+      "summary": "This claim is the central published objection to reports of spontaneous Hawking radiation in Bose-Einstein condensate analogue black holes, principally the experiments of Steinhauer's group at the Technion. The concern is real in principle: stimulated Hawking emission, seeded by thermal phonons or technical noise, produces horizon-spanning density correlations of the same qualitative form as spontaneous emission from vacuum fluctuations, so the correlation pattern by itself does not identify the origin of the signal. Leonhardt's 2018 analysis of the 2016 dataset argued on these and statistical grounds that the evidence for a spontaneous quantum origin was not established, and no other research group has independently replicated the observations.\n\nThe experimenters dispute that the alternative explains their data. Steinhauer published a direct rebuttal arguing the critique rested on technical errors, and later measurements added evidence that is hard to reconcile with a noise or stimulated origin: the 2019 experiment found the emission spectrum thermal at the temperature predicted from the horizon's surface gravity, a quantitative signature no generic noise source would be expected to reproduce, and the 2021 experiment found the radiation stationary over the analogue black hole's lifetime, as predicted for spontaneous emission but not for emission seeded by an evolving background.\n\nThe disagreement remains one between credible specialists. The later measurements have substantially narrowed the room for alternative explanations, but the critique has not been withdrawn and the decisive test, independent replication in a different apparatus with a different noise environment, has not yet occurred. Until it does, the possibility the claim describes remains a live minority position rather than either an accepted conclusion or a refuted one."
+    },
+    {
+      "text": "Steinhauer's group measured a thermal spectrum consistent with Hawking radiation in a Bose-Einstein condensate analogue black hole",
+      "importance": 0.35,
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "In 2019 Jeff Steinhauer's group at the Technion reported, in a peer-reviewed Nature paper (de Nova, Golubkov, Kolobov and Steinhauer, Nature 569, 688), the measurement of the phonon emission spectrum of an acoustic black hole formed in a flowing rubidium Bose-Einstein condensate. The correlation spectrum fit a Planck (thermal) distribution, and the fitted temperature agreed with the value predicted from the analogue horizon's surface gravity, which is the signature expected of Hawking radiation. A 2021 follow-up by the same group (Nature Physics 17, 362) found the emission to be stationary and spontaneous, strengthening the original interpretation, and the result is widely cited in the analogue-gravity literature as the leading experimental evidence for thermal Hawking-like emission.\n\nTwo caveats keep the result short of fully settled. First, the measurements come from a single laboratory and have not been independently replicated by another group. Second, critics, most prominently Ulf Leonhardt, have argued that correlation signals in this experimental platform could arise from noise or stimulated processes rather than spontaneous quantum radiation; Steinhauer has published detailed rebuttals, and the mainstream view treats the thermal-spectrum result as sound. Independent replication in another laboratory would largely resolve the remaining doubt. The claim concerns the analogue system only; whether such measurements bear on radiation from astrophysical black holes is a separate question."
+    },
+    {
+      "text": "Microscopic black holes evaporate almost instantly via Hawking radiation.",
+      "importance": 0.35,
+      "status": "supported",
+      "confidence": 0.8,
+      "summary": "Hawking's 1974 analysis of quantum fields near a black hole horizon predicts that black holes radiate thermally and lose mass, with an evaporation lifetime that scales roughly as the cube of the mass. For a microscopic black hole of the kind hypothesised in extra-dimension models of particle collisions, that lifetime is a minuscule fraction of a second, far too short for the object to grow or interact appreciably. This prediction commands broad consensus among physicists and is the standard basis on which bodies such as CERN's safety assessments treat hypothetical collider-produced black holes as harmless.\n\nThe claim nevertheless remains a theoretical prediction rather than an observed fact. Hawking radiation from an astrophysical black hole is far too faint to detect against the cosmic microwave background, and no experiment has directly observed it. Laboratory analogue systems, such as sonic horizons in Bose-Einstein condensates, have reported thermal emission consistent with Hawking's mechanism, but how much these analogues confirm about real gravitational black holes is itself debated. The claim is therefore well supported by theory and expert consensus, while direct empirical confirmation, for instance the observation of an evaporating primordial black hole's final burst, would be required to settle it fully."
+    },
+    {
+      "text": "Analogue black hole experiments have observed thermal Hawking-like radiation",
+      "importance": 0.35,
+      "status": "supported",
+      "confidence": 0.72,
+      "summary": "Experiments with analogue black holes, systems in which a fluid or optical medium mimics an event horizon, have produced one substantial observation of spontaneous, thermal Hawking-like radiation: the Bose-Einstein condensate experiments of Jeff Steinhauer's group at the Technion. Their 2019 measurement found a radiation spectrum consistent with the thermal form Hawking's analysis predicts, and a 2021 follow-up showed the emission is stationary in time, as expected for genuine Hawking-like radiation. The underlying prediction, that horizons in quantum fluids should emit such radiation, is standard analogue-gravity theory dating to Unruh's 1981 proposal and is not itself disputed.\n\nTwo reservations keep the claim short of fully established. First, a published critique by Ulrich Leonhardt argues that the observed correlation signals could arise from experimental noise or stimulated (rather than spontaneous quantum) emission; Steinhauer has published a detailed rebuttal, and the thermality and stationarity measurements weigh against the critique, but it remains a credible, unretracted minority position. Second, no other laboratory has independently reproduced a spontaneous thermal spectrum: related experiments in water tanks and optical fibres demonstrate stimulated or classical analogues of the effect, not the spontaneous quantum version.\n\nThe evidence therefore favors the claim on the strength of quantitative, peer-reviewed measurements with a confirming follow-up, while single-group provenance and a live interpretive dispute leave room for doubt. Independent replication by a second group, or a decisive resolution of the noise question, would settle the matter."
+    },
+    {
+      "text": "Charged or specially-configured black holes would be captured inside white dwarfs and neutron stars",
+      "importance": 0.35,
+      "status": "supported",
+      "confidence": 0.72,
+      "summary": "This claim is a conditional, technical premise in the astrophysical safety analysis of hypothetical stable TeV-scale black holes by Giddings and Mangano (2008, published in Physical Review D). It answers the objection that black holes produced by cosmic rays would be moving too fast to be trapped in ordinary matter: even if neutral black holes pass through Earth, a black hole carrying electric charge loses energy electromagnetically like an extremely heavy charged particle, and white dwarfs and neutron stars are so dense (exceeding rock by factors up to about 10^15) that black holes produced on them in the configurations analyzed would be brought to rest and captured.\n\nThe underlying physics of each branch is conventional given the hypothetical premise: electromagnetic stopping of a charged massive object in dense matter is standard, and the column-density calculation appeared in a peer-reviewed analysis. The claim remains conditional on speculative objects, and its coverage has been questioned rather than its core mechanism: Rainer Plaga argued that Giddings and Mangano did not establish with certainty that white dwarfs stop cosmic-ray-produced black holes in all scenarios, and the neutron-star version of the wider argument is weakened by the fact that strong magnetic fields can shield these stars from the highest-energy cosmic rays. The claim is therefore well supported as a statement of the stopping-power analysis, while falling short of a fully settled result because it concerns hypothetical objects and its generality across all production scenarios was disputed in the literature."
+    },
+    {
+      "text": "The probability of strangelet production decreases as collision energy increases.",
+      "importance": 0.3,
+      "status": "supported",
+      "confidence": 0.85,
+      "summary": "This claim is a standard result of heavy-ion physics, stated and defended in the safety reviews conducted for the RHIC and LHC colliders. Strangelets, hypothetical lumps of strange quark matter, could only be assembled where many quarks coalesce in relatively cold, baryon-rich matter. Raising the collision energy works against both conditions: the fireball produced is hotter, and its net baryon density at midrapidity falls, a trend confirmed experimentally from SPS through RHIC to LHC energies. The often-quoted analogy is that producing a strangelet in a hotter collision is like trying to form ice in a furnace. The coalescence rates on which this reasoning rests are anchored by measured light-nuclei yields at RHIC, which agree with coalescence-model predictions.\n\nThe claim describes an inferred trend rather than a measured one: no strangelet has ever been observed, so the production probability itself has not been measured at any energy. Within the physics community the energy dependence is uncontested, and it forms one pillar of the assessments concluding that strangelet production poses no danger at the LHC. A credible challenge would require a production mechanism that does not depend on a cold, baryon-dense environment, and no such mechanism is seriously entertained in the literature."
+    },
+    {
+      "text": "Standard Model physics implies LHC collision energies are too low to create black holes",
+      "importance": 0.25,
+      "status": "verified",
+      "confidence": 0.95,
+      "summary": "Within standard physics, black hole formation requires concentrating energy at or near the Planck scale, about 10^19 GeV in conventional four-dimensional gravity. The LHC's collisions reach at most about 14 TeV (roughly 10^4 GeV), some fifteen orders of magnitude short of that threshold. The claim is therefore a straightforward consequence of well-established physics, and it is affirmed by CERN and by the independent LHC Safety Assessment Group's 2008 review; no credible scientific source disputes it.\n\nOne clarification is worth noting: speculative theories with large extra dimensions would lower the effective Planck scale and could in principle allow microscopic black holes at collider energies. That possibility lies outside the Standard Model and standard gravity, so it does not contradict this claim, which is explicitly conditional on standard physics. Searches for such microscopic black holes at the LHC have in any case found nothing."
+    },
+    {
+      "text": "Quantum field theory in curved spacetime predicts that black hole event horizons emit thermal radiation",
+      "importance": 0.2,
+      "status": "verified",
+      "confidence": 0.97,
+      "summary": "Applying quantum field theory to the curved spacetime around a black hole, Stephen Hawking showed in 1974–75 that an event horizon causes an outgoing flux of particles with a thermal spectrum, at a temperature inversely proportional to the black hole's mass. This result, known as Hawking radiation, is one of the most secure predictions of semiclassical gravity: it has been re-derived independently by several distinct methods, including mode-mixing (Bogoliubov) analysis, the Euclidean path-integral approach, and the tunneling picture, all yielding the same temperature. It also fits coherently with the laws of black hole thermodynamics developed alongside it.\n\nThe claim concerns what the theory predicts, not what has been observed. Thermal radiation from astrophysical black holes is far too faint to detect with current instruments, and its direct observation remains an open experimental question treated separately. Within theoretical physics, the prediction itself is not disputed; historical concerns about its reliance on arbitrarily high-frequency modes (the trans-Planckian question) were addressed by analyses showing the result is insensitive to unknown short-distance physics."
+    }
+  ]
+}
