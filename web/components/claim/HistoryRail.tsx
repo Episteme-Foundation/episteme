@@ -1,5 +1,5 @@
 import type { ClaimDetail } from "@/lib/types";
-import { statusMeta } from "@/lib/ontology";
+import { statusMeta, VERDICT_CONFIDENCE_GLOSS } from "@/lib/ontology";
 import { Swatch } from "@/components/Assessment";
 import styles from "./margins.module.css";
 
@@ -29,7 +29,10 @@ export function HistoryRail({ trajectory }: { trajectory: Trajectory }) {
             <span className="traj-dot"><Swatch status={p.status} /></span>
             <span className="traj-body">
               <span className="sc" style={{ color: "var(--muted)" }}>{fmtDate(p.assessed_at)}</span>
-              {statusMeta(p.status).label} · {typeof p.confidence === "number" ? p.confidence.toFixed(2) : "—"}
+              {statusMeta(p.status).label}
+              {typeof p.confidence === "number" && (
+                <span title={VERDICT_CONFIDENCE_GLOSS}> · {p.confidence.toFixed(2)}</span>
+              )}
               {p.trigger && <em style={{ color: "var(--faint)" }}> — {p.trigger.replace(/_/g, " ")}</em>}
             </span>
           </div>

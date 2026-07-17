@@ -1,6 +1,9 @@
 import type { ClaimDetail } from "@/lib/types";
-import { statusMeta, isStatus, CLAIM_TYPE_LABEL, decompositionNote } from "@/lib/ontology";
-import { StatusBadge, Confidence, Swatch, Importance } from "./Assessment";
+import {
+  statusMeta, isStatus, CLAIM_TYPE_LABEL, decompositionNote,
+  VERDICT_CONFIDENCE_GLOSS,
+} from "@/lib/ontology";
+import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
 
 function fmtDate(iso: string) {
@@ -47,10 +50,11 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
       {assessment && (
         <div className="claim-assess">
           <StatusBadge status={assessment.status} size="lg" />
-          <span className="conf" aria-label="confidence">
-            <span className="sc" style={{ marginRight: ".1rem" }}>confidence</span>
-            <Confidence value={assessment.confidence} status={assessment.status} />
-          </span>
+          {/* Credence (P(claim true)) gets the meter, when the Steward stated
+              one; verdict confidence is meta and stays a quiet labelled figure
+              so the two are never mistaken for each other (#160). */}
+          <Credence value={assessment.claim_credence} />
+          <VerdictConfidence value={assessment.confidence} />
           <span className="summary-row">
             {Object.entries(assessment.subclaim_summary ?? {})
               .filter(([st]) => isStatus(st))
@@ -76,7 +80,10 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
                     <span className="traj-dot"><Swatch status={p.status} /></span>
                     <span className="traj-body">
                       <span className="sc" style={{ color: "var(--muted)" }}>{fmtDate(p.assessed_at)}</span>
-                      {statusMeta(p.status).label} · {typeof p.confidence === "number" ? p.confidence.toFixed(2) : "—"}
+                      {statusMeta(p.status).label}
+                      {typeof p.confidence === "number" && (
+                        <span title={VERDICT_CONFIDENCE_GLOSS}> · {p.confidence.toFixed(2)}</span>
+                      )}
                       {p.trigger && <em style={{ color: "var(--faint)" }}> — {p.trigger.replace(/_/g, " ")}</em>}
                     </span>
                   </div>
@@ -155,7 +162,15 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
                   <span>{inst.source_title}</span>
                 )}
                 {inst.source_type && <span className="tag">{inst.source_type.replace(/_/g, " ")}</span>}
-                <span className="conf-num" title="match confidence">match {inst.confidence.toFixed(2)}</span>
+                {/* This score is the Extractor's, not the Matcher's: it says
+                    "this passage states a genuine, well-formed claim", not how
+                    well the passage matches the canonical form (#160). */}
+                <span
+                  className="conf-num"
+                  title="The Extractor's confidence that this passage states a genuine, well-formed claim."
+                >
+                  extraction {inst.confidence.toFixed(2)}
+                </span>
               </div>
               {inst.context && (
                 <p style={{ fontFamily: "var(--sans)", fontSize: ".78rem", color: "var(--muted)", margin: ".35rem 0 0" }}>
@@ -169,8 +184,12 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
 
       <hr className="thin" />
       <p style={{ fontFamily: "var(--sans)", fontSize: ".74rem", color: "var(--faint)" }}>
-        Created by {claim.created_by} · {fmtDate(claim.created_at)}. Last assessed {fmtDate(claim.updated_at)}.
-        Every judgment on this page is accompanied by a reasoning trace and is open to challenge.
+        Created by {claim.created_by} · {fmtDate(claim.created_at)}.
+        {/* claim.updated_at moves on any row touch (importance edits, canonical
+            rewording, decomposition bookkeeping); only assessed_at is honestly
+            "last assessed" (#160). */}
+        {assessment && <> Last assessed {fmtDate(assessment.assessed_at)}.</>}
+        {" "}Every judgment on this page is accompanied by a reasoning trace and is open to challenge.
       </p>
     </article>
   );

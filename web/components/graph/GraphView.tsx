@@ -11,6 +11,7 @@ import type { DataSource } from "@/lib/data";
 import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
+  VERDICT_CONFIDENCE_GLOSS,
 } from "@/lib/ontology";
 import { buildClaimTextMap } from "@/lib/claim-links";
 import { ArgumentText } from "@/components/ArgumentText";
@@ -464,7 +465,9 @@ export function GraphView({
               ) : (
                 <span className="badge unassessed">unassessed</span>
               )}
-              {d.assessment && <span className={styles.confNum}>{d.assessment.confidence.toFixed(2)}</span>}
+              {/* Verdict confidence is meta and easily misread as P(claim
+                  true); on the map it lives in the hover preview, labelled,
+                  not as a bare number beside the badge (#160). */}
               {!view.partial && (
                 <span className="imp-pips" title={`importance: ${IMPORTANCE[impLevel].label} — ${IMPORTANCE[impLevel].gloss}`}>
                   {Array.from({ length: 5 }, (_, i) => (
@@ -481,9 +484,6 @@ export function GraphView({
           <>
             <div className={styles.chipHead}>
               <Glyph status={c.status} />
-              <span className={styles.chipConf}>
-                {c.confidence != null ? `·${Math.round(c.confidence * 100)}` : ""}
-              </span>
             </div>
             <div className={styles.t1Text}>{c.text}</div>
             <div className={styles.chipFoot}>
@@ -541,9 +541,6 @@ export function GraphView({
           <>
             <div className={styles.chipHead}>
               <Glyph status={c.status} size="0.58rem" />
-              <span className={styles.chipConf}>
-                {c.confidence != null ? `·${Math.round(c.confidence * 100)}` : ""}
-              </span>
             </div>
             <div className={styles.depText}>{c.text}</div>
           </>
@@ -812,13 +809,13 @@ export function GraphView({
                       <span className={`badge ${meta.cls}`}>
                         <span className="badge-glyph">{meta.glyph}</span>{meta.label}
                       </span>
+                      {/* Labelled and meterless: a bar here read as how true
+                          the claim is, when the number is only how sure the
+                          Steward is of the verdict (#160). */}
                       {c.confidence != null && (
-                        <>
-                          <span className={`${styles.previewMeter} ${meta.cls}`}>
-                            <i style={{ width: `${c.confidence * 100}%` }} />
-                          </span>
-                          <span className={styles.confNum}>{c.confidence.toFixed(2)}</span>
-                        </>
+                        <span className={styles.confNum} title={VERDICT_CONFIDENCE_GLOSS}>
+                          verdict confidence {c.confidence.toFixed(2)}
+                        </span>
                       )}
                     </div>
                     {rel && (

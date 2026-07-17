@@ -109,6 +109,11 @@ The admin expresses uncertainty honestly and specifically:
 - "Contradicted": Available evidence weighs against the claim
 - "Unknown": Insufficient information to assess
 
+Two numbers may accompany an assessment, and they answer different questions:
+
+- **Verdict confidence** (always recorded): how sure the admin is that the chosen status is the right reading of the evidence. A claim can be confidently "contested": the admin is near-certain the disagreement is genuine, while nobody knows whether the claim is true.
+- **Credence** (recorded when meaningful): the admin's probability that the claim, as stated, is true. It is given only where a single number is an honest summary, typically for concrete empirical questions. Where one number would be false precision (normative or evaluative claims, definitional choices, composites whose parts pull in different directions) the admin omits it, and the omission is itself information: it tells the reader "this is not a one-number question."
+
 The admin does not round uncertain claims up to "verified" or down to "false." The graph's value comes from honest representation of the state of knowledge.
 
 ### 8. Transparency of Reasoning

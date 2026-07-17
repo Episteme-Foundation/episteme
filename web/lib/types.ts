@@ -52,7 +52,15 @@ export interface TreeNode {
 export interface Assessment {
   id: string;
   status: AssessmentStatus;
+  // Verdict confidence: how sure the Steward is that `status` is the right
+  // reading of the evidence. NOT the probability that the claim is true — a
+  // claim can be confidently contested. Render it quietly and labelled.
   confidence: number;
+  // Credence: the Steward's probability that the claim, as stated, is true.
+  // Null where one number would be false precision (normative/evaluative
+  // claims, entangled composites) — constitution §7. Optional while API
+  // deploys race the frontend.
+  claim_credence?: number | null;
   // Reader-facing body shown front-and-centre. The API falls back to
   // reasoning_trace for assessments written before the summary/reasoning split,
   // so this is always populated.
@@ -95,6 +103,9 @@ export interface Instance {
   source_id: string;
   original_text: string;
   context: string | null;
+  // The Extractor's confidence that the passage states a genuine, well-formed
+  // claim (see src/workers/url-extraction.ts). NOT the Matcher's match
+  // confidence, which is currently not persisted on the instance.
   confidence: number;
   source_title: string;
   source_url: string | null;

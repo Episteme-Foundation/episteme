@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { StatusBadge, Importance, Confidence } from "@/components/Assessment";
+import { StatusBadge, Importance, VerdictConfidence } from "@/components/Assessment";
 import { RELATION, CLAIM_TYPE_LABEL, statusMeta } from "@/lib/ontology";
 import {
   loadAllShowcases,
@@ -274,8 +274,10 @@ export default function FlfPage() {
         <h2>Reaching — and keeping — a verdict</h2>
         <p>
           With the structure in place, the Steward assesses the claim: a status (verified,
-          supported, contested, unsupported, contradicted, or unknown), a confidence, a
-          reader-facing summary, and a full reasoning trace. Because claims are linked, a change
+          supported, contested, unsupported, contradicted, or unknown), a verdict confidence
+          (how sure it is of that status), where a single probability is honest a credence that
+          the claim is true, a reader-facing summary, and a full reasoning trace. Because claims
+          are linked, a change
           ripples: reassessing a sub-claim marks its parents for re-stewarding, so a verdict stays
           current as the evidence beneath it moves. Work drains in importance order, so the most
           load-bearing claims are assessed first.
@@ -284,10 +286,7 @@ export default function FlfPage() {
           <div className={s.assessment}>
             <div className={s.assessmentHead}>
               <StatusBadge status={decomposed[1].decomposed.claim.status} size="lg" />
-              <Confidence
-                value={decomposed[1].decomposed.claim.confidence}
-                status={decomposed[1].decomposed.claim.status}
-              />
+              <VerdictConfidence value={decomposed[1].decomposed.claim.confidence} />
             </div>
             <p style={{ fontWeight: 600, margin: "0 0 .4rem" }}>
               {decomposed[1].decomposed.claim.text}

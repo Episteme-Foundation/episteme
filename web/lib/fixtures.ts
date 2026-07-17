@@ -34,7 +34,11 @@ const FLAGSHIP: ClaimDetail = {
   assessment: {
     id: "a-1",
     status: "supported",
+    // Verdict confidence: how sure the Steward is that "supported" is right.
     confidence: 0.78,
+    // Credence that the claim is true: high, since under any mainstream
+    // threshold the 6.5% figure qualifies as "high".
+    claim_credence: 0.9,
     summary:
       "US consumer prices rose 6.5% over 2022, so whether inflation was “high” comes down to where you set the bar. Against the Federal Reserve's 2% target — or the looser 5% often used in policy debate — 6.5% is unambiguously high, which is the mainstream reading. The one genuine question is definitional, not factual: a minority reserve “high” for double-digit or hyperinflationary episodes, under which 2022 would not qualify. The underlying figure itself is not in dispute.",
     reasoning_trace:
