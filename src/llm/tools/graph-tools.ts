@@ -17,8 +17,8 @@ export function getGraphToolDefinitions(): Tool[] {
       name: "search_similar_claims",
       description:
         "Search for existing claims in the knowledge graph that are " +
-        "semantically similar to a query. Use this to find claims that " +
-        "might match a new claim or subclaim before creating a new one.",
+        "semantically similar to a query. Results are retrieval candidates " +
+        "for your judgment, not verdicts.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -37,8 +37,8 @@ export function getGraphToolDefinitions(): Tool[] {
     {
       name: "get_claim_details",
       description:
-        "Get detailed information about a specific claim, including " +
-        "its text, type, state, and assessment.",
+        "Get detailed information about a specific claim: its text, type, " +
+        "state, and decomposition status.",
       input_schema: {
         type: "object" as const,
         properties: {

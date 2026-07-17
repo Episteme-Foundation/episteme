@@ -20,7 +20,7 @@ export function getMatcherToolDefinition(): Tool {
       "Check whether a proposition already exists in the graph before creating " +
       "it as a new claim. The Matcher searches the graph itself (multiple " +
       "framings, including the negation) and decides identity: a claim and its " +
-      "denial/counterpart are the SAME node. Always call this before adding a " +
+      "denial/counterpart are the same node. Always call this before adding a " +
       "subclaim — if it returns a match, link that existing claim instead of " +
       "minting a duplicate.",
     input_schema: {

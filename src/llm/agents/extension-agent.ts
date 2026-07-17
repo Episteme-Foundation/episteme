@@ -71,8 +71,7 @@ const CLAIM_VERDICT_SCHEMA = {
     },
     why: {
       type: "string",
-      description:
-        "One plain-language line shown to the reader on hover; name the graph's status",
+      description: "One plain-language line shown to the reader on hover",
     },
     confidence: {
       type: "number",

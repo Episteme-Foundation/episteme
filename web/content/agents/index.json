@@ -8,8 +8,8 @@
     "invokedWhen": "A URL or document is submitted for ingestion.",
     "model": "Claude Sonnet 5",
     "hasConstitution": true,
-    "roleChars": 8090,
-    "fullChars": 43328
+    "roleChars": 4011,
+    "fullChars": 43350
   },
   {
     "key": "matcher",
@@ -20,8 +20,8 @@
     "invokedWhen": "For every new claim and subclaim — at ingestion, and as a tool the Steward and Curator call before creating anything.",
     "model": "Claude Haiku 4.5",
     "hasConstitution": true,
-    "roleChars": 6354,
-    "fullChars": 41592
+    "roleChars": 4313,
+    "fullChars": 43652
   },
   {
     "key": "contribution-reviewer",
@@ -32,8 +32,8 @@
     "invokedWhen": "A contributor submits a challenge, support, merge, edit, instance, or argument.",
     "model": "Claude Sonnet 5",
     "hasConstitution": true,
-    "roleChars": 13227,
-    "fullChars": 48465
+    "roleChars": 7356,
+    "fullChars": 46695
   },
   {
     "key": "claim-steward",
@@ -44,8 +44,8 @@
     "invokedWhen": "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 20161,
-    "fullChars": 55399
+    "roleChars": 6587,
+    "fullChars": 45926
   },
   {
     "key": "curator",
@@ -56,8 +56,8 @@
     "invokedWhen": "When a Steward escalates a structural concern (and, as a follow-up, on new-claim neighborhood sweeps).",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 3347,
-    "fullChars": 38585
+    "roleChars": 2717,
+    "fullChars": 42056
   },
   {
     "key": "dispute-arbitrator",
@@ -68,8 +68,8 @@
     "invokedWhen": "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 8153,
-    "fullChars": 43391
+    "roleChars": 5657,
+    "fullChars": 44996
   },
   {
     "key": "audit-agent",
@@ -77,10 +77,10 @@
     "stage": 7,
     "group": "governance",
     "tagline": "Quality control over the governance system itself: flags issues, adjusts reputation, suspends bad actors.",
-    "invokedWhen": "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
+    "invokedWhen": "On demand, for a decision audit, pattern analysis, contributor review, or anomaly investigation.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 7395,
-    "fullChars": 42633
+    "roleChars": 4847,
+    "fullChars": 44186
   }
 ]

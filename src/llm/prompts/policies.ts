@@ -60,7 +60,7 @@ export const CONTRIBUTION_REVIEW_POLICIES = `## Contribution Review Policies
 
 ### Intake contributions (new content)
 
-propose_claim and propose_source propose NEW graph content; they have no
+propose_claim and propose_source propose new graph content; they have no
 target claim while pending, and nothing a user submits enters the graph
 without passing this review. The gate is form, good faith, and the claim
 bar — never subject matter. The graph is topic-neutral: a fringe or false
@@ -91,7 +91,7 @@ Unverifiable assertion, original research, clear bad faith, exact
 duplication of an already-processed argument, or attacking contributors
 rather than claims.
 
-### Bad faith
+### Bad faith (GF)
 
 Rejecting a contribution and flagging bad faith are different acts
 (constitution §9): rejection is cheap for a sincere contributor, while the

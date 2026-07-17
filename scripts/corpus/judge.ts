@@ -18,7 +18,7 @@ const CONSTITUTION_STANDARDS = `Key standards (from the Episteme constitution):
 - Statuses: verified / supported / contested / unsupported / contradicted / unknown. Never round a genuinely contested claim up to verified or down to contradicted. CONTESTED requires credible evidence/argument on multiple sides in the live discourse — not merely "someone could quibble".
 - Every judgment carries a transparent reasoning trace: what evidence was considered, how competing evidence was weighed, what uncertainties remain. A reader should be able to follow WHY the status was chosen; referring to subclaims by opaque id instead of their text is a readability failure.
 - Neutrality: map claims faithfully regardless of valence; represent the strongest version of each major position.
-- Importance (0..1): how much rides on getting the claim right — foundational claims many debates turn on ≈0.8+, substantive domain claims ≈0.5-0.7, minor/settled/incidental ≈<0.4. Importance orders the scarce-compute work queue, so settled textbook/bedrock material should NOT outrank live contested questions users actually consult the graph for.`;
+- Importance (0..1): consequence-if-wrong × contestability, anchored per constitution §19 — central claims (widely consequential and live) ≈0.9, major domain claims ≈0.6, notable contested points ≈0.35, minor/settled/incidental ≈0.15. Importance orders the scarce-compute work queue, so settled textbook/bedrock material should NOT outrank live contested questions users actually consult the graph for.`;
 
 export interface JudgeInput {
   id: string;

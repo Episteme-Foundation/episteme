@@ -37,18 +37,17 @@ async function runContributionReviewImpl(input: {
     ...getReviewerToolDefinitions(),
   ];
 
-  const userMessage = `A new contribution has been submitted for review.
+  const userMessage = `A contribution has been submitted for review.
 
 Contribution ID: ${input.contributionId}
 
-Please review this contribution:
-1. Use get_contribution_details to load the contribution and understand what is being proposed.
-2. If it targets an existing claim, use get_claim_with_context to understand that claim. Intake contributions (propose_claim, propose_source) have no target claim — the proposal itself is what you are judging.
-3. Use get_contributor_profile to understand the contributor's history and trust level.
-4. Evaluate the contribution against policies.
-5. Record your decision using record_review_decision (accept, reject, or escalate).
-6. If you accept a contribution on an existing claim, use notify_claim_steward so the steward can integrate the change. Accepted INTAKE contributions are materialized automatically by record_review_decision (matching/canonicalization, then claim creation or extraction) — do not call notify_claim_steward for those; the result is reported back to you in the tool result.
-7. If you escalate, use escalate_to_arbitrator with your reasoning.`;
+Review it:
+1. Load it with get_contribution_details.
+2. If it targets an existing claim, read that claim with get_claim_with_context. Intake contributions have no target claim; the proposal itself is what you are judging.
+3. Check the contributor with get_contributor_profile.
+4. Evaluate against the policies and record your decision with record_review_decision.
+5. If you accepted a contribution on an existing claim, call notify_claim_steward. Accepted intake is materialized automatically — no steward call.
+6. If you escalated, also call escalate_to_arbitrator; that call is what enqueues arbitration.`;
 
   await toolUseLoop({
     initialMessages: [{ role: "user", content: userMessage }],

@@ -77,7 +77,7 @@ const AGENTS: AgentMeta[] = [
     model: "Claude Fable 5", fn: getDisputeArbitratorSystemPrompt },
   { key: "audit-agent", name: "Audit Agent", stage: 7, group: "governance",
     tagline: "Quality control over the governance system itself: flags issues, adjusts reputation, suspends bad actors.",
-    invokedWhen: "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
+    invokedWhen: "On demand, for a decision audit, pattern analysis, contributor review, or anomaly investigation.",
     model: "Claude Fable 5", fn: getAuditAgentSystemPrompt },
 ];
 

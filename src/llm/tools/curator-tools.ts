@@ -35,13 +35,10 @@ export function getCuratorToolDefinitions(): Tool[] {
     {
       name: "merge_claims",
       description:
-        "Merge two claims that are the same proposition into one (a duplicate the " +
-        "Matcher missed, or a counterpart). Moves the loser's instances, arguments, " +
-        "and edges onto the survivor and marks the loser a merged alias. Set " +
-        "stance_relation='opposed' when the loser is the survivor's negation/" +
-        "counterpart — moved instance/argument stances are then flipped. After " +
-        "merging, notify the survivor's Steward to reconcile wording/arguments and " +
-        "re-assess.",
+        "Merge two claims that are one proposition (a duplicate or counterpart the " +
+        "Matcher missed). Moves the loser's instances, arguments, and edges onto " +
+        "the survivor and marks the loser a merged alias. After merging, notify " +
+        "the survivor's Steward.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -52,7 +49,9 @@ export function getCuratorToolDefinitions(): Tool[] {
             enum: ["same", "opposed"],
             description:
               "'same' if both state the proposition the same way; 'opposed' if the " +
-              "loser is the survivor's negation/counterpart (flips moved stances)",
+              "loser is the survivor's negation/counterpart, which flips the moved " +
+              "instance and argument stances. Any value other than 'opposed' is " +
+              "treated as 'same'.",
           },
           reasoning: { type: "string", description: "Why these are one claim" },
         },
@@ -62,13 +61,18 @@ export function getCuratorToolDefinitions(): Tool[] {
     {
       name: "create_claim",
       description:
-        "Create a new claim node (embedded immediately). Use when splitting a " +
-        "conflated claim into a fresh one. Match first if you suspect it exists.",
+        "Create a new claim node (embedded immediately). Use for the split-off " +
+        "half of a split; match_claim first in case it already exists.",
       input_schema: {
         type: "object" as const,
         properties: {
           text: { type: "string", description: "Canonical text of the new claim" },
-          claim_type: { type: "string", description: "Claim type (optional)" },
+          claim_type: {
+            type: "string",
+            description:
+              "One of empirical_verifiable, empirical_derived, definitional, " +
+              "evaluative, causal, normative. Defaults to empirical_derived.",
+          },
         },
         required: ["text"],
       },
@@ -77,8 +81,8 @@ export function getCuratorToolDefinitions(): Tool[] {
       name: "add_relationship_edge",
       description:
         "Add an edge between two existing claims as part of a merge/split surgery. " +
-        "For steady-state suggestions into a claim you are not reconciling, use " +
-        "suggest_edge_to_steward instead — routine edges are the parent Steward's.",
+        "For an edge into a claim you are not reconciling, use " +
+        "suggest_edge_to_steward instead.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -126,9 +130,9 @@ export function getCuratorToolDefinitions(): Tool[] {
     {
       name: "suggest_edge_to_steward",
       description:
-        "Propose a structural edge into a claim you are NOT reconciling — routine " +
-        "decomposition edges are owned by the parent claim's Steward. This enqueues " +
-        "the parent's Steward to consider adopting the edge; it does not write it.",
+        "Propose a decomposition edge into a claim you are not reconciling. " +
+        "Writes nothing; it enqueues the parent claim's Steward to consider " +
+        "adopting the edge.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -143,10 +147,10 @@ export function getCuratorToolDefinitions(): Tool[] {
     {
       name: "notify_steward",
       description:
-        "Hand a claim to its Steward after surgery, with instructions (e.g. 'I " +
-        "merged X into you — reconcile the flipped arguments and re-assess', or 'you " +
-        "were split from Y — re-derive your decomposition'). Always do this after a " +
-        "merge or split.",
+        "Hand a claim to its Steward with instructions (e.g. 'merged a counterpart " +
+        "into you — reconcile the flipped arguments and re-assess', or 'you were " +
+        "split from another claim — re-derive your decomposition'). Required after " +
+        "every merge (the survivor) and every split (both claims).",
       input_schema: {
         type: "object" as const,
         properties: {

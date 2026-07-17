@@ -352,8 +352,9 @@ These act through tools over the life of a claim and the graph:
 - **Dispute Arbitrator** resolves escalations and appeals through careful
   adjudication, the highest-stakes governance call.
 - **Audit Agent** is quality control over the governance system itself: it
-  samples decisions (5% by default), adjusts reputation, and can suspend bad
-  actors.
+  reviews decisions for quality, consistency, and process compliance, adjusts
+  reputation, and can suspend bad actors. (Its queue is not yet wired to a
+  producer — sampled invocation is designed but unimplemented.)
 
 One agent lives outside governance entirely. The **Extension Agent** is the
 read-only companion behind the browser extension: it judges the phrasings on a

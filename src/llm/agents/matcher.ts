@@ -27,8 +27,8 @@ const MATCH_DECISION_SCHEMA = {
   type: "object" as const,
   properties: {
     is_match: { type: "boolean", description: "Whether the claim matches an existing claim (including its negation/counterpart)" },
-    matched_claim_id: { type: ["string", "null"], description: "ID of the matched claim if is_match is True" },
-    new_canonical_form: { type: ["string", "null"], description: "Proposed canonical form if is_match is False" },
+    matched_claim_id: { type: ["string", "null"], description: "ID of the matched claim if is_match is true" },
+    new_canonical_form: { type: ["string", "null"], description: "Proposed canonical form if is_match is false" },
     instance_stance: { type: "string", enum: ["affirms", "denies"], description: "Whether this source asserts the canonical claim (affirms) or its negation/contrary (denies)" },
     confidence: { type: "number", description: "Confidence in the matching decision (0.0-1.0)" },
     reasoning: { type: "string", description: "Detailed explanation of the decision" },
@@ -74,11 +74,10 @@ async function matchClaimImpl(input: {
   const searchTool: Tool = {
     name: "search_similar_claims",
     description:
-      "Search existing claims by semantic similarity. Returns the top matches " +
-      "ranked by similarity (NOT thresholded — low-scoring results are still " +
-      "shown for your judgment). Call this multiple times with different framings " +
-      "of the claim — its wording, paraphrases, and especially its NEGATION — " +
-      "before concluding the claim is novel.",
+      "Search existing claims by semantic similarity. Retrieval, not decision: " +
+      "low-scoring candidates are included for your judgment. Call this multiple " +
+      "times with different framings of the claim — its wording, paraphrases, and " +
+      "especially its negation — before concluding the claim is novel.",
     input_schema: {
       type: "object" as const,
       properties: {

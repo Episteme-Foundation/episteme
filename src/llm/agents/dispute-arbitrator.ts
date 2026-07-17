@@ -53,15 +53,8 @@ Contribution ID: ${input.contributionId}`;
 
   userMessage += `
 
-Please:
-1. Use get_contribution_details to understand the contribution and any existing review.
-2. Use get_claim_with_context to understand the target claim in full.
-3. Use get_contributor_profile for the contributor's history.
-4. Use get_recent_decisions to check for precedent in similar cases.
-5. Apply your decision framework: gather context, analyze policies, assess evidence, decide.
-6. Record your decision using record_arbitration_decision.
-7. Use notify_claim_steward if the outcome affects the claim.
-8. Use flag_for_human_review if the situation exceeds automated capacity.`;
+Gather the full record with your read tools, decide, and record the outcome
+with record_arbitration_decision (pass the appeal ID above, if any).`;
 
   await toolUseLoop({
     initialMessages: [{ role: "user", content: userMessage }],

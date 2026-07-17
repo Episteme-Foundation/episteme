@@ -66,16 +66,8 @@ Trigger: ${input.trigger}
 Anchor claim ID: ${input.claimId}
 Context: ${input.context}
 
-Proceed:
-1. Use get_claim_with_context and search_similar_claims (and match_claim) to
-   examine the anchor claim and its neighborhood.
-2. Look for: duplicates / counterparts to MERGE; a conflated claim to SPLIT; and
-   related-but-disconnected claims that should be linked.
-3. For merges/splits, perform the surgery, then notify_steward the affected
-   claims. For a routine edge into a claim you are not reconciling, use
-   suggest_edge_to_steward (do not write it yourself).
-4. Be conservative — only act when the structure is genuinely wrong. Doing
-   nothing is a fine outcome.`;
+Start from get_claim_with_context and search_similar_claims, then merge,
+split, suggest edges, or leave the structure alone as the evidence warrants.`;
 
   await toolUseLoop({
     initialMessages: [{ role: "user", content: userMessage }],

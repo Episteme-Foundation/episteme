@@ -21,11 +21,11 @@ const EXTRACTED_CLAIM_SCHEMA = {
   properties: {
     original_text: { type: "string", description: "The exact text from the document" },
     context: { type: ["string", "null"], description: "Surrounding text for disambiguation" },
-    proposed_canonical_form: { type: "string", description: "Precise, unambiguous version with explicit parameters" },
+    proposed_canonical_form: { type: "string", description: "Short, neutral, frame-independent statement of the underlying proposition (about 15 words); parameterized only where a parameter changes the truth conditions" },
     claim_type: { type: "string", description: "One of: empirical_verifiable, empirical_derived, definitional, evaluative, causal, normative" },
-    confidence: { type: "number", description: "Confidence this is a valid claim (0.0-1.0)" },
-    importance: { type: "number", description: "Provisional importance (0.0-1.0): how much it is worth getting this claim right — roughly consequence-if-wrong × contestability — from document salience, contestedness, and discourse reach. Settled/uncontested facts score LOW even if load-bearing. A prior the Steward will revise; distinct from confidence." },
-    source_location: { type: ["string", "null"], description: "Where in the document this was found" },
+    confidence: { type: "number", description: "Confidence this is a genuine, reusable claim (0.0-1.0); well-formedness, not truth" },
+    importance: { type: "number", description: "Provisional importance prior (0.0-1.0): roughly consequence-if-wrong × contestability. Settled/uncontested facts score low even if load-bearing. The Steward will revise it; distinct from confidence." },
+    source_location: { type: ["string", "null"], description: "Where in the document this was found (a section or position reference), used to anchor the claim on the page" },
   },
   required: ["original_text", "proposed_canonical_form", "claim_type", "confidence", "importance"],
 };

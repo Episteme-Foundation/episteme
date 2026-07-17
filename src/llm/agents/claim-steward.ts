@@ -75,59 +75,41 @@ async function runClaimStewardImpl(input: {
   const isInitial = input.trigger === "structure_and_assess";
 
   const structureStep = isInitial
-    ? `2. DECOMPOSE the claim (this is its first pass). Identify its load-bearing
-   dependencies and the strongest considerations for and against it — a handful,
-   not an exhaustive list (see the Decomposition guidance). For EACH dependency,
-   FIRST call match_claim to check whether it already exists in the graph (as
-   itself, a rewording, or its negation). If it matches, attach the existing
-   claim with add_relationship_edge; only if genuinely novel, create it with
-   add_decomposition_edge. Never mint a duplicate. If the claim is genuinely
-   simple, leave it atomic — do not invent dependencies.`
-    : `2. RE-ASSESS in light of what changed. Adjust structure only if you discover a
-   genuinely missing load-bearing dependency — and then match_claim FIRST, linking
-   an existing claim with add_relationship_edge or creating a new one with
-   add_decomposition_edge. Do not re-decompose from scratch.`;
+    ? `2. Decompose the claim (this is its first pass): identify its load-bearing
+   dependencies and the strongest considerations for and against it. For each
+   dependency, call match_claim first; attach an existing match with
+   add_relationship_edge, and create only genuinely novel propositions with
+   add_decomposition_edge (with an importance score). If the claim is genuinely
+   simple, leave it atomic.`
+    : `2. Re-assess in light of what changed. Adjust structure only if a
+   load-bearing dependency is genuinely missing (match_claim first); do not
+   re-decompose from scratch.`;
 
   const iterationBudget = config.stewardMaxIterations;
   let newSubclaimsThisRun = 0;
 
-  const userMessage = `You have been triggered to steward a claim.
+  const userMessage = `Steward this claim.
 
 Trigger: ${input.trigger}
 Claim ID: ${input.claimId}
 Context: ${input.context}
 
-Budget: you have up to ${iterationBudget} tool-use iterations for this stewardship.
-That is a generous backstop, not a target — use as few or as many as the claim's
-importance warrants. But it IS a hard limit: make sure you have recorded an
-assessment (update_claim_assessment) and logged your decision
-(log_stewardship_decision) before you approach it, so your work is never lost
-mid-task. If you are warned that few iterations remain, stop exploring and record
-your conclusion immediately.
+Budget: up to ${iterationBudget} tool-use iterations — a generous backstop, not
+a target, but a hard limit. Record your assessment (update_claim_assessment)
+and log your decision (log_stewardship_decision) before you approach it; if
+warned that few iterations remain, stop exploring and record your conclusion.
 
-You OWN this claim — its structure (decomposition) and its assessment. Proceed:
-1. Use get_claim_with_context to understand the claim, its subclaims and their
-   assessments, its source instances (note each instance's affirm/deny stance),
-   and its current assessment if any.
+1. Use get_claim_with_context to see the claim, its subclaims and their
+   assessments, its source instances (note each one's affirm/deny stance), and
+   any current assessment.
 ${structureStep}
-3. Gauge the claim's importance — how much it is worth getting right
-   (consequence-if-wrong × contestability), NOT mere dependency count.
-   get_claim_dependents is only a local signal; an uncontested or niche claim is
-   low importance even with many local dependents. Scale effort accordingly:
-   consequential, contested claims warrant deeper search and a second, adversarial
-   pass; minor or settled claims warrant a light touch.
-4. Reach a holistic assessment using your judgment (no mechanical aggregation).
-   Use web_search for external evidence where it would change the verdict.
-   Credible instances that BOTH affirm and deny the claim are a strong signal
-   toward CONTESTED.
-5. Record it with update_claim_assessment. Provide BOTH texts: a reader-facing
-   **assessment** (an encyclopedia-style account of where the claim stands, no
-   internal machinery or bookkeeping) and the **reasoning_trace** (the audit
-   detail behind the verdict). See "Writing the Assessment: Two Audiences".
-6. If the canonical form needs improving, use update_canonical_form.
-7. Log your decision with log_stewardship_decision.
-8. If you established or changed a material assessment, use
-   notify_dependent_stewards so claims that depend on this one are re-judged.`;
+3. Gauge the claim's importance, scale your effort to it, and record it with
+   set_claim_importance where your estimate differs from the stored value.
+4. Reach a holistic assessment and record it with update_claim_assessment,
+   providing both texts (assessment and reasoning_trace).
+5. Improve the canonical form with update_canonical_form if needed, log the
+   pass with log_stewardship_decision, and if the assessment materially
+   changed, call notify_dependent_stewards.`;
 
   await toolUseLoop({
     initialMessages: [{ role: "user", content: userMessage }],

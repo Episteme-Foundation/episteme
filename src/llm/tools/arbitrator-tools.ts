@@ -27,8 +27,10 @@ export function getArbitratorToolDefinitions(): Tool[] {
     {
       name: "record_arbitration_decision",
       description:
-        "Record your arbitration decision. This writes the outcome to the " +
-        "database and updates the contribution/appeal status.",
+        "Record your arbitration decision. Writes the outcome and updates " +
+        "the contribution and appeal status. An overturn also restores the " +
+        "contributor and, for intake contributions, materializes them into " +
+        "the graph; both happen automatically.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -76,8 +78,9 @@ export function getArbitratorToolDefinitions(): Tool[] {
     {
       name: "notify_claim_steward",
       description:
-        "Notify the claim steward about the arbitration outcome so they " +
-        "can update the claim accordingly.",
+        "Notify the claim steward about the arbitration outcome. The " +
+        "Steward re-judges the claim; this is the only way an arbitration " +
+        "changes a claim.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -100,8 +103,10 @@ export function getArbitratorToolDefinitions(): Tool[] {
     {
       name: "flag_for_human_review",
       description:
-        "Flag a specific contribution for human review. Use when the " +
-        "situation is beyond what automated arbitration can handle.",
+        "Route a contribution to human review without recording an " +
+        "arbitration. If you have reached a decision that humans should " +
+        "review, prefer the human_review outcome of " +
+        "record_arbitration_decision instead.",
       input_schema: {
         type: "object" as const,
         properties: {

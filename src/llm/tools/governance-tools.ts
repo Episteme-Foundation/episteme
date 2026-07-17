@@ -93,8 +93,9 @@ export function getGovernanceToolDefinitions(): Tool[] {
     {
       name: "get_recent_decisions",
       description:
-        "Get recent contribution review decisions, optionally filtered. " +
-        "Useful for audit agents analyzing patterns.",
+        "Get recent contribution review decisions, optionally filtered by " +
+        "decision or contributor. Useful for checking consistency with past " +
+        "decisions and for spotting patterns across contributors.",
       input_schema: {
         type: "object" as const,
         properties: {

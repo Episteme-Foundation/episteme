@@ -32,8 +32,10 @@ export function getReviewerToolDefinitions(): Tool[] {
     {
       name: "record_review_decision",
       description:
-        "Record your review decision for a contribution. This writes the " +
-        "decision to the database and updates the contribution's review status.",
+        "Record your review decision for a contribution. Writes the review, " +
+        "updates the contribution's status, applies reputation effects, and " +
+        "for an accepted intake contribution materializes the proposal " +
+        "(the result is returned to you).",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -58,23 +60,21 @@ export function getReviewerToolDefinitions(): Tool[] {
             type: "array",
             items: { type: "string" },
             description:
-              "Policy codes cited (e.g. VERIFIABILITY, SOURCE_HIERARCHY, CHARITABLE_INTERPRETATION)",
+              "Policies cited, by name or letter code (e.g. V, SH, CI)",
           },
           suspected_bad_faith: {
             type: "boolean",
             description:
-              "Set true ONLY with a 'reject' decision when the contribution " +
-              "shows deliberate abuse (spam, vandalism, sybil coordination, " +
-              "deliberate misinformation) — NOT for sincere contributions " +
-              "rejected on the merits. This flag has real consequences " +
-              "(reputation penalty, pay-to-contribute standing) and is " +
-              "appealable; when uncertain, reject without the flag or escalate.",
+              "Flags deliberate abuse per the bad-faith policy. Only " +
+              "meaningful with a 'reject' decision (ignored otherwise); " +
+              "carries a reputation penalty and pay-to-contribute standing, " +
+              "appealable and fully reversible.",
           },
           bad_faith_category: {
             type: "string",
             enum: [...BAD_FAITH_CATEGORIES],
             description:
-              "Required when suspected_bad_faith is true: which kind of abuse.",
+              "Which kind of abuse; required when suspected_bad_faith is true.",
           },
         },
         required: [
@@ -89,9 +89,9 @@ export function getReviewerToolDefinitions(): Tool[] {
     {
       name: "escalate_to_arbitrator",
       description:
-        "Escalate a contribution to the dispute arbitrator for further " +
-        "review. Use when uncertain, when stakes are high, or when the " +
-        "situation requires deeper adjudication.",
+        "Place a contribution in the Dispute Arbitrator's queue. Required " +
+        "in addition to record_review_decision when escalating; recording " +
+        "an 'escalate' decision alone does not reach the Arbitrator.",
       input_schema: {
         type: "object" as const,
         properties: {

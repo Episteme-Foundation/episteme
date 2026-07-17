@@ -19,8 +19,8 @@ export function getAuditToolDefinitions(): Tool[] {
     {
       name: "flag_issue",
       description:
-        "Flag a quality issue found during audit. Records the finding " +
-        "for tracking and follow-up.",
+        "Flag a quality issue found during the audit, with severity, " +
+        "evidence, and a recommended action.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -32,8 +32,8 @@ export function getAuditToolDefinitions(): Tool[] {
           category: {
             type: "string",
             description:
-              "Category: decision_quality, consistency, process_compliance, " +
-              "bias_detected, manipulation_suspected",
+              "Issue category, e.g. decision_quality, consistency, " +
+              "process_compliance, bias_detected, manipulation_suspected",
           },
           description: {
             type: "string",

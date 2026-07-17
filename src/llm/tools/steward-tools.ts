@@ -67,9 +67,9 @@ export function getStewardToolDefinitions(): Tool[] {
             type: "number",
             description:
               "Verdict confidence (0.0-1.0): how sure you are that the status " +
-              "you chose is the right reading of the evidence. Meta by design; " +
-              "NOT the probability that the claim is true. A claim can be " +
-              "confidently CONTESTED.",
+              "you chose is the right reading of the evidence. Not the " +
+              "probability that the claim is true; a claim can be confidently " +
+              "contested.",
           },
           claim_credence: {
             type: "number",
@@ -84,28 +84,24 @@ export function getStewardToolDefinitions(): Tool[] {
           assessment: {
             type: "string",
             description:
-              "The reader-facing account of where the claim stands, shown first when " +
-              "someone lands on its page. Self-contained prose in the third person, " +
+              "The reader-facing account of where the claim stands, shown first " +
+              "when someone lands on its page. Self-contained third-person prose, " +
               "like the opening of a good encyclopedia entry: what the claim rests " +
               "on, what the evidence shows, and for a contested claim where the " +
-              "credible disagreement lies and what would resolve it. Let the length " +
-              "follow the claim: a settled one may be two or three sentences, a " +
-              "genuinely contested or foundational one a few short paragraphs. Keep " +
-              "the machinery out of it: no tool or edge names (SUPPORTS/CONTRADICTS " +
-              "edge), no importance numbers, no 'per the constitution', no first-" +
-              "person 'I', and no narration of your own bookkeeping (merges, " +
-              "canonical-form edits, importance changes go in " +
-              "log_stewardship_decision).",
+              "credible disagreement lies and what would resolve it. Length follows " +
+              "the claim: two or three sentences when settled, a few short " +
+              "paragraphs when genuinely contested. Keep the machinery invisible; " +
+              "your own bookkeeping (merges, canonical-form edits, importance) goes " +
+              "in log_stewardship_decision, not here.",
           },
           reasoning_trace: {
             type: "string",
             description:
-              "The transparent audit detail behind the verdict, shown secondary to " +
-              "the assessment (behind a disclosure). Lay out the specific evidence, " +
-              "source instances, and how the material subclaims weigh. This is about " +
-              "the CLAIM'S TRUTH — keep structural bookkeeping out of it. Refer to " +
-              "subclaims by their text (quoted or paraphrased), never by bare UUID — " +
-              "ids are opaque to the human readers this trace exists for.",
+              "The transparent audit detail behind the verdict, shown behind a " +
+              "disclosure. Lay out the specific evidence, source instances, and how " +
+              "the material subclaims weigh. It is about the claim's truth; keep " +
+              "structural bookkeeping out, and refer to subclaims by their text, " +
+              "never by bare UUID.",
           },
         },
         required: ["claim_id", "status", "confidence", "assessment", "reasoning_trace"],
@@ -139,12 +135,12 @@ export function getStewardToolDefinitions(): Tool[] {
       name: "add_argument",
       description:
         "Create a named argument (a line of reasoning) on a claim — a grouping " +
-        "that subclaims attach to. Use when distinct for/against lines of reasoning " +
-        "exist; pass the returned argument_id to add_relationship_edge / " +
-        "add_decomposition_edge to group subclaims under it. The description is a " +
-        "label for the line of reasoning, not itself a proposition. An argument is " +
-        "NOT finished at creation: once its subclaim edges are attached, you MUST " +
-        "give it a written form with write_argument.",
+        "that subclaims attach to. Use when distinct for/against lines of " +
+        "reasoning exist; pass the returned argument_id to add_relationship_edge " +
+        "/ add_decomposition_edge to group subclaims under it. The description is " +
+        "a label, not itself a proposition, and an argument is not finished at " +
+        "creation: once its subclaim edges are attached, give it a written form " +
+        "with write_argument.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -173,16 +169,15 @@ export function getStewardToolDefinitions(): Tool[] {
       name: "write_argument",
       description:
         "Write (or revise) an argument's written form: a brief, logically " +
-        "straightforward prose statement of HOW its subclaims combine to bear on " +
-        "the claim — the inferential step the grouping alone leaves implicit. " +
-        "1–3 sentences, e.g. 'Because [[claim:<uuid>]] and [[claim:<uuid>]], and " +
-        "given [[claim:<uuid>]], the claim follows.' Reference EVERY subclaim in " +
-        "the argument inline as [[claim:<uuid>]] (or [[claim:<uuid>|inline " +
-        "phrasing]] when grammar needs it) — links resolve to the claims' " +
-        "canonical text at render time. The written form is structural, not " +
-        "epistemic: state the inference, never a verdict on whether it holds. " +
-        "Call this after attaching the argument's subclaim edges; call it again " +
-        "whenever the argument's subclaims change.",
+        "straightforward prose statement of how its subclaims combine to bear on " +
+        "the claim. 1–3 sentences, e.g. 'Because [[claim:<uuid>]] and " +
+        "[[claim:<uuid>]], and given [[claim:<uuid>]], the claim follows.' " +
+        "Reference every subclaim in the argument inline as [[claim:<uuid>]] " +
+        "(or [[claim:<uuid>|inline phrasing]] when grammar needs it); links " +
+        "resolve to the claims' canonical text at render time. The written form " +
+        "is structural, not epistemic: state the inference, never a verdict on " +
+        "whether it holds. Call this after attaching the argument's subclaim " +
+        "edges, and again whenever its subclaims change.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -203,10 +198,9 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "add_relationship_edge",
       description:
-        "Attach an EXISTING claim as a subclaim, by id. Use this when match_claim " +
-        "found that the dependency you want already exists (as itself, a rewording, " +
-        "or its negation) — link it instead of minting a duplicate. Edges to your " +
-        "claim's decomposition are yours to own.",
+        "Attach an existing claim as a subclaim, by id. Use this when match_claim " +
+        "found that the dependency already exists (as itself, a rewording, or its " +
+        "negation) — link it rather than minting a duplicate.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -247,9 +241,9 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "add_decomposition_edge",
       description:
-        "Create a NEW subclaim and attach it to a claim's decomposition. Use only " +
-        "after match_claim confirms the proposition does NOT already exist — " +
-        "otherwise use add_relationship_edge to link the existing claim.",
+        "Create a new subclaim and attach it to a claim's decomposition. Use only " +
+        "after match_claim confirms the proposition does not already exist; " +
+        "otherwise link the existing claim with add_relationship_edge.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -286,15 +280,12 @@ export function getStewardToolDefinitions(): Tool[] {
           importance: {
             type: "number",
             description:
-              "How much it is worth spending scarce intelligence to get this " +
-              "subclaim right, 0..1 — roughly consequence-if-wrong × contestability, " +
-              "NOT logical necessity. A dependency can be maximally load-bearing " +
-              "(the parent is false without it) yet LOW importance because nobody " +
-              "disputes it — getting an uncontested fact right is free. Reserve " +
-              "high values for genuinely contested or consequential dependencies. " +
-              "This orders the work queue AND (below a threshold) leaves the " +
-              "subclaim an un-decomposed embedded stub, so score uncontested " +
-              "bedrock low. Defaults to 0.5 if omitted.",
+              "The subclaim's importance, 0..1 (constitution §19): roughly " +
+              "consequence-if-wrong × contestability, not logical necessity. It " +
+              "orders the work queue and, below a threshold, leaves the subclaim " +
+              "an un-decomposed embedded stub — so score uncontested bedrock low " +
+              "(≈0.15) even when the parent depends on it entirely. Defaults to " +
+              "0.5 (full processing) if omitted, so pass a considered score.",
           },
         },
         required: ["parent_id", "child_text", "relation", "reasoning"],
@@ -303,21 +294,17 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "set_claim_importance",
       description:
-        "Set a claim's importance (0..1) — how much it is worth spending scarce " +
-        "intelligence to get it right (roughly consequence-if-wrong × " +
-        "contestability), NOT mere logical load-bearing-ness. A revisable judgment " +
-        "that scales effort and orders the work queue. Local dependents are only a " +
-        "local signal: a claim central to a niche subfield is still low-importance " +
-        "if the subfield is peripheral and the claim uncontested. An uncontested " +
-        "fact is low importance even if much depends on it, because getting it " +
-        "right is free.",
+        "Set a claim's importance (0..1): roughly consequence-if-wrong × " +
+        "contestability, not how logically load-bearing it is (constitution §19). " +
+        "A revisable judgment that scales effort and orders the work queue; an " +
+        "uncontested claim is low importance even when much depends on it.",
       input_schema: {
         type: "object" as const,
         properties: {
           claim_id: { type: "string", description: "The UUID of the claim" },
           importance: {
             type: "number",
-            description: "Importance score, 0 (peripheral) .. 1 (foundational)",
+            description: "Importance score, 0 (minor/settled) .. 1 (central)",
           },
           reasoning: {
             type: "string",
