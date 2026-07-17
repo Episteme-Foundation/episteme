@@ -31,14 +31,11 @@ copyFileSync(resolve(root, "docs/policies.md"), resolve(contentDir, "policies.md
 
 // ---- split the assembled prompt into its constitution / role layers -------
 const ROLE_MARKER = "# Your Specific Role";
-const FOOTER_MARKER = "\n\n---\n\nRemember:";
 
 function splitPrompt(full: string): { role: string; hasConstitution: boolean } {
   const idx = full.indexOf(ROLE_MARKER);
   if (idx === -1) return { role: full.trim(), hasConstitution: false };
-  let role = full.slice(idx + ROLE_MARKER.length);
-  const f = role.indexOf(FOOTER_MARKER);
-  if (f !== -1) role = role.slice(0, f);
+  const role = full.slice(idx + ROLE_MARKER.length);
   return { role: role.trim(), hasConstitution: true };
 }
 
