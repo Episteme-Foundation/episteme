@@ -175,7 +175,15 @@ export const assessments = pgTable(
       .notNull()
       .references(() => claims.id, { onDelete: "cascade" }),
     status: text("status").notNull(),
+    // Verdict confidence: how sure the Steward is that `status` is the right
+    // reading of the evidence. Meta by design; NOT the probability that the
+    // claim is true (a claim can be confidently contested).
     confidence: real("confidence").notNull(),
+    // Credence: the Steward's probability that the claim, as stated, is true.
+    // Nullable by design (constitution §7): where a single number would be
+    // false precision (normative/evaluative claims, entangled composites) no
+    // credence is stated, and the omission is itself information.
+    claimCredence: real("claim_credence"),
     // Reader-facing explanation shown front-and-centre on the claim page: a
     // welcoming, encyclopedia-style account of the best state of knowledge and
     // where credible disagreement lies. Distinct from reasoningTrace, which is

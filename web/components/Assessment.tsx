@@ -1,5 +1,8 @@
 import type { AssessmentStatus } from "@/lib/types";
-import { statusMeta, importanceLevel, IMPORTANCE } from "@/lib/ontology";
+import {
+  statusMeta, importanceLevel, IMPORTANCE,
+  CREDENCE_GLOSS, VERDICT_CONFIDENCE_GLOSS,
+} from "@/lib/ontology";
 
 export function StatusBadge({
   status, size = "sm",
@@ -54,17 +57,30 @@ export function Importance({
   );
 }
 
-export function Confidence({
-  value, status,
-}: { value: number | null | undefined; status?: AssessmentStatus | string | null }) {
-  const cls = statusMeta(status).cls;
-  const v = typeof value === "number" ? value : null;
+// Credence — the Steward's probability that the claim is true. The one number
+// that earns a meter; deliberately neutral-coloured so it never reads as a
+// restatement of the verdict. Renders nothing when no credence was stated:
+// per constitution §7 the absence is a signal, not a gap to paper over.
+export function Credence({ value }: { value: number | null | undefined }) {
+  if (typeof value !== "number") return null;
   return (
-    <span className={`conf ${cls}`}>
+    <span className="conf credence" title={CREDENCE_GLOSS}>
+      <span className="sc" style={{ marginRight: ".1rem" }}>credence</span>
       <span className="conf-track">
-        <span className="conf-fill" style={{ width: `${v === null ? 0 : Math.round(v * 100)}%` }} />
+        <span className="conf-fill" style={{ width: `${Math.round(value * 100)}%` }} />
       </span>
-      <span className="conf-num">{v === null ? "—" : v.toFixed(2)}</span>
+      <span className="conf-num">{value.toFixed(2)}</span>
+    </span>
+  );
+}
+
+// Verdict confidence — how sure the Steward is of the status itself. Meta, so
+// it stays quiet: a small labelled figure, no meter, defined on hover.
+export function VerdictConfidence({ value }: { value: number | null | undefined }) {
+  if (typeof value !== "number") return null;
+  return (
+    <span className="conf-quiet" title={VERDICT_CONFIDENCE_GLOSS}>
+      verdict confidence {value.toFixed(2)}
     </span>
   );
 }

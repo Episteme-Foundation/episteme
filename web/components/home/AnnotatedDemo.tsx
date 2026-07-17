@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { StatusBadge, Confidence, Unassessed } from "@/components/Assessment";
+import { StatusBadge, VerdictConfidence, Unassessed } from "@/components/Assessment";
 import styles from "./home.module.css";
 
 // The browser-extension demo (issue #80): a mock article whose sentences are
@@ -152,7 +152,7 @@ export function AnnotatedDemo() {
               >
                 <div className={styles.mMeta}>
                   {c.status ? <StatusBadge status={c.status} size="lg" /> : <Unassessed />}
-                  {c.status && <Confidence value={c.confidence} status={c.status} />}
+                  {c.status && <VerdictConfidence value={c.confidence} />}
                 </div>
                 <p className={styles.mClaim}>{c.claim}</p>
                 <p className={styles.mMatch}>{c.match}</p>
@@ -163,7 +163,7 @@ export function AnnotatedDemo() {
                       <li key={s.text}>
                         <StatusBadge status={s.status} />
                         <span className={styles.txt}>{s.text}</span>
-                        <span className="conf-num">{s.conf}</span>
+                        <span className="conf-num" title="verdict confidence">{s.conf}</span>
                       </li>
                     ))}
                   </ul>

@@ -72,7 +72,11 @@ export const claimResponse = z.object({
 export const assessmentResponse = z.object({
   id: uuidSchema,
   status: assessmentStatusEnum,
+  // Verdict confidence — how sure the Steward is of the status, not P(true).
   confidence: z.number(),
+  // Credence that the claim is true; null where one number would be false
+  // precision (constitution §7). Optional so pre-deploy responses still parse.
+  claim_credence: z.number().nullable().optional(),
   summary: z.string(),
   reasoning_trace: z.string(),
   subclaim_summary: z.record(z.unknown()),
@@ -189,6 +193,7 @@ export const assessmentHistoryItem = z.object({
   claim_id: uuidSchema,
   status: assessmentStatusEnum,
   confidence: z.number(),
+  claim_credence: z.number().nullable().optional(),
   summary: z.string(),
   reasoning_trace: z.string(),
   is_current: z.boolean(),

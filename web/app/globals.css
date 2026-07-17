@@ -214,14 +214,26 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 .badge.st-contradicted{ background: var(--st-contradicted-tint); }
 .badge.st-unknown     { background: var(--st-unknown-tint); }
 
-/* confidence meter */
+/* credence meter — the Steward's probability that the claim is true. Neutral
+   ink, not status-coloured, so the bar never reads as a restatement of the
+   verdict badge beside it. */
 .conf { display: flex; align-items: center; gap: 0.5rem; }
+.conf.credence { color: var(--ink-soft); }
 .conf-track {
   width: 7rem; height: 0.32rem; border-radius: 2px;
   background: var(--paper-sunk); border: 1px solid var(--rule); overflow: hidden;
 }
-.conf-fill { height: 100%; background: currentColor; }
+/* display:block — width is ignored on inline spans, which left this meter
+   permanently empty (#160). */
+.conf-fill { display: block; height: 100%; background: currentColor; }
 .conf-num { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+
+/* verdict confidence — meta (how sure the Steward is of the status), so it is
+   rendered as a quiet labelled figure, never a meter (#160). */
+.conf-quiet {
+  font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.02em;
+  color: var(--faint); white-space: nowrap; cursor: help;
+}
 
 /* ----- type / state tags ----- */
 .tag {

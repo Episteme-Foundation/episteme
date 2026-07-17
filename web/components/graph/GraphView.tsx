@@ -11,7 +11,7 @@ import type { DataSource } from "@/lib/data";
 import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
-  nodeStatusMeta, UNASSESSED_META,
+  nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS,
 } from "@/lib/ontology";
 import { buildClaimTextMap } from "@/lib/claim-links";
 import { ArgumentText } from "@/components/ArgumentText";
@@ -219,8 +219,14 @@ export function GraphView({
               argumentId: node.argument_id, argumentName: node.argument_name,
               argumentStance: node.argument_stance,
               childCount: node.children.length,
-              bedrock: bedrockOf(node.claim_type, node.assessment_status, node.children.length === 0),
+              bedrock: bedrockOf(
+                node.claim_type,
+                node.assessment_status,
+                node.children.length === 0 && !node.subtree_collapsed && !node.children_truncated,
+              ),
               up: false,
+              collapsed: !!node.subtree_collapsed,
+              truncated: !!node.children_truncated,
             }
           : (current.dependents ?? [])
               .filter((d) => d.id === id)
@@ -326,8 +332,13 @@ export function GraphView({
   const plinthNote = useMemo(() => {
     const d = view.detail;
     if (view.partial) return "Loading decomposition…";
-    const bed = bedrockOf(d.claim.claim_type, d.assessment?.status ?? null, true);
+    // A childless root is only bedrock when the cap didn't drop its children.
+    const rootTruncated = !!d.tree?.children_truncated;
+    const bed = bedrockOf(d.claim.claim_type, d.assessment?.status ?? null, !rootTruncated);
     if (bed && (d.tree?.children.length ?? 0) === 0) return BEDROCK[bed].note;
+    if (rootTruncated && (d.tree?.children.length ?? 0) === 0) {
+      return "This view is size-capped; open the claim page to see the full decomposition.";
+    }
     return decompositionNote({
       decompositionStatus: d.claim.decomposition_status,
       assessed: Boolean(d.assessment),
@@ -457,7 +468,9 @@ export function GraphView({
               ) : (
                 <span className="badge unassessed">unassessed</span>
               )}
-              {d.assessment && <span className={styles.confNum}>{d.assessment.confidence.toFixed(2)}</span>}
+              {/* Verdict confidence is meta and easily misread as P(claim
+                  true); on the map it lives in the hover preview, labelled,
+                  not as a bare number beside the badge (#160). */}
               {!view.partial && (
                 <span className="imp-pips" title={`importance: ${IMPORTANCE[impLevel].label} — ${IMPORTANCE[impLevel].gloss}`}>
                   {Array.from({ length: 5 }, (_, i) => (
@@ -474,12 +487,12 @@ export function GraphView({
           <>
             <div className={styles.chipHead}>
               <Glyph status={c.status} />
-              <span className={styles.chipConf}>
-                {c.confidence != null ? `·${Math.round(c.confidence * 100)}` : ""}
-              </span>
             </div>
             <div className={styles.t1Text}>{c.text}</div>
             <div className={styles.chipFoot}>
+              {/* Zero children here is only "atomic" when nothing was elided:
+                  a shared subclaim's repeat occurrence and a cap-truncated
+                  node both arrive childless without being leaves (#160). */}
               {c.childCount > 0 ? (
                 <button
                   type="button"
@@ -487,8 +500,22 @@ export function GraphView({
                   onClick={(ev) => { ev.stopPropagation(); toggleExpand(c.id); }}
                   aria-expanded={n.expandedNow}
                 >
-                  {n.expandedNow ? "▾" : "▸"} {c.childCount} subclaim{c.childCount > 1 ? "s" : ""}
+                  {n.expandedNow ? "▾" : "▸"} {c.childCount}{c.truncated ? "+" : ""} subclaim{c.childCount > 1 || c.truncated ? "s" : ""}
                 </button>
+              ) : c.collapsed ? (
+                <span
+                  className={styles.atomicTag}
+                  title="A shared subclaim — its decomposition is drawn at its other occurrence on this map. Click to recentre and see it in full."
+                >
+                  shared · shown elsewhere
+                </span>
+              ) : c.truncated ? (
+                <span
+                  className={styles.atomicTag}
+                  title="This view is size-capped and this claim's subclaims were not loaded. Click to recentre and see them."
+                >
+                  more on its map
+                </span>
               ) : c.bedrock ? null : (
                 <span className={styles.atomicTag}>atomic</span>
               )}
@@ -517,9 +544,6 @@ export function GraphView({
           <>
             <div className={styles.chipHead}>
               <Glyph status={c.status} size="0.58rem" />
-              <span className={styles.chipConf}>
-                {c.confidence != null ? `·${Math.round(c.confidence * 100)}` : ""}
-              </span>
             </div>
             <div className={styles.depText}>{c.text}</div>
           </>
@@ -793,13 +817,13 @@ export function GraphView({
                         {c.status && <span className="badge-glyph">{meta.glyph}</span>}
                         {meta.label}
                       </span>
+                      {/* Labelled and meterless: a bar here read as how true
+                          the claim is, when the number is only how sure the
+                          Steward is of the verdict (#160). */}
                       {c.confidence != null && (
-                        <>
-                          <span className={`${styles.previewMeter} ${meta.cls}`}>
-                            <i style={{ width: `${c.confidence * 100}%` }} />
-                          </span>
-                          <span className={styles.confNum}>{c.confidence.toFixed(2)}</span>
-                        </>
+                        <span className={styles.confNum} title={VERDICT_CONFIDENCE_GLOSS}>
+                          verdict confidence {c.confidence.toFixed(2)}
+                        </span>
                       )}
                     </div>
                     {rel && (

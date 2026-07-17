@@ -101,10 +101,9 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
                 <div className={styles.depEdge}>
                   <span className={`swatch ${st.cls}`} title={`${st.label} — ${st.def}`} aria-hidden />
                   {rel && <span className={`relation ${rel.cls}`} title={rel.gloss}>{rel.label}</span>}
-                  <span className={styles.depConf}>
-                    {st.label}
-                    {typeof d.assessment_confidence === "number" && ` · ${d.assessment_confidence.toFixed(2)}`}
-                  </span>
+                  {/* Status label only — the bare verdict-confidence number
+                      that used to follow it read as P(claim true) (#160). */}
+                  <span className={styles.depConf}>{st.label}</span>
                 </div>
                 <Link href={`/claims/${d.id}`} className={styles.depText}>
                   {d.text}
