@@ -55,16 +55,11 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
               so the two are never mistaken for each other (#160). */}
           <Credence value={assessment.claim_credence} />
           <VerdictConfidence value={assessment.confidence} />
-          <span className="summary-row">
-            {Object.entries(assessment.subclaim_summary ?? {})
-              .filter(([st]) => isStatus(st))
-              .map(([st, n]) => (
-                <span className="summary-chip" key={st}>
-                  <Swatch status={st} />
-                  {String(n)} {st}
-                </span>
-              ))}
-          </span>
+          {/* No subclaim-status chips here: subclaim_summary is never computed
+              by the pipeline (always {}), so the chips only ever rendered for
+              fixtures — a feature that looked implemented but wasn't (#160).
+              The margin compass gives the real breakdown, scored by effect on
+              this claim rather than by each subclaim's own status. */}
         </div>
       )}
 
