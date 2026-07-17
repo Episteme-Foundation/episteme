@@ -53,7 +53,11 @@ export const assessmentSchema = {
   properties: {
     id: { type: "string", format: "uuid" },
     status: { type: "string" },
+    // Verdict confidence — how sure the Steward is of the status, not P(true).
     confidence: { type: "number" },
+    // Credence that the claim is true; null where one number would be false
+    // precision (constitution §7).
+    claim_credence: { type: "number", nullable: true },
     summary: { type: "string" },
     reasoning_trace: { type: "string" },
     subclaim_summary: { type: "object", additionalProperties: true },
@@ -536,6 +540,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     claim_id: { type: "string", format: "uuid" },
                     status: { type: "string" },
                     confidence: { type: "number" },
+                    claim_credence: { type: "number", nullable: true },
                     summary: { type: "string" },
                     reasoning_trace: { type: "string" },
                     is_current: { type: "boolean" },
@@ -758,11 +763,15 @@ function formatClaim(claim: { id: string; text: string; claimType: string; state
   };
 }
 
-export function formatAssessment(a: { id: string; status: string; confidence: number; summary: string | null; reasoningTrace: string; subclaimSummary: unknown; assessedAt: Date }) {
+export function formatAssessment(a: { id: string; status: string; confidence: number; claimCredence: number | null; summary: string | null; reasoningTrace: string; subclaimSummary: unknown; assessedAt: Date }) {
   return {
     id: a.id,
     status: a.status,
+    // Verdict confidence — how sure the Steward is of the status, not P(true).
     confidence: a.confidence,
+    // Credence that the claim is true; null where one number would be false
+    // precision (constitution §7).
+    claim_credence: a.claimCredence ?? null,
     // Reader-facing body; fall back to the reasoning trace for assessments
     // written before the summary/reasoning split (nullable column).
     summary: a.summary ?? a.reasoningTrace,
@@ -778,6 +787,7 @@ function formatAssessmentHistory(a: {
   claimId: string;
   status: string;
   confidence: number;
+  claimCredence: number | null;
   summary: string | null;
   reasoningTrace: string;
   isCurrent: boolean;
@@ -791,6 +801,7 @@ function formatAssessmentHistory(a: {
     claim_id: a.claimId,
     status: a.status,
     confidence: a.confidence,
+    claim_credence: a.claimCredence ?? null,
     summary: a.summary ?? a.reasoningTrace,
     reasoning_trace: a.reasoningTrace,
     is_current: a.isCurrent,

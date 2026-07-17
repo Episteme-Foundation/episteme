@@ -62,15 +62,15 @@ export default async function ClaimsIndex({
                 {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
                 <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>
                   <Importance value={c.importance} />
-                  {typeof c.assessment_confidence === "number" ? (
-                    <span className="conf-num" title="assessment confidence">
-                      {c.assessment_confidence.toFixed(2)}
-                    </span>
-                  ) : typeof c.similarity_score === "number" ? (
+                  {/* Verdict confidence used to sit here as a bare number and
+                      read as P(claim true); it now lives on the claim page,
+                      quietly labelled (#160). Search relevance stays: it is
+                      about the match, not the claim. */}
+                  {typeof c.similarity_score === "number" && (
                     <span className="conf-num" title="search relevance">
                       {c.similarity_score.toFixed(2)}
                     </span>
-                  ) : null}
+                  )}
                 </span>
               </div>
             </Link>

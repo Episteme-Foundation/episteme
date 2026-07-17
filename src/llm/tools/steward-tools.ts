@@ -65,7 +65,21 @@ export function getStewardToolDefinitions(): Tool[] {
           },
           confidence: {
             type: "number",
-            description: "Confidence in this assessment (0.0-1.0)",
+            description:
+              "Verdict confidence (0.0-1.0): how sure you are that the status " +
+              "you chose is the right reading of the evidence. Meta by design; " +
+              "NOT the probability that the claim is true. A claim can be " +
+              "confidently CONTESTED.",
+          },
+          claim_credence: {
+            type: "number",
+            description:
+              "Optional credence (0.0-1.0): your probability that the claim, as " +
+              "stated, is TRUE. Give it only where a single number is an honest " +
+              "summary (typically concrete empirical questions). Omit it where " +
+              "it would be false precision: normative or evaluative claims, " +
+              "definitional choices, or composites whose parts pull in different " +
+              "directions. Omitting is itself information, not a failure.",
           },
           assessment: {
             type: "string",
@@ -399,6 +413,11 @@ export async function executeStewardTool(
         // out-of-enum value.
         const status = String(input.status).toLowerCase();
         const confidence = input.confidence as number;
+        // Optional: only recorded where a probability of truth is meaningful
+        // (constitution §7). null, not 0 — "no credence stated" is a distinct
+        // signal from "credence that the claim is false".
+        const claimCredence =
+          typeof input.claim_credence === "number" ? input.claim_credence : null;
         const reasoningTrace = input.reasoning_trace as string;
         // Reader-facing assessment (still persisted to the `summary` column). Also
         // accept the legacy `summary` key so an in-flight tool call from the older
@@ -431,6 +450,7 @@ export async function executeStewardTool(
           claimId,
           status,
           confidence,
+          claimCredence,
           summary,
           reasoningTrace,
           subclaimSummary: prev?.subclaimSummary ?? {},

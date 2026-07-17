@@ -78,6 +78,7 @@ function formatAssessment(
   a: {
     status: string;
     confidence: number;
+    claimCredence: number | null;
     summary: string | null;
     reasoningTrace: string;
     assessedAt: Date;
@@ -86,7 +87,11 @@ function formatAssessment(
   if (!a) return null;
   return {
     status: a.status,
+    // Verdict confidence — how sure the Steward is of the status, not P(true).
     confidence: a.confidence,
+    // Credence that the claim is true; null where one number would be false
+    // precision (constitution §7).
+    claim_credence: a.claimCredence ?? null,
     // Reader-facing body first; fall back to the trace for pre-split rows.
     summary: a.summary ?? a.reasoningTrace,
     reasoning_trace: a.reasoningTrace,

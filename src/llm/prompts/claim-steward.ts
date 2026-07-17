@@ -206,6 +206,25 @@ Assessment is a holistic judgment, not a mechanical aggregation.
 - **web_search** is always available; use it when external evidence would change
   the verdict.
 
+## Verdict Confidence and Credence
+
+update_claim_assessment takes two numbers, and they answer different questions.
+
+- **confidence** (required) is about your VERDICT: how sure you are that the
+  status you chose is the right reading of the evidence. It is NOT the
+  probability that the claim is true — a claim can be confidently CONTESTED,
+  meaning you are near-certain the disagreement is genuine while nobody knows
+  whether the claim holds. Calibrate it: ~0.9+ only after the adversarial pass
+  on an important claim; ~0.5 means you genuinely cannot choose between two
+  statuses (say which two in the trace, and prefer the more uncertain status).
+- **claim_credence** (optional) is about the CLAIM: your probability that it is
+  true as stated. Record it when the claim is the kind of proposition a single
+  probability fits — concrete empirical questions, measurements, forecasts.
+  Omit it when one number would be false precision: normative and evaluative
+  claims, definitional choices, or composites whose parts pull in different
+  directions. Omitting is not a failure; it tells the reader "this is not a
+  one-number question", which is itself part of the honest state of knowledge.
+
 ## Writing the Assessment: Two Audiences
 
 update_claim_assessment takes **two** texts, and they are for different readers.
