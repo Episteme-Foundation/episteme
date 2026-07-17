@@ -184,8 +184,12 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
 
       <hr className="thin" />
       <p style={{ fontFamily: "var(--sans)", fontSize: ".74rem", color: "var(--faint)" }}>
-        Created by {claim.created_by} · {fmtDate(claim.created_at)}. Last assessed {fmtDate(claim.updated_at)}.
-        Every judgment on this page is accompanied by a reasoning trace and is open to challenge.
+        Created by {claim.created_by} · {fmtDate(claim.created_at)}.
+        {/* claim.updated_at moves on any row touch (importance edits, canonical
+            rewording, decomposition bookkeeping); only assessed_at is honestly
+            "last assessed" (#160). */}
+        {assessment && <> Last assessed {fmtDate(assessment.assessed_at)}.</>}
+        {" "}Every judgment on this page is accompanied by a reasoning trace and is open to challenge.
       </p>
     </article>
   );
