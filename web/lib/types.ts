@@ -58,6 +58,10 @@ export interface Assessment {
   // so this is always populated.
   summary: string;
   reasoning_trace: string;
+  // DEPRECATED (#160): nothing in the pipeline ever computes this — the column
+  // defaults to {} and reassessment carries the empty value forward. Do not
+  // render it; the decomposition compass derives the real breakdown from the
+  // tree. Kept in the type because the API still returns the field.
   subclaim_summary: Record<string, number>;
   assessed_at: string;
 }
