@@ -216,8 +216,14 @@ export function GraphView({
               argumentId: node.argument_id, argumentName: node.argument_name,
               argumentStance: node.argument_stance,
               childCount: node.children.length,
-              bedrock: bedrockOf(node.claim_type, node.assessment_status, node.children.length === 0),
+              bedrock: bedrockOf(
+                node.claim_type,
+                node.assessment_status,
+                node.children.length === 0 && !node.subtree_collapsed && !node.children_truncated,
+              ),
               up: false,
+              collapsed: !!node.subtree_collapsed,
+              truncated: !!node.children_truncated,
             }
           : (current.dependents ?? [])
               .filter((d) => d.id === id)
@@ -323,8 +329,13 @@ export function GraphView({
   const plinthNote = useMemo(() => {
     const d = view.detail;
     if (view.partial) return "Loading decomposition…";
-    const bed = bedrockOf(d.claim.claim_type, d.assessment?.status ?? null, true);
+    // A childless root is only bedrock when the cap didn't drop its children.
+    const rootTruncated = !!d.tree?.children_truncated;
+    const bed = bedrockOf(d.claim.claim_type, d.assessment?.status ?? null, !rootTruncated);
     if (bed && (d.tree?.children.length ?? 0) === 0) return BEDROCK[bed].note;
+    if (rootTruncated && (d.tree?.children.length ?? 0) === 0) {
+      return "This view is size-capped; open the claim page to see the full decomposition.";
+    }
     return decompositionNote({
       decompositionStatus: d.claim.decomposition_status,
       assessed: Boolean(d.assessment),
@@ -476,6 +487,9 @@ export function GraphView({
             </div>
             <div className={styles.t1Text}>{c.text}</div>
             <div className={styles.chipFoot}>
+              {/* Zero children here is only "atomic" when nothing was elided:
+                  a shared subclaim's repeat occurrence and a cap-truncated
+                  node both arrive childless without being leaves (#160). */}
               {c.childCount > 0 ? (
                 <button
                   type="button"
@@ -483,8 +497,22 @@ export function GraphView({
                   onClick={(ev) => { ev.stopPropagation(); toggleExpand(c.id); }}
                   aria-expanded={n.expandedNow}
                 >
-                  {n.expandedNow ? "▾" : "▸"} {c.childCount} subclaim{c.childCount > 1 ? "s" : ""}
+                  {n.expandedNow ? "▾" : "▸"} {c.childCount}{c.truncated ? "+" : ""} subclaim{c.childCount > 1 || c.truncated ? "s" : ""}
                 </button>
+              ) : c.collapsed ? (
+                <span
+                  className={styles.atomicTag}
+                  title="A shared subclaim — its decomposition is drawn at its other occurrence on this map. Click to recentre and see it in full."
+                >
+                  shared · shown elsewhere
+                </span>
+              ) : c.truncated ? (
+                <span
+                  className={styles.atomicTag}
+                  title="This view is size-capped and this claim's subclaims were not loaded. Click to recentre and see them."
+                >
+                  more on its map
+                </span>
               ) : c.bedrock ? null : (
                 <span className={styles.atomicTag}>atomic</span>
               )}

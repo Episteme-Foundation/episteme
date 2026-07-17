@@ -67,6 +67,12 @@ export interface ClaimBits {
   childCount: number;
   bedrock: BedrockKind | null;
   up: boolean;                     // true for dependents (edge points at the focus)
+  // Zero children in the response does NOT always mean atomic (#160):
+  // a shared subclaim's repeat occurrence carries its children only at the
+  // first occurrence (subtree_collapsed), and the node cap can drop children
+  // (children_truncated). Both must suppress the atomic tag and bedrock hatch.
+  collapsed?: boolean;
+  truncated?: boolean;
 }
 
 export interface LNode {
@@ -163,8 +169,16 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
     argumentName: n.argument_name,
     argumentStance: n.argument_stance,
     childCount: n.children.length,
-    bedrock: bedrockOf(n.claim_type, n.assessment_status, n.children.length === 0),
+    // A node is only a leaf if its children are genuinely absent — not elided
+    // as a shared-subclaim repeat or dropped by the response's node cap.
+    bedrock: bedrockOf(
+      n.claim_type,
+      n.assessment_status,
+      n.children.length === 0 && !n.subtree_collapsed && !n.children_truncated,
+    ),
     up: false,
+    collapsed: !!n.subtree_collapsed,
+    truncated: !!n.children_truncated,
   });
 
   // ---- dependents band (above the focus) ----------------------------------
@@ -422,8 +436,13 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
       reasoning: null,
       argumentId: null, argumentName: null, argumentStance: null,
       childCount: children.length,
-      bedrock: bedrockOf(detail.claim.claim_type, detail.assessment?.status ?? null, children.length === 0),
+      bedrock: bedrockOf(
+        detail.claim.claim_type,
+        detail.assessment?.status ?? null,
+        children.length === 0 && !detail.tree?.children_truncated,
+      ),
       up: false,
+      truncated: !!detail.tree?.children_truncated,
     },
   });
   const focusCentre = { x: 0, y: yFocus + focusH / 2 };
@@ -437,7 +456,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
       bedrock: bedrockOf(
         detail.claim.claim_type,
         detail.assessment?.status ?? null,
-        true,
+        !detail.tree?.children_truncated,
       ),
       note: opts.plinthNote,
     });
