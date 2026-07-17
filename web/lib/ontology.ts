@@ -73,6 +73,13 @@ export function confidenceLabel(c: number): string {
   return c.toFixed(2).replace(/^0/, "·");
 }
 
+// The two numbers an assessment can carry answer different questions
+// (constitution §7); every surface that shows either must say which one it is.
+export const VERDICT_CONFIDENCE_GLOSS =
+  "Verdict confidence: how sure the Steward is that this status is the right reading of the evidence. Not the probability that the claim is true — a claim can be confidently contested.";
+export const CREDENCE_GLOSS =
+  "Credence: the Steward's probability that the claim, as stated, is true. Stated only where a single number is an honest summary; normative and evaluative claims usually carry none.";
+
 // Decomposition status — the backend stores this as a free-text column with four
 // values (pending → processing → atomic | complete). The UI must not conflate
 // "atomic" (decomposed and found irreducible) with "pending" (not yet looked at).

@@ -79,9 +79,12 @@ export default function DocsPage() {
           </li>
           <li>
             <strong>Assessment</strong>: one of six verdicts (verified, supported,
-            contested, unsupported, contradicted, unknown), with a confidence and a
-            reasoning trace, revised as the world changes. A claim the steward has not
-            reached yet is unassessed: a pending state, not a verdict.
+            contested, unsupported, contradicted, unknown) and a reasoning trace,
+            revised as the world changes. Two numbers can accompany the verdict: a
+            verdict confidence (how sure the steward is that the status is right) and,
+            where a single probability is honest, a credence that the claim is true.
+            A claim the steward has not reached yet is unassessed: a pending state,
+            not a verdict.
           </li>
           <li>
             <strong>Instances &amp; sources</strong>: the exact utterances of a claim

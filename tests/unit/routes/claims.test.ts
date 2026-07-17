@@ -7,6 +7,7 @@ describe("formatAssessment", () => {
     id: "11111111-1111-1111-1111-111111111111",
     status: "supported",
     confidence: 0.8,
+    claimCredence: 0.9,
     summary: "The evidence favours this claim.",
     reasoningTrace: "because",
     subclaimSummary: { a: 1 } as unknown,
@@ -18,11 +19,16 @@ describe("formatAssessment", () => {
       id: base.id,
       status: "supported",
       confidence: 0.8,
+      claim_credence: 0.9,
       summary: "The evidence favours this claim.",
       reasoning_trace: "because",
       subclaim_summary: { a: 1 },
       assessed_at: "2026-01-01T00:00:00.000Z",
     });
+  });
+
+  it("keeps an unstated credence null — distinct from credence 0 (constitution §7)", () => {
+    expect(formatAssessment({ ...base, claimCredence: null }).claim_credence).toBeNull();
   });
 
   it("falls back to the reasoning trace when summary is null (pre-split rows)", () => {

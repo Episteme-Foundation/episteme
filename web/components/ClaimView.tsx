@@ -1,6 +1,9 @@
 import type { ClaimDetail } from "@/lib/types";
-import { statusMeta, isStatus, CLAIM_TYPE_LABEL, decompositionNote } from "@/lib/ontology";
-import { StatusBadge, Confidence, Swatch, Importance } from "./Assessment";
+import {
+  statusMeta, isStatus, CLAIM_TYPE_LABEL, decompositionNote,
+  VERDICT_CONFIDENCE_GLOSS,
+} from "@/lib/ontology";
+import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
 
 function fmtDate(iso: string) {
@@ -47,10 +50,11 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
       {assessment && (
         <div className="claim-assess">
           <StatusBadge status={assessment.status} size="lg" />
-          <span className="conf" aria-label="confidence">
-            <span className="sc" style={{ marginRight: ".1rem" }}>confidence</span>
-            <Confidence value={assessment.confidence} status={assessment.status} />
-          </span>
+          {/* Credence (P(claim true)) gets the meter, when the Steward stated
+              one; verdict confidence is meta and stays a quiet labelled figure
+              so the two are never mistaken for each other (#160). */}
+          <Credence value={assessment.claim_credence} />
+          <VerdictConfidence value={assessment.confidence} />
           <span className="summary-row">
             {Object.entries(assessment.subclaim_summary ?? {})
               .filter(([st]) => isStatus(st))
@@ -76,7 +80,10 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
                     <span className="traj-dot"><Swatch status={p.status} /></span>
                     <span className="traj-body">
                       <span className="sc" style={{ color: "var(--muted)" }}>{fmtDate(p.assessed_at)}</span>
-                      {statusMeta(p.status).label} · {typeof p.confidence === "number" ? p.confidence.toFixed(2) : "—"}
+                      {statusMeta(p.status).label}
+                      {typeof p.confidence === "number" && (
+                        <span title={VERDICT_CONFIDENCE_GLOSS}> · {p.confidence.toFixed(2)}</span>
+                      )}
                       {p.trigger && <em style={{ color: "var(--faint)" }}> — {p.trigger.replace(/_/g, " ")}</em>}
                     </span>
                   </div>
