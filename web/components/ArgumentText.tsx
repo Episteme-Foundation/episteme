@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { parseWrittenForm } from "@/lib/claim-links";
 
-// Keep resolved canonical text short enough to sit inside a sentence; the
-// full text is a hover (title) and a click away.
-function inlineText(text: string): string {
-  return text.length > 90 ? `${text.slice(0, 87)}…` : text;
-}
-
 /**
  * An argument's written form: brief prose in which [[claim:<id>]] references
  * become links to the subclaims the argument runs on. Authored inline phrasing
@@ -32,7 +26,7 @@ export function ArgumentText({
             className="argform-link"
             title={canonical && seg.display ? canonical : "open this claim"}
           >
-            {seg.display ?? (canonical ? inlineText(canonical) : "linked claim")}
+            {seg.display ?? canonical ?? "linked claim"}
           </Link>
         );
       })}
