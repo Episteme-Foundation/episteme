@@ -3,15 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { DependentClaim } from "@/lib/types";
-import { RELATION, STATUS_ORDER, statusMeta } from "@/lib/ontology";
+import { RELATION, STATUS_ORDER, statusMeta, nodeStatusMeta, UNASSESSED_META } from "@/lib/ontology";
 import styles from "./margins.module.css";
 
 // Above this many dependents, a dot-per-claim row stops being legible, so we
 // switch the ambient marker to a status-distribution bar instead.
 const DOT_CAP = 18;
 
+// null status → "unassessed", a pending state — never the "Unknown" verdict,
+// which is an assessed outcome (#160).
 function statusKey(status: string | null): string {
-  return statusMeta(status).cls.replace("st-", "");
+  return nodeStatusMeta(status).cls.replace("st-", "");
+}
+
+// Reading order for counts/legend: verdicts first, the pending tail last.
+const KEY_ORDER: string[] = [...STATUS_ORDER, "unassessed"];
+
+function keyMeta(key: string) {
+  return key === "unassessed" ? UNASSESSED_META : statusMeta(key);
 }
 
 // The right-margin rail: claims that depend on this one (reverse decomposition
@@ -40,7 +49,7 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
     const k = statusKey(d.assessment_status);
     counts[k] = (counts[k] ?? 0) + 1;
   }
-  const present = STATUS_ORDER.filter((s) => counts[s]);
+  const present = KEY_ORDER.filter((s) => counts[s]);
 
   return (
     <aside className={styles.rail} aria-label="Claims that depend on this one">
@@ -71,7 +80,7 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
               <li key={s} className={`st-${s}`}>
                 <span className={`swatch st-${s}`} aria-hidden />
                 <span className={styles.legendN}>{counts[s]}</span>
-                <span className={styles.legendLbl}>{statusMeta(s).label}</span>
+                <span className={styles.legendLbl}>{keyMeta(s).label}</span>
               </li>
             ))}
           </ul>
@@ -86,7 +95,7 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
         <ul className={`${styles.depList} ${n > 8 ? styles.scrollList : ""}`}>
           {dependents.map((d) => {
             const rel = RELATION[d.relation_type];
-            const st = statusMeta(d.assessment_status);
+            const st = nodeStatusMeta(d.assessment_status);
             return (
               <li key={d.id} className={styles.depItem}>
                 <div className={styles.depEdge}>

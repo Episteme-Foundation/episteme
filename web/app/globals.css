@@ -29,6 +29,8 @@
   --st-unsupported:   #6c6657;  --st-unsupported-tint: #eeebe2;
   --st-contradicted:  #8f3a2c;  --st-contradicted-tint:#f4e6e1;
   --st-unknown:       #8b8576;  --st-unknown-tint:     #eeece4;
+  /* not a verdict: the pending state of a claim the Steward hasn't reached */
+  --st-unassessed:    #9b9484;  --st-unassessed-tint:  #f3f1ea;
 
   /* — argument stance — */
   --stance-for:     #4f7d4a;
@@ -199,6 +201,11 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 .st-unsupported { color: var(--st-unsupported); }
 .st-contradicted{ color: var(--st-contradicted); }
 .st-unknown     { color: var(--st-unknown); }
+.st-unassessed  { color: var(--st-unassessed); }
+
+/* unassessed markers stay hollow/dashed wherever solid swatches mean a
+   verdict, echoing the dashed Unassessed badge: pending, not judged */
+.swatch.st-unassessed { background: transparent; border-style: dashed; }
 
 .badge.st-verified    { background: var(--st-verified-tint); }
 .badge.st-supported   { background: var(--st-supported-tint); }
