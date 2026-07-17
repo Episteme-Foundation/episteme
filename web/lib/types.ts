@@ -103,6 +103,9 @@ export interface Instance {
   source_id: string;
   original_text: string;
   context: string | null;
+  // The Extractor's confidence that the passage states a genuine, well-formed
+  // claim (see src/workers/url-extraction.ts). NOT the Matcher's match
+  // confidence, which is currently not persisted on the instance.
   confidence: number;
   source_title: string;
   source_url: string | null;

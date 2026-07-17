@@ -162,7 +162,15 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
                   <span>{inst.source_title}</span>
                 )}
                 {inst.source_type && <span className="tag">{inst.source_type.replace(/_/g, " ")}</span>}
-                <span className="conf-num" title="match confidence">match {inst.confidence.toFixed(2)}</span>
+                {/* This score is the Extractor's, not the Matcher's: it says
+                    "this passage states a genuine, well-formed claim", not how
+                    well the passage matches the canonical form (#160). */}
+                <span
+                  className="conf-num"
+                  title="The Extractor's confidence that this passage states a genuine, well-formed claim."
+                >
+                  extraction {inst.confidence.toFixed(2)}
+                </span>
               </div>
               {inst.context && (
                 <p style={{ fontFamily: "var(--sans)", fontSize: ".78rem", color: "var(--muted)", margin: ".35rem 0 0" }}>
