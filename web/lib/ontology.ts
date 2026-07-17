@@ -47,6 +47,22 @@ export function statusMeta(s: unknown) {
   return isStatus(s) ? STATUS[s] : STATUS.unknown;
 }
 
+// A claim with no current assessment is a pending state, NOT a verdict — and
+// specifically not the "Unknown" verdict, which is an assessed outcome
+// ("insufficient information to assess"). Surfaces that render mixed
+// populations (the dependents rail, map glyphs) must use this meta for null
+// statuses instead of letting statusMeta() fall through to Unknown (#160).
+export const UNASSESSED_META = {
+  label: "Unassessed",
+  glyph: "◌",
+  cls: "st-unassessed",
+  def: "No current assessment — the Steward prioritises higher-importance claims, so this one is likely still queued.",
+} as const;
+
+export function nodeStatusMeta(s: unknown) {
+  return s == null ? UNASSESSED_META : statusMeta(s);
+}
+
 export const RELATION: Record<RelationType, { label: string; cls: string; gloss: string }> = {
   requires:    { label: "requires",    cls: "rel-requires",    gloss: "the parent's truth depends on this" },
   supports:    { label: "supports",    cls: "rel-supports",    gloss: "this provides evidence for the parent" },

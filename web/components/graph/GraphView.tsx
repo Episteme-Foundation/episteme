@@ -11,7 +11,7 @@ import type { DataSource } from "@/lib/data";
 import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
-  VERDICT_CONFIDENCE_GLOSS,
+  nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS,
 } from "@/lib/ontology";
 import { buildClaimTextMap } from "@/lib/claim-links";
 import { ArgumentText } from "@/components/ArgumentText";
@@ -101,8 +101,9 @@ interface PreviewState {
   pill?: { name: string; stance: string; desc: string | null };
 }
 
+// null is "unassessed" (pending), never the assessed "Unknown" verdict (#160).
 function statusVars(status: AssessmentStatus | null): React.CSSProperties {
-  const s = status ?? "unknown";
+  const s = status ?? "unassessed";
   return {
     color: `var(--st-${s})`,
     background: `var(--st-${s}-tint)`,
@@ -125,11 +126,13 @@ const BED_CLS: Record<string, string> = {
 };
 
 function Glyph({ status, size }: { status: AssessmentStatus | null; size?: string }) {
-  const meta = statusMeta(status);
+  // nodeStatusMeta: an unassessed claim gets the hollow ◌, not Unknown's "?"
+  // — "not yet judged" and "judged unknowable" are different facts (#160).
+  const meta = nodeStatusMeta(status);
   return (
     <span
       className={styles.glyph}
-      style={{ color: `var(--st-${status ?? "unknown"})`, fontSize: size }}
+      style={{ color: `var(--st-${status ?? "unassessed"})`, fontSize: size }}
       aria-hidden
     >
       {meta.glyph}
@@ -533,7 +536,7 @@ export function GraphView({
         );
       }
       case "mini":
-        return statusMeta(n.claim!.status).glyph;
+        return nodeStatusMeta(n.claim!.status).glyph;
       case "dep":
       case "depstub": {
         const c = n.claim!;
@@ -717,9 +720,11 @@ export function GraphView({
                 );
               }
               if (m.kind === "deplabel") {
-                const counts = new Map<AssessmentStatus, number>();
+                // Keyed by cls suffix so a null status counts as "unassessed"
+                // (pending), never as the assessed "Unknown" verdict (#160).
+                const counts = new Map<string, number>();
                 for (const st of m.dist) {
-                  const k = (st ?? "unknown") as AssessmentStatus;
+                  const k = st ?? "unassessed";
                   counts.set(k, (counts.get(k) ?? 0) + 1);
                 }
                 return (
@@ -733,10 +738,10 @@ export function GraphView({
                         <span className={styles.depCount}>{m.n}</span>
                         <span className={styles.depUnit}>depended on by</span>
                         <span className={styles.distBar}>
-                          {[...counts.entries()].map(([st, nn]) => (
+                          {[...counts.entries()].map(([k, nn]) => (
                             <i
-                              key={st}
-                              className={statusMeta(st).cls}
+                              key={k}
+                              className={`st-${k}`}
                               style={{ width: `${(nn / m.dist.length) * 100}%` }}
                             />
                           ))}
@@ -794,7 +799,7 @@ export function GraphView({
             ) : preview.claim ? (
               (() => {
                 const c = preview.claim!;
-                const meta = statusMeta(c.status);
+                const meta = nodeStatusMeta(c.status);
                 const rel = c.relation ? RELATION[c.relation] : null;
                 return (
                   <>
@@ -806,8 +811,11 @@ export function GraphView({
                     </div>
                     <p className={styles.previewText}>{c.text}</p>
                     <div className={styles.previewRow}>
-                      <span className={`badge ${meta.cls}`}>
-                        <span className="badge-glyph">{meta.glyph}</span>{meta.label}
+                      {/* the dashed unassessed badge, not a status-coloured one:
+                          no verdict exists for this claim yet (#160) */}
+                      <span className={`badge ${c.status ? meta.cls : "unassessed"}`} title={meta.def}>
+                        {c.status && <span className="badge-glyph">{meta.glyph}</span>}
+                        {meta.label}
                       </span>
                       {/* Labelled and meterless: a bar here read as how true
                           the claim is, when the number is only how sure the
@@ -853,6 +861,10 @@ export function GraphView({
               {STATUS[s].label.toLowerCase()}
             </span>
           ))}
+          <span className={styles.legendItem} title={UNASSESSED_META.def}>
+            <span className={`${styles.legendGlyph} ${UNASSESSED_META.cls}`}>{UNASSESSED_META.glyph}</span>
+            unassessed
+          </span>
         </span>
         <span className={styles.legendRule} />
         <span className={styles.legendGroup}>

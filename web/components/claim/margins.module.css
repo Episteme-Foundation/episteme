@@ -156,6 +156,11 @@
   border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
   flex: none;
 }
+/* unassessed dependents: hollow dashed dot — pending, not a verdict (#160) */
+.dot:global(.st-unassessed) {
+  background: transparent;
+  border: 1px dashed var(--st-unassessed);
+}
 
 /* ----- right: assessment-history rail (below dependents) -----------------
    Reproduces the original Tufte sidenote voice (globals.css .sidenote): quiet
