@@ -16,9 +16,11 @@ export function getGraphToolDefinitions(): Tool[] {
     {
       name: "search_similar_claims",
       description:
-        "Search for existing claims in the knowledge graph that are " +
-        "semantically similar to a query. Use this to find claims that " +
-        "might match a new claim or subclaim before creating a new one.",
+        "Search the knowledge graph for claims semantically similar to a " +
+        "query. Use it to see the surrounding territory: related claims, " +
+        "rival explanations, how live the neighborhood is. It is retrieval, " +
+        "not identity: candidate lists inform judgment about whether a claim " +
+        "already exists, they never decide it.",
       input_schema: {
         type: "object" as const,
         properties: {

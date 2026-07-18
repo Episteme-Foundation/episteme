@@ -90,7 +90,7 @@ export function getStewardToolDefinitions(): Tool[] {
               "on, what the evidence shows, and for a contested claim where the " +
               "credible disagreement lies and what would resolve it. Let the length " +
               "follow the claim: a settled one may be two or three sentences, a " +
-              "genuinely contested or foundational one a few short paragraphs. Keep " +
+              "contested or foundational one a few short paragraphs. Keep " +
               "the machinery out of it: no tool or edge names (SUPPORTS/CONTRADICTS " +
               "edge), no importance numbers, no 'per the constitution', no first-" +
               "person 'I', and no narration of your own bookkeeping (merges, " +
@@ -114,8 +114,14 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "update_canonical_form",
       description:
-        "Update the canonical form (text) of a claim. Use when a contribution " +
-        "proposes a better formulation or when clarity requires adjustment.",
+        "Update the canonical form (text) of a claim. Wording is judged fresh " +
+        "on its merits (constitution §3): the shortest neutral statement of the " +
+        "proposition as actually debated, about fifteen words. The node's " +
+        "identity and history stay stable while its wording improves; never " +
+        "keep a worse form because it came first. Do not change what the claim " +
+        "IS: a rewording that different considerations would bear on is a " +
+        "different claim, and rewording into the negation would flip every " +
+        "recorded stance. Escalate those to the Curator instead.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -291,7 +297,7 @@ export function getStewardToolDefinitions(): Tool[] {
               "NOT logical necessity. A dependency can be maximally load-bearing " +
               "(the parent is false without it) yet LOW importance because nobody " +
               "disputes it — getting an uncontested fact right is free. Reserve " +
-              "high values for genuinely contested or consequential dependencies. " +
+              "high values for contested, consequential dependencies. " +
               "This orders the work queue AND (below a threshold) leaves the " +
               "subclaim an un-decomposed embedded stub, so score uncontested " +
               "bedrock low. Defaults to 0.5 if omitted.",
@@ -317,7 +323,9 @@ export function getStewardToolDefinitions(): Tool[] {
           claim_id: { type: "string", description: "The UUID of the claim" },
           importance: {
             type: "number",
-            description: "Importance score, 0 (peripheral) .. 1 (foundational)",
+            description:
+              "Importance score in [0, 1]. Anchor against constitution §19: " +
+              "~0.9 central, ~0.6 major, ~0.35 notable, ~0.15 minor/settled.",
           },
           reasoning: {
             type: "string",
