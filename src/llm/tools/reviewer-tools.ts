@@ -70,7 +70,7 @@ export function getReviewerToolDefinitions(): Tool[] {
             description:
               "Set true ONLY with a 'reject' decision when the contribution " +
               "shows deliberate abuse (spam, vandalism, sybil coordination, " +
-              "deliberate misinformation) — NOT for sincere contributions " +
+              "deliberate misinformation), NOT for sincere contributions " +
               "rejected on the merits. This flag has real consequences " +
               "(reputation penalty, pay-to-contribute standing) and is " +
               "appealable; when uncertain, reject without the flag or escalate.",

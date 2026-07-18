@@ -30,8 +30,9 @@ LLM client so calls are metered and priced like any agent call. It grades a
 sample of assessed claims and aggregates the two dimensions the rubric
 under-weights, plus assessment quality:
 
-- **claim-bar pass-rate** — share of sampled claims that are genuinely
-  contestable. A low rate means the Steward is decomposing settled claims into
+- **claim-bar pass-rate** — share of sampled claims that pass §2's claim bar:
+  single reusable propositions informed people could dispute with evidence or
+  reasons. A low rate means the Steward is decomposing settled claims into
   uncontestable textbook/bedrock nodes (over-decomposition, #98).
 - **importance alignment** — stored importance vs the judge's independent
   importance, and the share overrated by > 0.2. Catches importance tracking

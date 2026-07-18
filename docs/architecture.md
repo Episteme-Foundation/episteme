@@ -81,9 +81,11 @@ epistemic core, where `──<` reads "has many":
 A **claim** is the atomic unit: a proposition that can be true or false.
 Empirical claims (directly verifiable or derived), definitional, evaluative,
 causal, and normative claims are all represented the same way and all decompose
-into subclaims. Two formulations are the *same* claim if and only if they
-decompose identically; this is the basis for deduplication, and it extends to
-negation. A claim and its denial are one node, and each recorded appearance
+into subclaims. Two formulations are the *same* claim when they turn on the
+same considerations: nothing could count as evidence or argument bearing on one
+without bearing equally on the other (identical decomposition is a useful
+diagnostic, not the definition). This is the basis for deduplication, and it
+extends to negation. A claim and its denial are one node, and each recorded appearance
 carries a stance saying which side it takes.
 
 Each claim carries its canonical `text`, a `claim_type`, a lifecycle `state` (a
@@ -308,7 +310,8 @@ Ingestion runs three steps before governance takes over:
   searches the graph itself, under multiple framings including the negation,
   and decides match-or-create, recording the stance of the new appearance. It
   is also a **tool** the Steward and Curator call before creating anything. Two
-  claims match iff they decompose alike. If the Matcher cannot reach a decision
+  claims match when the same considerations bear on both; identical
+  decomposition is a diagnostic, not the test. If the Matcher cannot reach a decision
   within its iteration budget, it defaults to "novel, low confidence": the
   failure mode is a duplicate the Curator can merge, never a lost claim.
 - **Onboarding** is not an agent. A small dispatcher latches the new claim so
@@ -337,7 +340,7 @@ These act through tools over the life of a claim and the graph:
   per-run cap on newly minted subclaims backstops a single runaway pass.
 - **Curator** is the graph-level counterpart: it owns the connective tissue
   *between* claims, merging duplicates and counterparts the Matcher missed,
-  splitting conflated claims (§18), and suggesting cross-claim edges for the
+  splitting conflated claims (§5), and suggesting cross-claim edges for the
   owning Stewards to adopt. It runs on Steward escalations and on sampled
   sweeps of the neighborhood around newly created claims. Every structural
   operation lands in an append-only reconciliation log with enough payload to
@@ -351,9 +354,12 @@ These act through tools over the life of a claim and the graph:
   claim creation or extraction).
 - **Dispute Arbitrator** resolves escalations and appeals through careful
   adjudication, the highest-stakes governance call.
-- **Audit Agent** is quality control over the governance system itself: it
-  samples decisions (5% by default), adjusts reputation, and can suspend bad
-  actors.
+- **Audit Agent** is quality control over the governance system itself. Each
+  run is invoked with an audit type (a decision audit of specific review
+  decisions, a pattern analysis across recent ones, a contributor review, or an
+  anomaly investigation) and a free-text context saying what prompted it. It
+  flags issues, can send a decision back for fresh review, adjusts reputation,
+  and can suspend bad actors.
 
 One agent lives outside governance entirely. The **Extension Agent** is the
 read-only companion behind the browser extension: it judges the phrasings on a
