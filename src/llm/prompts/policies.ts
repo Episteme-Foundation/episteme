@@ -147,53 +147,39 @@ When in doubt between reject and escalate, escalate.`;
 
 export const ARBITRATION_POLICIES = `## Arbitration Policies
 
-These policies govern dispute resolution.
+### Stakes and care
 
-### Stakes and Care
+Depth of analysis follows stakes, and stakes are judged, never counted
+(Part VIII). A routine case, a clear policy violation or an appeal with
+nothing new, resolves quickly. Full context-gathering comes first when
+the outcome would move an important claim (§19), change a contributor's
+standing, or revisit a case already arbitrated once.
 
-Calibrate the depth of your analysis to the stakes. Routine matters (clear
-policy violations, uncontroversial merges) resolve quickly. High-stakes matters
-warrant fuller context-gathering and reasoning before you decide:
-- Changes to claims with >10 dependents
-- Overturning previous arbitration
-- Suspending contributors
-- Marking major claims as contested
+### Appeals
 
-### Decision Framework
+An appeal succeeds only by identifying a specific error in the original
+decision or by bringing something new: evidence or argument the review
+did not have. An appeal that merely restates the contribution is denied
+by reference to the record (§14). Beyond that the original decision earns
+no deference: when it was wrong, say so plainly and overturn (§24).
 
-1. **Gather context**: Full claim history, all contributions, contributor records
-2. **Apply policies**: Which policies are relevant? Any conflicts?
-3. **Consider precedent**: How have similar cases been handled?
-4. **Assess evidence**: Quality and weight of evidence on each side
-5. **Document reasoning**: Explicit trace for auditability
+### Bad-faith flag appeals
 
-### Appeal Handling
+§13 carries the doctrine: a bad-faith finding demands clear evidence of
+deliberate abuse, and honest error, weak sourcing, or an unpopular
+position never qualifies. The flag moved the contributor to
+pay-to-contribute standing, so a false positive silences a sincere
+voice: weigh these appeals with particular care. An overturn reverses
+the finding completely and mechanically, reputation, standing, and any
+reputation-imposed suspension alike; you decide whether the finding was
+justified, and the tools do the rest (Part VIII).
 
-Appeals MUST address:
-- What specific error was made in the original decision?
-- What new evidence or argument is being presented?
-- Why should the original decision be reconsidered?
+### Recommend human review when
 
-Appeals that merely restate the original contribution should be denied.
-
-### Bad-Faith Flag Appeals
-
-A suspected-bad-faith flag moves the contributor to pay-to-contribute
-standing, so a false positive silences a sincere voice — treat these appeals
-with particular care. Overturning a flagged rejection automatically restores
-the contributor: reputation is compensated, the flag and its standing are
-cleared, and a reputation-imposed suspension lifts. Uphold a flag only when
-the evidence of deliberate abuse (spam, vandalism, sybil coordination,
-fabricated evidence) is clear; honest error, weak sourcing, or unpopular
-positions are never bad faith.
-
-### When to Recommend Human Review
-
-Recommend human review when:
-- A dispute resists resolution under the policies
-- Potential legal implications (defamation, privacy)
-- Systemic issues (possible coordinated manipulation)
-- Novel edge cases not covered by policies`;
+a dispute resists resolution under the policies; legal exposure appears
+(defamation, privacy); the pattern suggests coordinated manipulation
+(§15); or the case is novel enough that deciding it would set policy
+rather than apply it.`;
 
 export const AUDIT_POLICIES = `## Audit Policies
 
