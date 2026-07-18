@@ -1,159 +1,193 @@
 # Episteme
 
-**LLMs as Epistemic Infrastructure**
+**LLMs as epistemic infrastructure.**
 
-Episteme is a system that uses large language models to build and maintain a global knowledge graph of claims, providing transparent provenance, decomposition, and validity assessment for any factual assertion on the internet.
+Episteme turns documents into a shared, queryable graph of claims. An LLM
+pipeline reads a source, pulls out the atomic claims it asserts, decides
+whether each already exists in the graph, decomposes it into the subclaims and
+arguments it rests on, and assesses its validity — with every judgment traced
+and open to challenge. The graph is live at [episteme.wiki](https://episteme.wiki),
+served by a public API at `api.claimgraph.io`, and reachable from a browser
+extension and an MCP server.
 
-## The Problem
+This repository contains the whole system: the API and agent pipeline, the web
+app, the extension, the evaluation harness, and the infrastructure.
 
-Current epistemic infrastructure is inadequate for the information age:
+## The idea
 
-- **Wikipedia** is valuable but limited to encyclopedia entries. It can't contextualize claims as you encounter them on other websites, and its editors must rely on secondary sources rather than evaluating primary evidence directly.
+Most epistemic tools work at the level of documents — an article is
+fact-checked, a page is encyclopedic. But disputes live at the level of
+*claims*, and the same claim recurs across thousands of documents. Episteme
+takes the claim as its atomic unit and does the expensive work once: a claim is
+extracted, canonicalized, decomposed, and assessed a single time, then reused
+everywhere it appears.
 
-- **Fact-checkers** are slow, have limited coverage, and are often politically contested. They can't scale to the volume of claims people encounter daily.
+A few commitments, argued in full in the [constitution](admin_constitution.md),
+shape everything downstream:
 
-- **Readers have no easy way** to understand what a claim actually rests on, where the real disagreements lie, or whether an apparent dispute is actually about facts, definitions, or values.
+- **Clarity over resolution.** The system's job is to make the structure of a
+  claim visible — what it rests on, where consensus exists, which
+  disagreements are empirical and which come down to values or definitions —
+  not to declare winners. A well-mapped unresolvable disagreement is a
+  success, not a failure.
 
-- **Most disagreements are confused**. People think they're arguing about facts when they're actually using different definitions, or they think they disagree on values when they actually disagree about empirical consequences.
+- **Decomposition, stopped by contestedness.** Claims decompose into subclaims
+  until they reach bedrock, and bedrock is where no informed person in the live
+  discourse would actually dispute the claim — not where it becomes logically
+  primitive. "Special relativity is empirically valid" is load-bearing for a
+  physics claim, but it is settled, so it is a leaf. Effort belongs on live
+  disagreements.
 
-## The Vision
+- **Identity by decomposition.** Two formulations are the same claim if and
+  only if they decompose identically — the basis for deduplication. A claim
+  and its denial are one node: they pose the same question, so the
+  disagreement is represented *on* the claim, with each recorded appearance
+  carrying a stance.
 
-Deploy LLMs as epistemic infrastructure across the internet:
+- **Arguments as structure.** A claim can have several independent lines of
+  reasoning for and against it ("God exists" has the cosmological argument,
+  the teleological argument, the argument from evil). Each is a named grouping
+  of subclaims with a short written form stating the inference. Arguments are
+  structural, never epistemic: whether an argument is *sound* is itself a
+  claim in the graph.
 
-- **Browser extension** that color-codes claims by validity as you read any webpage
-- **Click any claim** to see its provenance, decomposition into subclaims, and the full discourse around it
-- **Pre-computed, not hallucinated** — claims are processed systematically by dedicated LLM agents, not generated ad-hoc in response to queries
-- **Wikipedia-like openness** — anyone can contribute challenges, evidence, and improvements
-- **Transparent LLM judgment** — all reasoning is logged and auditable, more scalable and potentially less biased than human-only systems
+- **Honest uncertainty.** A claim's assessment is one of six statuses —
+  `verified`, `supported`, `contested`, `unsupported`, `contradicted`,
+  `unknown` — never a binary, and every assessment carries a reasoning trace
+  explaining how the verdict was reached.
 
-## Core Insight: Claims as Primitive
+- **Effort proportional to importance.** Not every claim deserves the full
+  treatment. Each claim carries an importance score — roughly
+  consequence-if-wrong × contestability — and stewardship drains in importance
+  order, so the most consequential claims are structured and assessed first
+  while minor ones wait as searchable stubs.
 
-The system is built on a simple but powerful ontology:
+- **Openness.** Anyone can contribute — challenges, evidence, merge and split
+  proposals, new arguments — and contributions flow through reviewed,
+  appealable governance with the reasoning on the public record.
 
-**Claims** are the atomic unit. A claim is a proposition that can be true or false. "The Earth is approximately 4.5 billion years old" is a claim. "We should raise the minimum wage" is also a claim (a normative one).
-
-**Two formulations are the same claim if they decompose identically.** This is the key insight for deduplication. "Inflation was high in 2022" and "prices rose significantly in 2022" might be the same claim or different claims depending on whether they decompose into the same subclaims.
-
-**Every claim decomposes into subclaims** until hitting one of three types of bedrock:
-
-1. **Verified facts** — "The Bureau of Labor Statistics reported CPI of 6.5% for 2022" — checkable against primary sources, no serious dispute
-2. **Contested empirical questions** — Evidence exists but experts disagree on interpretation
-3. **Fundamental value premises** — "Individual liberty matters more than collective welfare" — not resolvable by data, but can be made explicit
-
-**The system's job is to make this structure visible**, not to adjudicate everything. When you see a claim like "the economy is doing well," the system shows you:
-- What that claim actually depends on (GDP growth? unemployment? wage growth? inequality?)
-- Which of those subclaims are settled vs contested
-- Where disagreement is truly about values vs where it's about empirical facts that could in principle be resolved
-
-## Why This Is Tractable
-
-This might sound impossibly ambitious, but several factors make it feasible:
-
-**The universe of claims is smaller than it seems.** There's enormous redundancy in what gets written. The same claims appear in thousands of articles. Once you've decomposed "inflation was high in 2022" once, that work applies everywhere the claim appears.
-
-**LLMs are remarkably cheap.** Maintaining an LLM "admin" for millions of claims is economically viable. The hard work is done once during ingestion; serving queries against the built graph is inexpensive.
-
-**Vector search + LLM judgment enables matching at scale.** When new text comes in, vector embeddings find the top candidate matches, then an LLM makes the final determination. This combines the speed of embedding search with the judgment quality of language models.
-
-**LLMs can read primary sources.** Unlike Wikipedia editors who must rely on secondary sources (they can't personally replicate experiments or audit statistics), LLMs can actually examine primary data, statistical methodologies, and research papers directly.
-
-## What Success Looks Like
-
-Given any claim, the system produces:
-
-- **Decomposition tree** — what subclaims this claim depends on
-- **Assessment status** — verified, supported, contested, unsupported, contradicted, or unknown
-- **Evidence links** — where each subclaim is supported or contradicted
-- **Discourse history** — all contributions, challenges, and resolutions
-- **Reasoning traces** — exactly why the system reached its conclusions
-
-This is valuable whether the claim is "the Earth is 4.5 billion years old" (verified, based on radiometric dating that decomposes into well-established physics) or "we should close the border" (decomposes into contested empirical claims about effects plus explicit value premises about what matters).
-
-## Architecture Overview
+## How it works
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        APPLICATIONS                              │
-│  Browser Extension  │  Claim Browser UI  │  API Consumers       │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                          API LAYER                               │
-│  Claims  │  Search  │  Contributions  │  Validation             │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      GOVERNANCE LAYER                            │
-│  Claim Steward  │  Contribution Reviewer  │  Dispute Arbitrator │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      PROCESSING LAYER                            │
-│  Extractor  │  Matcher  │  Decomposer  │  Assessor              │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       STORAGE LAYER                              │
-│        PostgreSQL + pgvector (unified data + vector store)       │
-└─────────────────────────────────────────────────────────────────┘
+   SOURCE               INGESTION                    GRAPH
+ ┌─────────┐   ┌───────────────────────────┐   ┌───────────┐
+ │ URL or  │──▶│ Extractor → Matcher →     │──▶│ Postgres  │
+ │ document│   │ onboard → Claim Steward   │   │ + pgvector│
+ └─────────┘   └───────────────────────────┘   └─────┬─────┘
+                                                     │ read
+   GOVERNANCE (ongoing)                              ▼
+ ┌──────────────────────────────────────┐      ┌───────────┐     web ·
+ │ Claim Steward (decompose + assess) · │◀────▶│    API    │──▶  extension ·
+ │ Curator · Contribution Reviewer ·    │      │ (Fastify) │     MCP clients
+ │ Dispute Arbitrator · Audit Agent     │      └───────────┘
+ └──────────────────────────────────────┘
 ```
 
-### LLM Agents
+Ingestion is the expensive, write-side work; serving is cheap, with no LLM in
+the read path. The graph is maintained by a small organization of LLM agents,
+each bound by the constitution, each with a bounded domain:
 
-The system uses eight specialized LLM agents for different tasks:
+- **Extractor** reads a source and surfaces the discrete, reusable claims it
+  asserts — deliberately selective: the claims a reader would want checked,
+  not every sentence.
+- **Matcher** is the identity gate. For each proposed claim it searches the
+  graph agentically — under multiple framings, including the negation — and
+  decides match-or-create. It is also a tool the other agents call before
+  creating anything.
+- **Claim Steward** owns a single claim end to end: it decomposes it,
+  maintains its canonical form and arguments, sets its importance, and
+  assesses it — re-judging as evidence and depended-on claims change.
+  Decomposing and assessing are one open-ended judgment, so they belong to one
+  owner, not to fire-once scorers.
+- **Curator** owns the connective tissue *between* claims: merging duplicates
+  the Matcher missed, splitting conflations, proposing cross-claim edges. It
+  never overrides a Steward's verdict.
+- **Contribution Reviewer**, **Dispute Arbitrator**, and **Audit Agent** run
+  governance: policy review of incoming contributions, adjudication of
+  escalations and appeals, and sampled quality control over the system's own
+  decisions.
+- **Extension Agent** lives outside governance, behind the browser extension:
+  it judges on-page phrasings against graph state and powers the in-page chat.
+  It never writes to the graph.
 
-- **Extractor** — Identifies claims in documents
-- **Matcher** — Determines if a claim matches an existing canonical form or is new
-- **Claim Steward** — Owns each claim: decomposes it, maintains its canonical form, and assesses it over time (there is no separate Decomposer or Assessor)
-- **Curator** — Owns the structure between claims: merges duplicates, splits conflations, and proposes cross-claim edges
-- **Contribution Reviewer** — Evaluates community contributions against policies
-- **Dispute Arbitrator** — Resolves escalated disputes and appeals
-- **Audit Agent** — Reviews system decisions for quality and consistency
-- **Extension Agent** — Lives with the browser extension (never edits the graph): judges how on-page phrasings relate to graph state and powers the in-page chat — see [extension/](extension/)
+Model choice follows the stakes of the judgment: matching is a saturating task
+and runs on Claude Haiku; the load-bearing epistemic work — stewardship,
+structural adjudication, arbitration, audit — runs on the strongest available
+Claude models. Model ids are centralized in [`src/llm/models.ts`](src/llm/models.ts).
 
-### Governance Model
+The full picture — domain model, assessment semantics, queues and failure
+handling, persistence, serving surfaces — is in
+[docs/architecture.md](docs/architecture.md).
 
-Episteme follows Wikipedia-inspired principles adapted for LLM-native operation:
+## Surfaces
 
-- **Anyone can contribute** — challenges, evidence, merge proposals
-- **Transparent reasoning** — all agent decisions include full reasoning traces
-- **Policy-based evaluation** — contributions are judged against explicit, documented policies
-- **Human escalation path** — truly contested issues can be flagged for human review
+- **Web app** — [episteme.wiki](https://episteme.wiki), a Next.js app for
+  browsing claims, decomposition trees, arguments, assessments, and
+  contribution history.
+- **API** — Fastify at `api.claimgraph.io`. Reads are public; anything that
+  writes or spends model tokens requires a key. Interactive OpenAPI docs at
+  `/docs` on the API host.
+- **Browser extension** — reads the page with you, underlining each recognized
+  claim by what the graph knows about it, with a chat grounded in the graph.
+  Built with Plasmo; see [extension/](extension/).
+- **MCP server** — remote MCP over streamable HTTP at `POST /mcp`, with OAuth
+  2.1 so hosted clients (such as Claude.ai) can connect. Tools for searching
+  and reading the graph, running the pipeline's judgments, and contributing.
+  See [docs/mcp.md](docs/mcp.md).
 
-## Technology Stack
+## Repository layout
 
-| Component | Technology |
-|-----------|------------|
-| Language | TypeScript (Node.js) |
-| API | Fastify |
-| Database | PostgreSQL + pgvector (Drizzle ORM) |
-| Queue | AWS SQS (in-memory for local dev) |
-| LLM | Anthropic Claude (Anthropic Messages API) |
-| Infrastructure | AWS CDK (ECS Fargate, RDS, SQS) |
-| Frontend | React + TypeScript |
-| Browser Extension | Plasmo — in [extension/](extension/) |
-| Accounts & metering | One identity for users & contributors, hashed API keys, per-token LLM meter — see [docs/accounts.md](docs/accounts.md) |
-| MCP | Remote MCP server (streamable HTTP) exposing the claim graph to MCP clients — see [docs/mcp.md](docs/mcp.md) |
-| Graph epochs | Claims are stamped with the pipeline era that minted them; superseded cohorts are archived, not deleted — see [docs/graph-epochs.md](docs/graph-epochs.md) |
+| Path | Contents |
+|------|----------|
+| [`src/`](src/) | The API (Fastify), the agent pipeline (`llm/`, `workers/`), services, and the Drizzle schema (`db/`) |
+| [`web/`](web/) | The Next.js web app deployed at episteme.wiki |
+| [`extension/`](extension/) | The Plasmo browser extension |
+| [`corpus/`](corpus/) | The evaluation harness: pinned document clusters, scoring rubric, LLM-judge scoring |
+| [`docs/`](docs/) | Architecture, policies, MCP, accounts, reputation, graph epochs, infrastructure |
+| [`infra/`](infra/) | AWS CDK stacks (ECS Fargate, RDS PostgreSQL, SQS) |
+| [`admin_constitution.md`](admin_constitution.md) | The constitution every administrator agent is bound by |
 
-## Project Status
+## Running locally
 
-This project is in early development. See the [implementation plan](/.claude/plans/) for current progress and roadmap.
+The whole pipeline runs on a laptop: docker-compose provides Postgres with
+pgvector, and the job queue runs in-memory with handlers identical to the SQS
+ones used in production. You need Node.js 20+, Docker, an Anthropic API key
+(agents), and an OpenAI API key (embeddings).
+
+```bash
+docker compose up -d          # Postgres + pgvector
+cp .env.example .env          # fill in ANTHROPIC_API_KEY and OPENAI_API_KEY
+npm install
+npm run db:migrate
+npm run dev                   # API + workers on :3000
+```
+
+`npm test` runs the unit tests; `npm run typecheck` checks types.
+
+## Evaluation
+
+Agent changes are graded, not eyeballed. The corpus harness runs the real
+application over pinned clusters of source documents, drains the pipeline to
+quiescence, and has an LLM judge — deliberately a different model from the
+agent under test — score the resulting graph against the constitution. Runs
+are compared release over release. See [corpus/](corpus/).
 
 ## Contributing
 
-Episteme is designed to be open to contributions, both to its codebase and (eventually) to its knowledge graph. Guidelines for contribution will be published as the project matures.
+Two graphs accept contributions here. The knowledge graph is open now: submit
+challenges, evidence, and proposals through the web app, API, or MCP server,
+and they flow through the reviewed governance pipeline described above. For
+the codebase, issues and pull requests are welcome — start with
+[docs/architecture.md](docs/architecture.md) to get oriented.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 *"The owl of Minerva spreads its wings only with the falling of the dusk."* — Hegel
 
-Episteme aims to change that. With LLMs as epistemic infrastructure, we can understand claims as they're made, not only in retrospect.
+Understanding, Hegel thought, arrives only in retrospect. Episteme is an
+attempt to do better: to map claims as they are made, not after the dust has
+settled.
