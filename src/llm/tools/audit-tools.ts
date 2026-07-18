@@ -1,8 +1,8 @@
 /**
  * Action tools for the Audit Agent.
  *
- * These let the audit agent flag issues, recommend re-reviews,
- * and adjust contributor reputation.
+ * These let the audit agent flag issues, recommend re-reviews, adjust
+ * contributor reputation, and manage contributor suspensions.
  */
 import type Anthropic from "@anthropic-ai/sdk";
 type Tool = Anthropic.Tool;
@@ -19,8 +19,8 @@ export function getAuditToolDefinitions(): Tool[] {
     {
       name: "flag_issue",
       description:
-        "Flag a quality issue found during audit. Records the finding " +
-        "for tracking and follow-up.",
+        "Flag a quality issue found during audit, with severity, " +
+        "category, evidence, and a recommended action.",
       input_schema: {
         type: "object" as const,
         properties: {
