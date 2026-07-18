@@ -30,7 +30,7 @@ Analysis and chat run against your Episteme account:
 
 1. Sign in at [episteme.wiki](https://episteme.wiki) and create an API key
    under [Account · API keys](https://episteme.wiki/account). Keys look like
-   `ek_…`.
+   `epk_…`.
 2. Click the extension icon and open its **Settings** tab.
 3. Set the API base URL to `https://api.claimgraph.io` and paste your key.
 

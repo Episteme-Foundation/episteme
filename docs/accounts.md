@@ -1,6 +1,6 @@
 # Accounts, API keys & usage metering
 
-Implementation of [issue #70](https://github.com/jacksonqueenking/episteme/issues/70):
+Implementation of [issue #70](https://github.com/Episteme-Foundation/episteme/issues/70):
 one identity for users and contributors, dashboard-managed API keys, and a
 per-token meter under every LLM call. It deliberately stops short of payments —
 but the meter is shaped so Stripe usage-based credits drop in as configuration,

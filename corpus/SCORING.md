@@ -22,8 +22,8 @@ is unit-tested with fixtures (`tests/unit/scripts/corpus-metrics.test.ts`):
 | F assessment | status distribution, % with a substantive trace, mean trace length |
 | importance | mean, histogram, and mean importance of **atomic vs compound** claims |
 
-The depth walk memoizes and cycle-guards, so a shared-subclaim DAG does **not**
-explode the way the tree-rendering CTE does.
+The depth walk memoizes and cycle-guards, so it counts each unique node in the
+DAG exactly once — shared subclaims are **not** double-counted.
 
 **Judged (bounded LLM sample)** — `scripts/corpus/judge.ts`, run through the real
 LLM client so calls are metered and priced like any agent call. It grades a

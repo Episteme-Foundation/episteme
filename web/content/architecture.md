@@ -264,7 +264,7 @@ useless.
 
 Instead, the Steward weighs the status of subclaims across all arguments, the
 *materiality* of each subclaim to the parent's truth, and the strength of each
-argument as a whole, and documents the result in its reasoning trace. The
+argument as a whole, and documents the result in its reasoning. The
 Steward prompt gives guidance and worked examples rather than rules, and is
 explicit: *do not mechanically propagate status changes; assess materiality
 first.*
@@ -420,9 +420,13 @@ engine carry vector search and full-text search without a second system to
 operate.
 
 Tree-building (`src/services/tree-service.ts`) walks the relationship table
-with a recursive CTE and carries each edge's `argument_id`, `argument_name`,
-`argument_stance`, and `argument_content` onto the node, so a client can group
-a claim's children by argument and render each argument's written form.
+level by level with a visited set, so each node and edge is fetched exactly
+once even where shared subclaims give the DAG a diamond shape. The walk is
+bounded by a cap of 500 nodes per response (`MAX_TREE_NODES`); children
+dropped by the cap are flagged on their parent (`children_truncated`), never
+silently. Each edge's `argument_id`, `argument_name`, `argument_stance`, and
+`argument_content` are carried onto the node, so a client can group a claim's
+children by argument and render each argument's written form.
 
 ### Schema at a glance
 
@@ -453,8 +457,11 @@ embedding range. The two signals are deliberately not blended into one score;
 results are ordered by cosine similarity, with keyword rank as a tiebreak, and
 keyword matching serves to widen recall. If embedding generation fails, search
 degrades to keyword-only. Every path serves only active, unmerged claims. This
-same hybrid search is what the Matcher uses to find candidate existing claims
-before making its final judgment.
+hybrid search serves the public search API, the MCP `search_claims` tool, and
+the agents' general search tool. The Matcher's candidate retrieval is the
+exception: it uses embedding similarity alone, with a deliberately low floor,
+and widens recall by re-searching under multiple framings rather than by
+keyword rank.
 
 ---
 
@@ -491,12 +498,16 @@ and the key lives in the extension's background worker, never in the page.
 ### MCP
 
 A remote MCP server, speaking streamable HTTP at `POST /mcp` on the API host,
-exposes the graph to agentic clients under the same keys and quotas: tools for
-searching and reading claims (`search_claims`, `get_claim`,
+exposes the graph to agentic clients under the same accounts and quotas: tools
+for searching and reading claims (`search_claims`, `get_claim`,
 `get_decomposition`), for the pipeline's judgments (`match_claim`,
 `extract_claims`, `assess_text`), and for contributing
 (`submit_contribution`, `get_contribution_status`), plus claim resources and
-fact-checking prompts.
+fact-checking prompts. Clients authenticate with an API key or via the OAuth
+2.1 authorization flow — the API acts as an authorization server for the
+`/mcp` resource, handing sign-in and consent to the web app — which is what
+lets hosted clients such as Claude.ai connect. Every call is attributed to an
+account either way.
 
 ---
 

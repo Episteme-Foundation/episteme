@@ -342,7 +342,7 @@ function SettingsPane({
           type="password"
           value={settings.apiKey}
           onChange={(e) => void update({ apiKey: e.target.value })}
-          placeholder="ek_…"
+          placeholder="epk_…"
         />
       </label>
       <p className="muted">
