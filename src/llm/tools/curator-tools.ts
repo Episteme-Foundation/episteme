@@ -1,6 +1,6 @@
 /**
  * Action tools for the Curator — the graph-level agent that owns the connective
- * tissue between claims (constitution Part VII, §18).
+ * tissue between claims (constitution Part VIII; merges and splits per §5).
  *
  * Two kinds of action:
  *  - **Re-individuation surgery** (merge/split): the Curator mutates nodes, edges,
@@ -68,7 +68,10 @@ export function getCuratorToolDefinitions(): Tool[] {
         type: "object" as const,
         properties: {
           text: { type: "string", description: "Canonical text of the new claim" },
-          claim_type: { type: "string", description: "Claim type (optional)" },
+          claim_type: {
+            type: "string",
+            description: "Claim type (optional; defaults to empirical_derived)",
+          },
         },
         required: ["text"],
       },
