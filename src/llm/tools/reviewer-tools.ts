@@ -33,7 +33,11 @@ export function getReviewerToolDefinitions(): Tool[] {
       name: "record_review_decision",
       description:
         "Record your review decision for a contribution. This writes the " +
-        "decision to the database and updates the contribution's review status.",
+        "decision to the database and updates the contribution's review " +
+        "status. Accepting an intake contribution (propose_claim, " +
+        "propose_source) also materializes it here: the Matcher decides " +
+        "identity, then the claim is created or the source queued for " +
+        "extraction, and the outcome is reported in the tool result.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -58,14 +62,15 @@ export function getReviewerToolDefinitions(): Tool[] {
             type: "array",
             items: { type: "string" },
             description:
-              "Policy codes cited (e.g. VERIFIABILITY, SOURCE_HIERARCHY, CHARITABLE_INTERPRETATION)",
+              "Policy codes cited (e.g. V, ND, CI, GF), plus constitution " +
+              "sections where relevant",
           },
           suspected_bad_faith: {
             type: "boolean",
             description:
               "Set true ONLY with a 'reject' decision when the contribution " +
               "shows deliberate abuse (spam, vandalism, sybil coordination, " +
-              "deliberate misinformation) — NOT for sincere contributions " +
+              "deliberate misinformation), NOT for sincere contributions " +
               "rejected on the merits. This flag has real consequences " +
               "(reputation penalty, pay-to-contribute standing) and is " +
               "appealable; when uncertain, reject without the flag or escalate.",
@@ -89,9 +94,11 @@ export function getReviewerToolDefinitions(): Tool[] {
     {
       name: "escalate_to_arbitrator",
       description:
-        "Escalate a contribution to the dispute arbitrator for further " +
-        "review. Use when uncertain, when stakes are high, or when the " +
-        "situation requires deeper adjudication.",
+        "Place a contribution in the dispute arbitrator's queue. Use when " +
+        "uncertain, when stakes are high, or when the situation requires " +
+        "deeper adjudication. This call is what enqueues arbitration; also " +
+        "record the review itself with record_review_decision (decision " +
+        "'escalate'), whose reasoning is what the arbitrator reads.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -111,7 +118,9 @@ export function getReviewerToolDefinitions(): Tool[] {
       name: "notify_claim_steward",
       description:
         "Notify the claim steward that a claim may need attention due to " +
-        "a contribution being accepted or other change.",
+        "a contribution being accepted or other change. Not for accepted " +
+        "intake contributions: those enqueue their own follow-on work " +
+        "during record_review_decision.",
       input_schema: {
         type: "object" as const,
         properties: {

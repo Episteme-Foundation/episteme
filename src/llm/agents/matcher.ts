@@ -75,10 +75,11 @@ async function matchClaimImpl(input: {
     name: "search_similar_claims",
     description:
       "Search existing claims by semantic similarity. Returns the top matches " +
-      "ranked by similarity (NOT thresholded — low-scoring results are still " +
-      "shown for your judgment). Call this multiple times with different framings " +
-      "of the claim — its wording, paraphrases, and especially its NEGATION — " +
-      "before concluding the claim is novel.",
+      "ranked by similarity, above only a low floor that trims noise; results " +
+      "are retrieval for your judgment, not a decision. A true counterpart can " +
+      "score low or miss the floor under one framing, so call this multiple " +
+      "times with different framings of the claim (its wording, paraphrases, " +
+      "and especially its NEGATION) before concluding the claim is novel.",
     input_schema: {
       type: "object" as const,
       properties: {

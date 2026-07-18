@@ -90,7 +90,7 @@ export function getStewardToolDefinitions(): Tool[] {
               "on, what the evidence shows, and for a contested claim where the " +
               "credible disagreement lies and what would resolve it. Let the length " +
               "follow the claim: a settled one may be two or three sentences, a " +
-              "genuinely contested or foundational one a few short paragraphs. Keep " +
+              "contested or foundational one a few short paragraphs. Keep " +
               "the machinery out of it: no tool or edge names (SUPPORTS/CONTRADICTS " +
               "edge), no importance numbers, no 'per the constitution', no first-" +
               "person 'I', and no narration of your own bookkeeping (merges, " +
@@ -103,8 +103,8 @@ export function getStewardToolDefinitions(): Tool[] {
               "The transparent audit detail behind the verdict, shown secondary to " +
               "the assessment (behind a disclosure). Lay out the specific evidence, " +
               "source instances, and how the material subclaims weigh. This is about " +
-              "the CLAIM'S TRUTH — keep structural bookkeeping out of it. Refer to " +
-              "subclaims by their text (quoted or paraphrased), never by bare UUID — " +
+              "the CLAIM'S TRUTH: keep structural bookkeeping out of it. Refer to " +
+              "subclaims by their text (quoted or paraphrased), never by bare UUID; " +
               "ids are opaque to the human readers this trace exists for.",
           },
         },
@@ -114,8 +114,14 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "update_canonical_form",
       description:
-        "Update the canonical form (text) of a claim. Use when a contribution " +
-        "proposes a better formulation or when clarity requires adjustment.",
+        "Update the canonical form (text) of a claim. Wording is judged fresh " +
+        "on its merits (constitution §3): the shortest neutral statement of the " +
+        "proposition as actually debated, about fifteen words. The node's " +
+        "identity and history stay stable while its wording improves; never " +
+        "keep a worse form because it came first. Do not change what the claim " +
+        "IS: a rewording that different considerations would bear on is a " +
+        "different claim, and rewording into the negation would flip every " +
+        "recorded stance. Escalate those to the Curator instead.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -138,7 +144,7 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "add_argument",
       description:
-        "Create a named argument (a line of reasoning) on a claim — a grouping " +
+        "Create a named argument (a line of reasoning) on a claim: a grouping " +
         "that subclaims attach to. Use when distinct for/against lines of reasoning " +
         "exist; pass the returned argument_id to add_relationship_edge / " +
         "add_decomposition_edge to group subclaims under it. The description is a " +
@@ -174,11 +180,11 @@ export function getStewardToolDefinitions(): Tool[] {
       description:
         "Write (or revise) an argument's written form: a brief, logically " +
         "straightforward prose statement of HOW its subclaims combine to bear on " +
-        "the claim — the inferential step the grouping alone leaves implicit. " +
+        "the claim, the inferential step the grouping alone leaves implicit. " +
         "1–3 sentences, e.g. 'Because [[claim:<uuid>]] and [[claim:<uuid>]], and " +
         "given [[claim:<uuid>]], the claim follows.' Reference EVERY subclaim in " +
         "the argument inline as [[claim:<uuid>]] (or [[claim:<uuid>|inline " +
-        "phrasing]] when grammar needs it) — links resolve to the claims' " +
+        "phrasing]] when grammar needs it); links resolve to the claims' " +
         "canonical text at render time. The written form is structural, not " +
         "epistemic: state the inference, never a verdict on whether it holds. " +
         "Call this after attaching the argument's subclaim edges; call it again " +
@@ -205,7 +211,7 @@ export function getStewardToolDefinitions(): Tool[] {
       description:
         "Attach an EXISTING claim as a subclaim, by id. Use this when match_claim " +
         "found that the dependency you want already exists (as itself, a rewording, " +
-        "or its negation) — link it instead of minting a duplicate. Edges to your " +
+        "or its negation): link it instead of minting a duplicate. Edges to your " +
         "claim's decomposition are yours to own.",
       input_schema: {
         type: "object" as const,
@@ -248,7 +254,7 @@ export function getStewardToolDefinitions(): Tool[] {
       name: "add_decomposition_edge",
       description:
         "Create a NEW subclaim and attach it to a claim's decomposition. Use only " +
-        "after match_claim confirms the proposition does NOT already exist — " +
+        "after match_claim confirms the proposition does NOT already exist; " +
         "otherwise use add_relationship_edge to link the existing claim.",
       input_schema: {
         type: "object" as const,
@@ -287,11 +293,11 @@ export function getStewardToolDefinitions(): Tool[] {
             type: "number",
             description:
               "How much it is worth spending scarce intelligence to get this " +
-              "subclaim right, 0..1 — roughly consequence-if-wrong × contestability, " +
+              "subclaim right, 0..1: roughly consequence-if-wrong × contestability, " +
               "NOT logical necessity. A dependency can be maximally load-bearing " +
               "(the parent is false without it) yet LOW importance because nobody " +
-              "disputes it — getting an uncontested fact right is free. Reserve " +
-              "high values for genuinely contested or consequential dependencies. " +
+              "disputes it: getting an uncontested fact right is free. Reserve " +
+              "high values for contested, consequential dependencies. " +
               "This orders the work queue AND (below a threshold) leaves the " +
               "subclaim an un-decomposed embedded stub, so score uncontested " +
               "bedrock low. Defaults to 0.5 if omitted.",
@@ -303,7 +309,7 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "set_claim_importance",
       description:
-        "Set a claim's importance (0..1) — how much it is worth spending scarce " +
+        "Set a claim's importance (0..1): how much it is worth spending scarce " +
         "intelligence to get it right (roughly consequence-if-wrong × " +
         "contestability), NOT mere logical load-bearing-ness. A revisable judgment " +
         "that scales effort and orders the work queue. Local dependents are only a " +
@@ -317,7 +323,9 @@ export function getStewardToolDefinitions(): Tool[] {
           claim_id: { type: "string", description: "The UUID of the claim" },
           importance: {
             type: "number",
-            description: "Importance score, 0 (peripheral) .. 1 (foundational)",
+            description:
+              "Importance score in [0, 1]. Anchor against constitution §19: " +
+              "~0.9 central, ~0.6 major, ~0.35 notable, ~0.15 minor/settled.",
           },
           reasoning: {
             type: "string",
@@ -375,7 +383,7 @@ export function getStewardToolDefinitions(): Tool[] {
     {
       name: "escalate_to_curator",
       description:
-        "Flag a graph-level structural concern for the Curator — e.g. this claim " +
+        "Flag a graph-level structural concern for the Curator, e.g. this claim " +
         "looks like a duplicate/counterpart of another, conflates two distinct " +
         "claims (should be split), or should be linked to a related claim. " +
         "Individuation (merge/split) and cross-claim edges are the Curator's domain, " +
@@ -414,7 +422,7 @@ export async function executeStewardTool(
         const status = String(input.status).toLowerCase();
         const confidence = input.confidence as number;
         // Optional: only recorded where a probability of truth is meaningful
-        // (constitution §7). null, not 0 — "no credence stated" is a distinct
+        // (constitution §10). null, not 0 — "no credence stated" is a distinct
         // signal from "credence that the claim is false".
         const claimCredence =
           typeof input.claim_credence === "number" ? input.claim_credence : null;
@@ -559,7 +567,7 @@ export async function executeStewardTool(
             success: false,
             message:
               `Written form is ${content.length} chars; keep it under 1000. ` +
-              `State the inference in 1–3 sentences — detail belongs in the ` +
+              `State the inference in 1–3 sentences; detail belongs in the ` +
               `subclaims themselves.`,
           });
         }
@@ -570,7 +578,7 @@ export async function executeStewardTool(
             success: false,
             message:
               "The written form must reference the argument's subclaims inline " +
-              "as [[claim:<uuid>]] — a written form with no links is just a " +
+              "as [[claim:<uuid>]]; a written form with no links is just a " +
               "longer label.",
           });
         }
@@ -738,7 +746,7 @@ export async function executeStewardTool(
           message:
             `Added subclaim to ${parentId}: "${childText}" (${relation})` +
             (gated
-              ? ` — kept as a deferred embedded stub (importance ` +
+              ? `; kept as a deferred embedded stub (importance ` +
                 `${effectiveImportance} below the decomposition threshold ` +
                 `${stewardEnqueueMinImportance}); not recursively decomposed.`
               : ""),

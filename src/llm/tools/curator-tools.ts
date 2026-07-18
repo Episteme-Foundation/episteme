@@ -1,6 +1,6 @@
 /**
  * Action tools for the Curator — the graph-level agent that owns the connective
- * tissue between claims (constitution Part VII, §18).
+ * tissue between claims (constitution Part VIII; merges and splits per §5).
  *
  * Two kinds of action:
  *  - **Re-individuation surgery** (merge/split): the Curator mutates nodes, edges,
@@ -39,7 +39,7 @@ export function getCuratorToolDefinitions(): Tool[] {
         "Matcher missed, or a counterpart). Moves the loser's instances, arguments, " +
         "and edges onto the survivor and marks the loser a merged alias. Set " +
         "stance_relation='opposed' when the loser is the survivor's negation/" +
-        "counterpart — moved instance/argument stances are then flipped. After " +
+        "counterpart; moved instance/argument stances are then flipped. After " +
         "merging, notify the survivor's Steward to reconcile wording/arguments and " +
         "re-assess.",
       input_schema: {
@@ -68,7 +68,10 @@ export function getCuratorToolDefinitions(): Tool[] {
         type: "object" as const,
         properties: {
           text: { type: "string", description: "Canonical text of the new claim" },
-          claim_type: { type: "string", description: "Claim type (optional)" },
+          claim_type: {
+            type: "string",
+            description: "Claim type (optional; defaults to empirical_derived)",
+          },
         },
         required: ["text"],
       },
@@ -78,7 +81,7 @@ export function getCuratorToolDefinitions(): Tool[] {
       description:
         "Add an edge between two existing claims as part of a merge/split surgery. " +
         "For steady-state suggestions into a claim you are not reconciling, use " +
-        "suggest_edge_to_steward instead — routine edges are the parent Steward's.",
+        "suggest_edge_to_steward instead: routine edges are the parent Steward's.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -126,7 +129,7 @@ export function getCuratorToolDefinitions(): Tool[] {
     {
       name: "suggest_edge_to_steward",
       description:
-        "Propose a structural edge into a claim you are NOT reconciling — routine " +
+        "Propose a structural edge into a claim you are NOT reconciling: routine " +
         "decomposition edges are owned by the parent claim's Steward. This enqueues " +
         "the parent's Steward to consider adopting the edge; it does not write it.",
       input_schema: {
@@ -144,8 +147,8 @@ export function getCuratorToolDefinitions(): Tool[] {
       name: "notify_steward",
       description:
         "Hand a claim to its Steward after surgery, with instructions (e.g. 'I " +
-        "merged X into you — reconcile the flipped arguments and re-assess', or 'you " +
-        "were split from Y — re-derive your decomposition'). Always do this after a " +
+        "merged X into you, reconcile the flipped arguments and re-assess', or 'you " +
+        "were split from Y, re-derive your decomposition'). Always do this after a " +
         "merge or split.",
       input_schema: {
         type: "object" as const,

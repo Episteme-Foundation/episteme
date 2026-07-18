@@ -1,11 +1,12 @@
 /**
  * Reconciliation operations: the data layer for the Curator's re-individuation
- * surgery (constitution §18). Merges combine two claims into one; splits break a
+ * surgery (constitution §5). Merges combine two claims into one; splits break a
  * conflated claim apart. These mutate nodes, edges, and instances directly — that
  * is the operation.
  *
  * Every operation is recorded in `reconciliation_events` with a payload detailed
- * enough to **reverse** it (§18: "logged and reversible"). `reverseReconciliation`
+ * enough to **reverse** it (§5: every operation is logged, and reversal restores
+ * the prior structure without erasing history). `reverseReconciliation`
  * undoes a logged event.
  */
 import { getDb, rawQuery } from "../db/client.js";

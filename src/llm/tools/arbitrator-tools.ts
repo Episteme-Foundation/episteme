@@ -27,8 +27,12 @@ export function getArbitratorToolDefinitions(): Tool[] {
     {
       name: "record_arbitration_decision",
       description:
-        "Record your arbitration decision. This writes the outcome to the " +
-        "database and updates the contribution/appeal status.",
+        "Record your arbitration decision. This writes the outcome, updates " +
+        "the contribution and appeal status, and on an overturn applies the " +
+        "consequences mechanically: the contributor is restored (reputation, " +
+        "standing, any reputation-imposed suspension) and an intake " +
+        "contribution is materialized through the Matcher, with the results " +
+        "reported in the tool result.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -38,7 +42,10 @@ export function getArbitratorToolDefinitions(): Tool[] {
           },
           appeal_id: {
             type: "string",
-            description: "The UUID of the appeal, if this is an appeal arbitration",
+            description:
+              "The UUID of the appeal, if this is an appeal arbitration. " +
+              "Always include it when one was given: recording the decision " +
+              "with this id is what resolves the appeal.",
           },
           outcome: {
             type: "string",

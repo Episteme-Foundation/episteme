@@ -24,17 +24,17 @@ How to use it: read the run report top to bottom with these dimensions in mind. 
 
 **Standard.** Extract *all* substantive claims, faithfully and charitably, across every claim type.
 Questions, commands, meta-text, pure definitions, and hedged non-assertions are not claims.
-(Constitution §2, §3, §14; Policy 2, 3; Extractor prompt.)
+(Constitution §2, §4, §8; Policy 2, 3; Extractor prompt.)
 
 **Failure modes.**
 - **Under-extraction** — misses substantive claims, especially implicit assumptions and background factual
-  claims the author treats as given. The Extractor is told to be thorough (§2); thin extraction from a
-  dense post is a red flag.
+  claims the author treats as given. Claims are scarce relative to text (§2), but the propositions the
+  document actually turns on must still surface; a missed central contested proposition is a red flag.
 - **Over-extraction** — pulls meta-text ("in this post I'll argue…"), rhetorical questions, or hedged
   non-assertions as if they were claims.
 - **Type skew** — extracts only empirical claims and drops normative/evaluative/causal ones. This violates
-  uniform treatment (§3) and quietly biases the whole graph toward "facts."
-- **Fidelity loss** — `original_text` is paraphrased rather than an exact quote, breaking provenance (§17).
+  uniform treatment (§8) and quietly biases the whole graph toward "facts."
+- **Fidelity loss** — `original_text` is paraphrased rather than an exact quote, breaking provenance (§4).
 - **Granularity drift** — one claim shattered into fragments, or several distinct claims fused into one
   `original_text` span.
 
@@ -45,13 +45,16 @@ pairs for a couple of posts you've read.
 
 ## B. Canonical form quality — how claims were normalized
 
-**Standard.** The canonical form makes every implicit parameter explicit (measure, time, place, threshold),
-is self-contained, and preserves meaning. When a parameter is unknown, use a placeholder rather than
-inventing one. (Constitution §16, §2; Policy 2; Extractor prompt.)
+**Standard.** The canonical form is the shortest neutral statement of the proposition as it is actually
+debated: about fifteen words, rarely more than twenty-five, terse and frame-independent, self-contained,
+and meaning-preserving. State the proposition at the precision the discourse debates it; do not sharpen it
+with parameters the author never committed to, and do not mint placeholders for missing ones — the vague
+proposition is the claim. (Constitution §3, §2; Policy 2; Extractor prompt.)
 
 **Failure modes.**
-- **Vague restatement** — canonical form just echoes the original ("AGI is dangerous" → "AGI is dangerous")
-  with no parameters surfaced. This is the most common quiet failure, and it directly degrades matching.
+- **Frame-bound restatement** — canonical form keeps one author's framing, hedges, or dialectical setup
+  instead of the neutral statement both sides would accept. This is the most common quiet failure, and it
+  directly degrades matching.
 - **Hallucinated specificity** — invents thresholds, dates, or numbers not in the source. Violates
   faithfulness; worse than vagueness because it's confidently wrong.
 - **Context-stripping** — the canonical form is self-contained but lost the meaning by dropping essential
@@ -66,38 +69,39 @@ inventing one. (Constitution §16, §2; Policy 2; Extractor prompt.)
 
 ## C. Matching / canonicalization / dedup — **the core test**
 
-This is the dimension the corpus is built to stress. All matching — top-level and subclaim — goes through
-the single **agentic Matcher** (`src/llm/agents/matcher.ts`): top-level claims reach it via
-`url-extraction.ts`, subclaims via the Steward's `match_claim` tool. Embedding similarity is retrieval,
-not decision — each search returns the top `MATCHING_TOP_K` candidates above a low 0.4 cosine floor, and
-the Matcher is expected to search multiple framings (including the negation) before the **Matcher LLM**
-decides match-vs-new with reasoning.
+This is the dimension the corpus is built to stress. **Note the two paths — they fail differently:**
 
-**Standard.** Two claims are the same iff they would decompose identically / have the same truth conditions.
-When unsure, create both and map the relationship — liberal creation, rigorous mapping, conservative
-merging. (Constitution §4, §16–18; Policy 4; Matcher prompt.)
+- **Top-level claims** retrieve candidates by embedding (cosine ≥ 0.8) then a **Matcher LLM** decides
+  match-vs-new with reasoning. (`url-extraction.ts`)
+- **Subclaims** match by **embedding only** — top-1 above the threshold, **no LLM judgment**.
+  (`claim-pipeline.ts`)
+
+**Standard.** Two formulations are the same claim when they turn on the same considerations: nothing could
+count as evidence or argument bearing on one without bearing equally on the other. Identical decomposition
+is a useful diagnostic, not the definition. A claim and its denial are one node, with each source recorded
+as affirming or denying it. When unsure, create both and map the relationship — liberal creation, rigorous
+mapping, conservative merging. (Constitution §2, §3, §5; Policy 4; Matcher prompt.)
 
 **Failure modes.**
-- **Over-merging (the worst failure).** Collapsing claims with different truth conditions into one canonical
-  node — e.g. "AGI will kill everyone" merged with "AGI poses serious catastrophic risk," or a claim merged
-  with its own negation. This silently *destroys the disagreement the system exists to surface*
-  (§1 clarity, §15 fair representation, §16 individuation). Note the design nuance: a claim and its
-  negation are *deliberately* one node with per-source stance recorded — the failure is collapsing claims
-  with genuinely different truth conditions, not counterpart handling.
+- **Over-merging (the worst failure).** Collapsing claims that turn on different considerations into one
+  canonical node — e.g. "AGI will kill everyone" merged with "AGI poses serious catastrophic risk." This
+  silently *destroys the disagreement the system exists to surface* (§1 clarity, §18 fair representation,
+  §2 individuation). A claim and its denial are correctly one node, but only with the stance recorded; the
+  embedding-only subclaim path is especially exposed here, because a negation absorbed with no LLM judgment
+  gets no stance flip.
 - **Fragmentation / under-merging.** The same proposition, stated across several posts, ends up as multiple
   canonical claims because canonical forms diverged (see B) or embeddings fell below threshold. This defeats
   the core scaling premise that redundant claims collapse to one node (README). Watch the
   near-duplicate-canonical-pairs section.
-- **Retrieval artifacts.** Matches/non-matches that hinge on what retrieval happened to surface — the right
-  candidate never appeared within the `MATCHING_TOP_K` window or above the 0.4 similarity floor, so the
-  Matcher never evaluated it. If a merge decision hinges on retrieval rather than the meaning, flag it.
+- **Threshold artifacts.** Matches/non-matches that look arbitrary and would flip with a small change to the
+  0.8 / 0.85 cutoffs. If a merge decision hinges on the threshold rather than the meaning, flag it.
 - **Order sensitivity.** Matching is stateful — the first phrasing ingested becomes the canonical node and
   later phrasings attach to it. Check that the "winning" canonical form is a good one and not an artifact of
   which post happened to be processed first.
 - **Relationship neglect.** When two top-level claims are correctly kept separate but are related
   (specification, contradiction), the ingestion path creates **no relationship** between them — only the
   decomposer makes edges. So related-but-distinct claims from different posts can sit as disconnected
-  islands. That's "liberal creation" without the "rigorous mapping" half (§4). Note where it happens.
+  islands. That's "liberal creation" without the "rigorous mapping" half (§2). Note where it happens.
 
 **Where to look.** Per-canonical-claim instance lists (what got collapsed, and whether it should have);
 the near-duplicate-canonical-pairs section (fragmentation candidates); the Matcher reasoning traces for any
@@ -111,19 +115,16 @@ merge that surprises you.
 reaching genuine bedrock (bedrock fact / contested empirical / value premise). Surface definitional
 subclaims (DEFINES) and hidden assumptions (PRESUPPOSES). Include both supporting and contradicting
 dependencies. Group distinct lines of reasoning into named arguments; don't manufacture arguments for simple
-claims. Don't add subclaims that aren't logically necessary. (Constitution §2; Policy 2; Decomposer prompt.)
+claims. Don't add subclaims that aren't logically necessary. (Constitution §6, §7; Policy 2; Decomposer prompt.)
 
 **Failure modes.**
 - **Shallow decomposition** — stops early, marks a clearly compound claim atomic.
-- **Runaway / filler decomposition** — generates generic boilerplate subclaims, or keeps splitting without
-  ever reaching real bedrock. There is no depth cap: decomposition is bounded economically — a new subclaim
-  the Steward scores below `STEWARD_ENQUEUE_MIN_IMPORTANCE` (default 0.25) is left an embedded stub rather
-  than recursively decomposed, and total Steward invocations are capped by `STEWARD_MAX_RUNS` — so filler
-  with inflated importance scores burns real run budget.
+- **Runaway / filler decomposition** — generates generic boilerplate subclaims, or keeps splitting until it
+  hits the depth cap (`maxDecompositionDepth` = 5) without ever reaching real bedrock.
 - **Evaluation leakage** — the decomposer judges validity instead of structure ("this subclaim is false…"),
   violating neutral decomposition.
 - **Missing definitional / presupposition subclaims** — fails to surface what load-bearing terms mean
-  ("aligned," "AGI," "sharp left turn"). These are exactly the hidden disagreements §2 wants exposed.
+  ("aligned," "AGI," "sharp left turn"). These are exactly the hidden disagreements §6 wants exposed.
 - **Argument structure misuse** — dumps everything into one default argument when distinct for/against lines
   exist, or invents named arguments for a simple claim.
 - **Non-reconnecting subclaims** — subclaims phrased so idiosyncratically that the same underlying dependency
@@ -162,12 +163,12 @@ Secondary for a disambiguation-focused run, but it runs, so sanity-check it.
 **Standard.** Use the six statuses honestly (Verified, Supported, Contested, Unsupported, Contradicted,
 Unknown); never round a genuinely contested claim up to verified or down to contradicted; every assessment
 carries a substantive reasoning trace; assessment is holistic judgment, not mechanical aggregation.
-(Constitution §1, §7, §8, §22; Policy 1, 7, 8; architecture doc, "Judgment-based propagation".)
+(Constitution §1, §9, §10, §11, §22; Policy 1, 7, 8; architecture doc, "Judgment-based propagation".)
 
 **Failure modes.**
 - **Status collapse** — nearly everything lands on one status (all `contested`, or all `unknown`).
 - **False resolution** — a genuinely contested AI-risk claim marked `verified` / `contradicted` (§1).
-- **Empty reasoning traces** — boilerplate or missing traces (violates §8); note that the pipeline swallows
+- **Empty reasoning traces** — boilerplate or missing traces (violates §11); note that the pipeline swallows
   assessment errors silently, so a missing assessment is itself worth flagging.
 - **Confidence miscalibration** — high confidence on claims the trace doesn't actually support.
 
@@ -183,7 +184,7 @@ enough to propagate to dependent claims, and to maintain canonical forms, argume
 proposals. Propagation should be **self-limiting**: most changes absorb within one or two levels, because
 superior claims are not the locus for disputes about their subclaims. The run drains the steward queue (and
 anything it triggers) to quiescence; this dimension judges whether that settling behaves well.
-(Constitution §18, §19, §22; Policy: Claim Steward; architecture doc, "Judgment-based propagation".)
+(Constitution §5, §19, §22; Policy: Claim Steward; architecture doc, "Judgment-based propagation".)
 
 **Failure modes.**
 - **Non-termination / runaway propagation** — stewardship keeps enqueuing more stewardship work and the
@@ -216,9 +217,9 @@ Applies to every stage above.
 
 - **Faithfulness / no hallucination** — nothing in any canonical form, subclaim, or trace that isn't grounded
   in the source. The single most important cross-cutting check.
-- **Neutrality (§13)** — this corpus is politically/ideologically loaded (AI risk). Are canonical forms and
+- **Neutrality (§17)** — this corpus is politically/ideologically loaded (AI risk). Are canonical forms and
   decompositions tilted toward either doom or dismissal? The framing should be even-handed.
-- **Charity (§14)** — claims and arguments rendered in their strongest defensible form, not strawmanned.
+- **Charity (§4, §18)** — claims and arguments rendered in their strongest defensible form, not strawmanned.
 - **Consistency (§21)** — similar claims treated similarly across the corpus (similar decomposition depth,
   similar canonicalization style, similar assessment).
 

@@ -90,7 +90,7 @@ function formatAssessment(
     // Verdict confidence — how sure the Steward is of the status, not P(true).
     confidence: a.confidence,
     // Credence that the claim is true; null where one number would be false
-    // precision (constitution §7).
+    // precision (constitution §10).
     claim_credence: a.claimCredence ?? null,
     // Reader-facing body first; fall back to the trace for pre-split rows.
     summary: a.summary ?? a.reasoningTrace,
@@ -185,10 +185,13 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Search claims",
       description:
-        "Hybrid (semantic + keyword) search over Episteme's canonical claims. " +
-        "Returns claims ranked by similarity, each with its current assessment " +
-        "status/confidence and a link to its episteme.wiki page. Free (no LLM " +
-        "work is metered).",
+        "Search Episteme's claim graph. A claim is a single reusable " +
+        "proposition about the world that informed people could dispute with " +
+        "evidence or reasons; each is stored once, under a neutral canonical " +
+        "wording shared by the claim and its denial. Combined semantic and " +
+        "keyword search, ranked by similarity; each result carries its " +
+        "current assessment status and a link to its episteme.wiki page. " +
+        "Free.",
       inputSchema: {
         query: z.string().min(1).max(500).describe("Free-text search query"),
         limit: z.number().int().min(1).max(50).default(10),
@@ -226,9 +229,15 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Get claim",
       description:
-        "Fetch a canonical claim: its canonical form, current assessment " +
-        "(status, confidence, reasoning), provenance (source instances), " +
-        "arguments, dependents, and episteme.wiki link. Free.",
+        "Fetch one claim in full: canonical form, current assessment, and, " +
+        "via `include`, its source instances (provenance), the named " +
+        "arguments bearing on it, and the claims that depend on it. An " +
+        "assessment is a verdict reached by direct examination of the " +
+        "evidence, with the reasoning included: a status (verified, " +
+        "supported, contested, unsupported, contradicted, or unknown), a " +
+        "confidence that the status is the right reading of the evidence, " +
+        "and a credence that the claim is true where a single number is an " +
+        "honest summary (null where it would be false precision). Free.",
       inputSchema: {
         claim_id: z.string().uuid(),
         include: z
@@ -282,10 +291,11 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Get decomposition",
       description:
-        "Fetch a claim's subclaim tree (recursive decomposition). Each node " +
-        "carries its assessment status, so contested vs. settled structure is " +
-        "visible: a disputed node under a well-supported parent marks exactly " +
-        "where the disagreement lives. Free.",
+        "Fetch the tree of subclaims a claim rests on. Each edge is typed " +
+        "(requires, supports, contradicts, and so on) and grouped into a " +
+        "named argument where one exists; each node carries its own " +
+        "assessment status, so a disputed subclaim under a well-supported " +
+        "parent marks exactly where the disagreement lives. Free.",
       inputSchema: {
         claim_id: z.string().uuid(),
         max_depth: z.number().int().min(1).max(8).default(5),
@@ -310,11 +320,12 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Match an assertion to a canonical claim",
       description:
-        "Run a free-text assertion through Episteme's Matcher agent to decide " +
-        "whether it is an existing canonical claim (possibly stated as its " +
-        "negation) or new/unknown. On a match, returns the canonical claim, " +
-        "the assertion's stance toward it (affirms/denies), and its current " +
-        "assessment. Agentic: metered per token and quota-gated.",
+        "Ask Episteme's Matcher whether an assertion is already a claim in " +
+        "the graph, under any wording or as its negation (a claim and its " +
+        "denial are one node). On a match, returns the canonical claim, " +
+        "whether the assertion affirms or denies it, and its current " +
+        "assessment; otherwise, a proposed canonical form. Runs a model: " +
+        "metered to your account and quota-gated.",
       inputSchema: {
         assertion: z
           .string()
@@ -340,10 +351,12 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Extract claims from text",
       description:
-        "Run a passage through Episteme's Extractor agent to pull out its " +
-        "discrete, checkable claims (each with a proposed canonical form, " +
-        "claim type, and provisional importance). Agentic: metered per token " +
-        "and quota-gated.",
+        "Run a passage through Episteme's Extractor to surface the claims it " +
+        "asserts or relies on: single reusable propositions that informed " +
+        "people could dispute, each with a proposed canonical form, claim " +
+        "type, and provisional importance. Claims are scarce relative to " +
+        "text, so most sentences yield none. Runs a model: metered to your " +
+        "account and quota-gated.",
       inputSchema: {
         text: z.string().min(1).max(100_000).describe("The text to extract from"),
         source_type: z
@@ -372,11 +385,13 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Assess a passage against the claim graph",
       description:
-        "Fact-check a passage: extract its claims, match each against the " +
-        "graph, and return a per-claim judgment grounded in Episteme's " +
-        "pre-computed assessments — the same judgment surface the browser " +
-        "extension uses. Verdicts come from the graph, not from a model's " +
-        "recollection. Agentic: metered per token and quota-gated.",
+        "Fact-check a passage: extract its claims, match each to a canonical " +
+        "claim, and report the graph's current assessment of each. Verdicts " +
+        "come from assessments reached by direct examination of evidence, " +
+        "with the reasoning included, never from a model's recollection. " +
+        "'unknown' means the graph holds no such claim; 'unassessed' means " +
+        "it exists but has no assessment yet. Runs a model: metered to your " +
+        "account and quota-gated.",
       inputSchema: {
         text: z.string().min(1).max(50_000).describe("The passage to assess"),
         max_claims: z
@@ -430,11 +445,13 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Submit a contribution",
       description:
-        "File a challenge, supporting evidence, merge/split/edit proposal, or " +
-        "argument against a canonical claim. The contribution enters the " +
-        "standard review pipeline (Contribution Reviewer agent, reputation " +
-        "and good-faith policy) and is attributed to your account. Returns " +
-        "the contribution id to check review status later.",
+        "Contribute to an existing claim: a challenge, supporting evidence, " +
+        "a new source appearance, a proposed merge, split, or edit, or an " +
+        "argument for or against it. A contribution gets a hearing, not " +
+        "automatic admission: a reviewer evaluates it on its merits, the " +
+        "exchange is recorded on the claim, and the graph changes only if " +
+        "the contribution succeeds. Attributed to your account; returns a " +
+        "contribution id for checking the outcome.",
       inputSchema: {
         claim_id: z.string().uuid(),
         contribution_type: contributionTypeEnum,
@@ -521,9 +538,9 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Get contribution review status",
       description:
-        "Check the review outcome of a previously submitted contribution: " +
-        "decision, reasoning, and policy citations once the Contribution " +
-        "Reviewer has ruled. Free.",
+        "Check the outcome of a submitted contribution: pending until " +
+        "reviewed, then the decision (accept, reject, or escalate) with the " +
+        "reviewer's reasoning and policy citations. Free.",
       inputSchema: { contribution_id: z.string().uuid() },
     },
     async ({ contribution_id }) => {
@@ -561,8 +578,8 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Canonical claim",
       description:
-        "A canonical claim with its current assessment and decomposition tree, " +
-        "attachable as context.",
+        "One claim with its current assessment and decomposition tree, " +
+        "suitable to attach as context.",
       mimeType: "application/json",
     },
     async (uri, { claim_id }) => {
@@ -606,8 +623,8 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Recently updated claims",
       description:
-        "The most recently updated canonical claims, highest-importance view " +
-        "of what the graph is working on.",
+        "The most recently updated claims: a live view of where the graph " +
+        "is changing.",
       mimeType: "application/json",
     },
     async (uri) => {
@@ -640,8 +657,8 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
     {
       title: "Fact-check a document against Episteme",
       description:
-        "Assess every checkable claim in a document against the Episteme " +
-        "claim graph and produce a grounded report.",
+        "Check every disputable claim a document makes against the Episteme " +
+        "claim graph and report what the graph's assessments establish.",
       argsSchema: {
         document: z.string().describe("The document text to fact-check"),
       },
@@ -654,14 +671,15 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
             type: "text",
             text:
               "Fact-check the following document against the Episteme claim graph.\n\n" +
-              "Use the `assess_text` tool on the document (chunk it if it is long). " +
-              "For each judged claim, report the verdict that came back from the " +
-              "graph — do not substitute your own recollection. Where the verdict " +
-              "is `unknown`, say the graph has no canonical claim for it yet; where " +
-              "it is `unassessed`, say the claim exists but has not been assessed. " +
-              "Mind the `stance` field: a `denies` stance means the document asserts " +
-              "the NEGATION of the canonical claim, so invert the assessment when " +
-              "judging the document's sentence. Cite each claim's `page_url`.\n\n" +
+              "Use the `assess_text` tool on the document, chunking it if it is " +
+              "long. For each judged claim, report the verdict the graph " +
+              "returned, not your own recollection. A verdict of `unknown` " +
+              "means the graph holds no canonical claim for that assertion; " +
+              "`unassessed` means the claim exists but has no assessment yet. " +
+              "Watch the `stance` field: `denies` means the document asserts " +
+              "the negation of the canonical claim, so invert the assessment " +
+              "when judging the document's sentence. Cite each claim's " +
+              "`page_url`.\n\n" +
               "Document:\n\n" +
               document,
           },
@@ -688,11 +706,11 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
             type: "text",
             text:
               "Check this assertion against the Episteme claim graph using the " +
-              "`match_claim` tool, then explain its standing: the canonical claim " +
-              "it maps to (if any), the current assessment and confidence, and — " +
-              "if you need the contested/settled structure — `get_decomposition`. " +
-              "Report the graph's judgment, not your own recollection, and link " +
-              "the claim's `page_url`.\n\n" +
+              "`match_claim` tool, then explain its standing: the canonical " +
+              "claim it maps to, if any, and the current assessment with its " +
+              "confidence. Call `get_decomposition` if you need to show where " +
+              "agreement ends and dispute begins. Report the graph's judgment, " +
+              "not your own recollection, and link the claim's `page_url`.\n\n" +
               `Assertion: ${assertion}`,
           },
         },

@@ -74,7 +74,7 @@ Proceed:
 3. For merges/splits, perform the surgery, then notify_steward the affected
    claims. For a routine edge into a claim you are not reconciling, use
    suggest_edge_to_steward (do not write it yourself).
-4. Be conservative — only act when the structure is genuinely wrong. Doing
+4. Be conservative: act only when the structure is clearly wrong. Doing
    nothing is a fine outcome.`;
 
   await toolUseLoop({

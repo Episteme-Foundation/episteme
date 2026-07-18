@@ -75,16 +75,17 @@ async function runClaimStewardImpl(input: {
   const isInitial = input.trigger === "structure_and_assess";
 
   const structureStep = isInitial
-    ? `2. DECOMPOSE the claim (this is its first pass). Identify its load-bearing
-   dependencies and the strongest considerations for and against it — a handful,
-   not an exhaustive list (see the Decomposition guidance). For EACH dependency,
-   FIRST call match_claim to check whether it already exists in the graph (as
-   itself, a rewording, or its negation). If it matches, attach the existing
-   claim with add_relationship_edge; only if genuinely novel, create it with
-   add_decomposition_edge. Never mint a duplicate. If the claim is genuinely
-   simple, leave it atomic — do not invent dependencies.`
+    ? `2. DECOMPOSE the claim (this is its first pass). Identify what it turns on:
+   the dependencies that would undermine it if false, and the strongest
+   considerations for and against it, each a subclaim passing the claim bar. A
+   handful, not an exhaustive list (see the Decomposition guidance). For EACH
+   dependency, FIRST call match_claim to check whether it already exists in the
+   graph (as itself, a rewording, or its negation). If it matches, attach the
+   existing claim with add_relationship_edge; only when the Matcher says it is
+   novel, create it with add_decomposition_edge. Never mint a duplicate. If the
+   claim is simple, leave it atomic; do not invent dependencies.`
     : `2. RE-ASSESS in light of what changed. Adjust structure only if you discover a
-   genuinely missing load-bearing dependency — and then match_claim FIRST, linking
+   missing dependency the claim turns on, and then match_claim FIRST, linking
    an existing claim with add_relationship_edge or creating a new one with
    add_decomposition_edge. Do not re-decompose from scratch.`;
 
@@ -98,19 +99,19 @@ Claim ID: ${input.claimId}
 Context: ${input.context}
 
 Budget: you have up to ${iterationBudget} tool-use iterations for this stewardship.
-That is a generous backstop, not a target — use as few or as many as the claim's
+That is a generous backstop, not a target: use as few or as many as the claim's
 importance warrants. But it IS a hard limit: make sure you have recorded an
 assessment (update_claim_assessment) and logged your decision
 (log_stewardship_decision) before you approach it, so your work is never lost
 mid-task. If you are warned that few iterations remain, stop exploring and record
 your conclusion immediately.
 
-You OWN this claim — its structure (decomposition) and its assessment. Proceed:
+You OWN this claim: its structure (decomposition) and its assessment. Proceed:
 1. Use get_claim_with_context to understand the claim, its subclaims and their
    assessments, its source instances (note each instance's affirm/deny stance),
    and its current assessment if any.
 ${structureStep}
-3. Gauge the claim's importance — how much it is worth getting right
+3. Gauge the claim's importance: how much it is worth getting right
    (consequence-if-wrong × contestability), NOT mere dependency count.
    get_claim_dependents is only a local signal; an uncontested or niche claim is
    low importance even with many local dependents. Scale effort accordingly:
@@ -143,7 +144,7 @@ ${structureStep}
       warnWithin: 3,
       message: (remaining) =>
         `⚠ Stewardship budget notice: ${remaining} tool-use iteration(s) remain ` +
-        `before you are stopped. Wrap up now — if you have not yet recorded your ` +
+        `before you are stopped. Wrap up now: if you have not yet recorded your ` +
         `assessment with update_claim_assessment and logged it with ` +
         `log_stewardship_decision, do so on your next turn so your work is saved.`,
     },
@@ -168,10 +169,10 @@ ${structureStep}
           return JSON.stringify({
             success: false,
             message:
-              `This run has already minted ${newSubclaimsThisRun} new subclaims — the ` +
+              `This run has already minted ${newSubclaimsThisRun} new subclaims, the ` +
               `per-run backstop (${cap}). Do not create more in this pass: link any ` +
               `remaining dependencies that already exist with add_relationship_edge, ` +
-              `note the rest in your reasoning trace, and proceed to your assessment. ` +
+              `note the rest in your reasoning_trace, and proceed to your assessment. ` +
               `A future stewardship pass can continue the decomposition.`,
           });
         }
