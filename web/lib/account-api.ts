@@ -50,9 +50,19 @@ async function accountFetch<T>(
     let code: string | undefined;
     let message = `Episteme API ${res.status} for ${path}`;
     try {
-      const payload = (await res.json()) as { error?: string; code?: string };
-      code = payload.code;
-      if (payload.error) message = payload.error;
+      // Two error shapes exist: flat { error, code } on the account routes and
+      // an { error: { code, message } } envelope on the governed write routes.
+      const payload = (await res.json()) as {
+        error?: string | { code?: string; message?: string };
+        code?: string;
+      };
+      if (typeof payload.error === "string") {
+        code = payload.code;
+        message = payload.error;
+      } else if (payload.error) {
+        code = payload.error.code ?? payload.code;
+        if (payload.error.message) message = payload.error.message;
+      }
     } catch {
       // non-JSON error body; keep the generic message
     }
@@ -179,6 +189,72 @@ export async function revokeApiKey(
     method: "DELETE",
     actingUser: externalId,
   });
+}
+
+// --- Contributions (#174) ----------------------------------------------------
+
+export interface SubmittedContribution {
+  id: string;
+  claim_id: string | null;
+  contribution_type: string;
+  content: string;
+  evidence_urls: string[];
+  submitted_at: string;
+  review_status: string;
+}
+
+export async function submitContribution(
+  externalId: string,
+  input: {
+    claimId: string;
+    contributionType: string;
+    content: string;
+    evidenceUrls?: string[];
+    mergeTargetClaimId?: string;
+    proposedCanonicalForm?: string;
+    displayName?: string;
+  }
+): Promise<SubmittedContribution> {
+  const r = await accountFetch<{ contribution: SubmittedContribution }>(
+    "/contributions",
+    {
+      method: "POST",
+      actingUser: externalId,
+      body: {
+        claim_id: input.claimId,
+        contribution_type: input.contributionType,
+        content: input.content,
+        ...(input.evidenceUrls?.length
+          ? { evidence_urls: input.evidenceUrls }
+          : {}),
+        ...(input.mergeTargetClaimId
+          ? { merge_target_claim_id: input.mergeTargetClaimId }
+          : {}),
+        ...(input.proposedCanonicalForm
+          ? { proposed_canonical_form: input.proposedCanonicalForm }
+          : {}),
+        ...(input.displayName
+          ? { contributor_display_name: input.displayName }
+          : {}),
+      },
+    }
+  );
+  return r.contribution;
+}
+
+/** Intake (#157): propose a claim not yet in the graph; reviewed before it materializes. */
+export async function proposeClaimIntake(
+  externalId: string,
+  input: { claim: string; argument: string }
+): Promise<{ id: string; review_status: string }> {
+  const r = await accountFetch<{
+    contribution: { id: string; review_status: string };
+  }>("/claims/propose", {
+    method: "POST",
+    actingUser: externalId,
+    body: { claim: input.claim, argument: input.argument },
+  });
+  return r.contribution;
 }
 
 // --- OAuth consent (remote MCP connectors) -----------------------------------

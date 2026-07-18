@@ -34,6 +34,24 @@ export const config: PlasmoCSConfig = {
 const MAX_CONTENT_CHARS = 200_000;
 const MIN_CONTENT_CHARS = 80;
 
+// Public site for contribution deep links (#174). Claim pages come back from
+// the API with their full URL; only the propose-a-claim path (no claim to
+// link to) needs a base of its own.
+const WEB_BASE = "https://episteme.wiki";
+const MAX_QUOTE_CHARS = 300;
+
+/** Claim-page contribute link, quoting the highlighted passage. */
+function contributeUrl(claimUrl: string, quote: string): string {
+  const q = quote.length > MAX_QUOTE_CHARS ? `${quote.slice(0, MAX_QUOTE_CHARS)}…` : quote;
+  return `${claimUrl}?contribute=challenge&quote=${encodeURIComponent(q)}`;
+}
+
+/** Propose-a-claim link for statements the graph does not hold. */
+function proposeUrl(text: string): string {
+  const t = text.length > MAX_QUOTE_CHARS ? text.slice(0, MAX_QUOTE_CHARS) : text;
+  return `${WEB_BASE}/claims?propose=${encodeURIComponent(t)}`;
+}
+
 interface Anchored {
   annotation: PageAnnotation;
   ranges: Range[];
@@ -224,8 +242,10 @@ async function openPanel(a: PageAnnotation): Promise<void> {
     <div class="ep-detail"><p class="ep-muted">Loading decomposition & evidence…</p></div>
     ${
       a.claim
-        ? `<p><a href="${esc(a.claim.url)}" target="_blank" rel="noopener">Open this claim on episteme.wiki →</a></p>`
-        : `<p class="ep-muted">This claim isn't in the Episteme graph yet.</p>`
+        ? `<p><a href="${esc(a.claim.url)}" target="_blank" rel="noopener">Open this claim on episteme.wiki →</a><br>
+           <a href="${esc(contributeUrl(a.claim.url, a.original_text))}" target="_blank" rel="noopener">Challenge it or add evidence →</a></p>`
+        : `<p class="ep-muted">This claim isn't in the Episteme graph yet.
+           <a href="${esc(proposeUrl(a.original_text))}" target="_blank" rel="noopener">Propose it →</a></p>`
     }`;
   panel.querySelector(".ep-close")!.addEventListener("click", closePanel);
   document.documentElement.appendChild(panel);
