@@ -2,6 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 type Tool = Anthropic.Tool;
 import { findSimilarClaims } from "../../services/search-service.js";
 import { getClaimById } from "../../services/claim-service.js";
+import { getCurrentAssessment } from "../../services/assessment-service.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
 import { rawQuery } from "../../db/client.js";
 
@@ -39,8 +40,10 @@ export function getGraphToolDefinitions(): Tool[] {
     {
       name: "get_claim_details",
       description:
-        "Get detailed information about a specific claim, including " +
-        "its text, type, state, and assessment.",
+        "Get detailed information about a specific claim: its text, type, " +
+        "lifecycle state (active/merged/deprecated), and current assessment " +
+        "(status, confidence, and the reasoning behind the verdict), when " +
+        "the graph has judged it.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -121,7 +124,10 @@ async function executeGraphToolInner(
 
     case "get_claim_details": {
       const claimId = input.claim_id as string;
-      const claim = await getClaimById(claimId);
+      const [claim, assessment] = await Promise.all([
+        getClaimById(claimId),
+        getCurrentAssessment(claimId),
+      ]);
       if (!claim) {
         return { success: false, data: null, error: `Claim not found: ${claimId}` };
       }
@@ -131,9 +137,23 @@ async function executeGraphToolInner(
           claim_id: claim.id,
           text: claim.text,
           claim_type: claim.claimType,
-          state: claim.state,
+          // Named to keep the active/merged/deprecated lifecycle distinct
+          // from the assessment's verdict status (#181).
+          lifecycle_state: claim.state,
           decomposition_status: claim.decompositionStatus,
           created_at: claim.createdAt.toISOString(),
+          assessment: assessment
+            ? {
+                status: assessment.status,
+                confidence: assessment.confidence,
+                // Reader-facing summary where one exists; assessments written
+                // before the summary/trace split (#122) fall back to a
+                // truncated audit trace.
+                reasoning:
+                  assessment.summary ??
+                  assessment.reasoningTrace.slice(0, 1200),
+              }
+            : null,
         },
       };
     }
