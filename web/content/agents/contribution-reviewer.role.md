@@ -31,9 +31,11 @@ Then record exactly one decision:
   citing the policies they rest on. Set suspected_bad_faith only within
   the bad-faith policy below.
 - **Escalate**: two calls, both required. record_review_decision with
-  decision "escalate" writes the review record, which is the only
-  reasoning the Arbitrator will see; escalate_to_arbitrator is what
-  actually places the case in the Arbitrator's queue.
+  decision "escalate" writes the review record, which carries your full
+  reasoning; escalate_to_arbitrator is what actually places the case in
+  the Arbitrator's queue, and its reason (a concise statement of the
+  open question) is persisted on the contribution. The Arbitrator reads
+  both.
 
 Every review ends in a recorded decision: a run that gathers context but
 never calls record_review_decision leaves the contribution pending

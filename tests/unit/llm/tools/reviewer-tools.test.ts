@@ -5,6 +5,7 @@ const CONTRIBUTION_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
 const mocks = vi.hoisted(() => ({
   insertedReviews: [] as Array<Record<string, unknown>>,
+  updateSets: [] as Array<Record<string, unknown>>,
   applyReviewOutcome: vi.fn(async () => ({
     contributorId: "c-1",
     previousScore: 50,
@@ -26,7 +27,10 @@ vi.mock("../../../../src/db/client.js", () => ({
       },
     }),
     update: () => ({
-      set: () => ({ where: async () => undefined }),
+      set: (v: Record<string, unknown>) => {
+        mocks.updateSets.push(v);
+        return { where: async () => undefined };
+      },
     }),
   }),
   rawQuery: vi.fn(async () => []),
@@ -63,6 +67,7 @@ import { executeReviewerTool } from "../../../../src/llm/tools/reviewer-tools.js
 
 beforeEach(() => {
   mocks.insertedReviews.length = 0;
+  mocks.updateSets.length = 0;
   mocks.applyReviewOutcome.mockClear();
 });
 
@@ -131,6 +136,26 @@ describe("record_review_decision", () => {
     expect(mocks.insertedReviews[0]).toMatchObject({
       suspectedBadFaith: false,
       badFaithCategory: null,
+    });
+  });
+});
+
+describe("escalate_to_arbitrator", () => {
+  // The escalation reason must survive the call (#178): without it, an
+  // escalation recorded without a review row reaches the Arbitrator with no
+  // reasoning at all.
+  it("persists the escalation reason on the contribution", async () => {
+    const out = JSON.parse(
+      await executeReviewerTool("escalate_to_arbitrator", {
+        contribution_id: CONTRIBUTION_ID,
+        reason: "credible sources conflict; needs deeper adjudication",
+      })
+    );
+
+    expect(out.success).toBe(true);
+    expect(mocks.updateSets).toContainEqual({
+      reviewStatus: "escalated",
+      escalationReason: "credible sources conflict; needs deeper adjudication",
     });
   });
 });

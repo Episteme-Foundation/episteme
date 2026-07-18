@@ -1,0 +1,1 @@
+ALTER TABLE "contributions" ADD COLUMN "escalation_reason" text;
