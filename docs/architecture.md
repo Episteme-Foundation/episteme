@@ -554,6 +554,6 @@ the graph, not by how they read.
 ---
 
 The operational policies that follow turn the constitution's principles into
-concrete, per-agent rules: the acceptance criteria the Contribution Reviewer
-applies, the assessment guidance the Claim Steward follows, and the
-reasoning-trace format every agent emits.
+concrete, per-agent rules: the shared policy vocabulary every governance
+decision cites, the acceptance criteria the Contribution Reviewer applies, and
+the reasoning obligations every agent carries.
