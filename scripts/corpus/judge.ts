@@ -1,24 +1,25 @@
 /**
  * LLM-as-judge for the corpus-run scorecard (#99).
  *
- * Grades a single assessed claim against the constitution's standards —
- * readability, reasoning-fit, impartiality, whether the text clears the claim
- * bar (contestability), decomposition granularity, and an independent
- * importance estimate. Runs through the real LLM client so calls are metered by
- * the budget tracker and priced like any other agent call. The judge model is a
- * separate knob (`JUDGE_MODEL`, default Sonnet) so it is never the same context
- * as the agent under test.
+ * Grades one assessed claim against the constitution: readability of the
+ * reasoning, whether it justifies the status, impartiality, the claim bar,
+ * decomposition granularity, and an independent importance estimate. Runs
+ * through the real LLM client so calls are metered by the budget tracker and
+ * priced like any other agent call. The judge model is a separate knob
+ * (`JUDGE_MODEL`, default Sonnet) so it is never the same model or context as
+ * the agent under test.
  */
 import { completeStructured } from "../../src/llm/client.js";
 import { loadConfig } from "../../src/config.js";
 
-const CONSTITUTION_STANDARDS = `Key standards (from the Episteme constitution):
-- A claim is a single, reusable, CONTESTABLE proposition — something informed people could genuinely dispute with evidence or reasons. Definitional glosses, textbook theorems, and uncontested mathematical/bedrock facts are NOT claims.
-- Decomposition identifies only LOAD-BEARING dependencies (a handful, not twenty); stop at bedrock facts, contested-empirical questions, or value premises. Marking a genuinely simple claim atomic is correct — do not decompose a settled claim into how it is proved.
-- Statuses: verified / supported / contested / unsupported / contradicted / unknown. Never round a genuinely contested claim up to verified or down to contradicted. CONTESTED requires credible evidence/argument on multiple sides in the live discourse — not merely "someone could quibble".
-- Every judgment carries a transparent reasoning trace: what evidence was considered, how competing evidence was weighed, what uncertainties remain. A reader should be able to follow WHY the status was chosen; referring to subclaims by opaque id instead of their text is a readability failure.
-- Neutrality: map claims faithfully regardless of valence; represent the strongest version of each major position.
-- Importance (0..1): how much rides on getting the claim right — foundational claims many debates turn on ≈0.8+, substantive domain claims ≈0.5-0.7, minor/settled/incidental ≈<0.4. Importance orders the scarce-compute work queue, so settled textbook/bedrock material should NOT outrank live contested questions users actually consult the graph for.`;
+const CONSTITUTION_STANDARDS = `Standards, from the Episteme constitution (cited by section):
+- Claim bar (§2): a claim is a single reusable proposition that informed people could dispute with evidence or reasons, the kind that could anchor a long-running debate. Arguments ("X therefore Y"), one author's framing, uncontested definitions, and settled textbook or bedrock facts are not claims.
+- Canonical form (§3): the shortest neutral statement of the proposition as actually debated, about fifteen words and rarely more than twenty-five, acceptable to either side as a fair statement of what is in dispute.
+- Decomposition (§6): subclaims must themselves pass the claim bar; the steps of a derivation, undisputed definitions, and facts specific to one source belong in prose, not nodes. Decomposition ends where the discourse ends, not where logic bottoms out. Depth is an effort decision governed by importance (§19): an unexpanded dependency on a minor claim is a prioritization, not a gap, and marking a simple claim atomic is correct.
+- Statuses (§10): verified / supported / contested / unsupported / contradicted / unknown. Contested requires credible evidence or argument on multiple sides of the live discourse, not merely that someone could quibble. Never round a contested claim up to verified or down to contradicted.
+- Reasoning (§11, §12): every verdict shows its work: what evidence was considered, how competing evidence was weighed, what uncertainties remain, and what would change the conclusion. A reader should be able to follow why the status was chosen. Referring to subclaims by opaque id rather than by what they say is a failure.
+- Neutrality (§17, §18): claims are mapped faithfully whichever way the answer cuts, with the strongest form of each major position represented. Even-handedness is not false parity: when the evidence overwhelmingly favors one side, the assessment says so.
+- Importance (§19): consequence-if-wrong × contestability, recorded 0..1 against anchors: ≈0.9 central (widely consequential and live), ≈0.6 major within a domain, ≈0.35 a notable contested point inside a larger debate, ≈0.15 minor or settled. Load-bearing is not important: an uncontested claim is low importance even when much depends on it, so settled textbook material must never outrank the live questions users consult the graph for.`;
 
 export interface JudgeInput {
   id: string;
@@ -49,16 +50,16 @@ export interface JudgeVerdict {
 const SCHEMA = {
   type: "object" as const,
   properties: {
-    readability: { type: "number", description: "1-5: can a reader follow WHY this status was chosen from the trace alone?" },
-    reasoning_fit: { type: "number", description: "1-5: does the trace's content justify the chosen status and confidence?" },
-    impartiality: { type: "number", description: "1-5: is the reasoning even-handed (weighs counter-evidence, no rounding, no one-sided framing)?" },
-    claim_bar: { type: "string", enum: ["yes", "no"], description: "Is the text a genuine CONTESTABLE claim (vs textbook theorem / definitional gloss / uncontestable bedrock)?" },
+    readability: { type: "number", description: "1-5: can a reader follow, from the reasoning alone, why this status was chosen?" },
+    reasoning_fit: { type: "number", description: "1-5: does the content of the reasoning justify the chosen status and confidence?" },
+    impartiality: { type: "number", description: "1-5: even-handed weighing of counter-evidence, no rounding, no one-sided framing; false parity also fails." },
+    claim_bar: { type: "string", enum: ["yes", "no"], description: "Does the text pass the claim bar of §2: a disputable, reusable proposition, not an argument, definition, or settled textbook fact?" },
     decomposition_granularity: {
       type: "string",
       enum: ["good", "too_granular", "too_shallow", "n_a"],
-      description: "Are the direct subclaims load-bearing dependencies, over-decomposition of settled material, or missing key dependencies? n_a if atomic.",
+      description: "too_granular: settled material unfolded into derivation steps or non-claims. too_shallow: dependencies the discourse actually contains are missing, and the claim's importance warranted mapping them. n_a if atomic.",
     },
-    importance_judged: { type: "number", description: "0..1: your independent importance for this claim per the scale above." },
+    importance_judged: { type: "number", description: "0..1: your independent importance for this claim, on the §19 anchors." },
     flags: {
       type: "array",
       items: { type: "string", enum: ["status_miscalibrated", "false_precision", "bias", "hallucination_risk", "boilerplate_trace", "opaque_ids", "other"] },
@@ -73,9 +74,9 @@ export async function judgeClaim(input: JudgeInput): Promise<JudgeVerdict> {
   const subs =
     input.subclaims.length > 0
       ? input.subclaims.map((s) => `- [${s.relation}] ${s.text} (status: ${s.status ?? "none"})`).join("\n")
-      : "(atomic — no decomposition)";
+      : "(atomic: no decomposition)";
 
-  const prompt = `You are auditing one claim from a claim-graph maintained by LLM agents. Be concretely critical — this is a quality audit, not a compliment.
+  const prompt = `You are auditing one claim from a claim graph maintained by LLM agents. Grade it against the standards below. Be concretely critical: this is a quality audit, not a compliment, and a defect named is worth more than a rounded-up score.
 
 ${CONSTITUTION_STANDARDS}
 
@@ -85,13 +86,11 @@ Type: ${input.claimType}
 Stored importance: ${input.importance}
 Assessment status: ${input.status ?? "(none)"} (confidence ${input.confidence ?? "n/a"})
 
-## Reasoning trace
+## Reasoning
 ${input.reasoningTrace ?? "(none)"}
 
 ## Direct subclaims (${input.subclaims.length})
-${subs}
-
-Grade against the standards above and respond with the 'respond' tool.`;
+${subs}`;
 
   const model = loadConfig().judgeModel;
   const verdict = await completeStructured<Omit<JudgeVerdict, "id" | "text" | "importanceStored" | "status">>({
@@ -100,7 +99,7 @@ Grade against the standards above and respond with the 'respond' tool.`;
     schemaName: "ClaimQualityVerdict",
     model,
     // Claude-5 judge models think before answering, and thinking counts against
-    // max_tokens — too low a budget is spent thinking and never emits the
+    // max_tokens: too low a budget is spent thinking and never emits the
     // respond tool. Give comfortable headroom for a small JSON verdict.
     maxTokens: 4096,
   });
