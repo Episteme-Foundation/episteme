@@ -223,10 +223,16 @@ export async function executeReviewerTool(
           })
           .returning();
 
-        // Update contribution status
+        // Update contribution status. The claim/attempt columns reset so the
+        // escalated->arbitration phase, when there is one, starts with a fresh
+        // recovery budget (#218); on terminal decisions the reset is inert.
         await db
           .update(contributions)
-          .set({ reviewStatus: decision === "accept" ? "accepted" : decision === "reject" ? "rejected" : "escalated" })
+          .set({
+            reviewStatus: decision === "accept" ? "accepted" : decision === "reject" ? "rejected" : "escalated",
+            reviewClaimedAt: null,
+            reviewAttempts: 0,
+          })
           .where(eq(contributions.id, contributionId));
 
         // Counters, reputation ledger, standing, and kudos — one write path
@@ -301,7 +307,13 @@ export async function executeReviewerTool(
         const db = getDb();
         await db
           .update(contributions)
-          .set({ reviewStatus: "escalated", escalationReason: reason })
+          .set({
+            reviewStatus: "escalated",
+            escalationReason: reason,
+            // Fresh recovery budget for the arbitration phase (#218).
+            reviewClaimedAt: null,
+            reviewAttempts: 0,
+          })
           .where(eq(contributions.id, contributionId));
 
         return JSON.stringify({

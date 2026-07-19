@@ -649,6 +649,18 @@ export const contributions = pgTable(
     // except through claim instances — so storing the submission verbatim
     // before review is safe.
     sourceId: uuid("source_id").references(() => sources.id),
+    // Crash-safe processing claim, mirroring the Steward's stewarded_at
+    // reclaim (#218): the pipeline handler atomically stamps this before
+    // running, so duplicate messages (recovery-sweep re-enqueues, SQS
+    // redelivery, multi-process races) no-op, and a claim older than the
+    // reclaim window counts as abandoned. One column serves both the
+    // pending->review and escalated->arbitration phases — their statuses are
+    // disjoint.
+    reviewClaimedAt: timestamp("review_claimed_at", { withTimezone: true }),
+    // Attempts consumed in the current phase (reset on escalation). The
+    // recovery sweep stops re-driving a row at the attempt cap so a poisoned
+    // contribution cannot burn LLM spend forever.
+    reviewAttempts: integer("review_attempts").notNull().default(0),
   },
   (table) => [
     index("idx_contributions_claim").on(table.claimId),
@@ -706,6 +718,10 @@ export const appeals = pgTable(
       .notNull()
       .defaultNow(),
     status: text("status").notNull().default("pending"),
+    // Crash-safe arbitration claim + attempt cap — same recovery mechanics as
+    // contributions.review_claimed_at (#218).
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    arbitrationAttempts: integer("arbitration_attempts").notNull().default(0),
   },
   (table) => [
     index("idx_appeals_contribution").on(table.contributionId),
