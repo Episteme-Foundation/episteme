@@ -44,9 +44,9 @@ export function Importance({
   if (typeof value !== "number") return null;
   const level = importanceLevel(value);
   const meta = IMPORTANCE[level];
-  const title = `importance ${value.toFixed(2)} · ${meta.label} — ${meta.gloss}. The Steward assesses and decomposes higher-importance claims first.`;
+  const tip = `Importance ${value.toFixed(2)}, from 0 to 1 · ${meta.label}: ${meta.gloss}. The Steward assesses and decomposes higher-importance claims first.`;
   return (
-    <span className="imp" title={title} aria-label={`importance: ${meta.label}`}>
+    <span className="imp tip" data-tip={tip} tabIndex={0} aria-label={`importance: ${meta.label}`}>
       <span className="imp-pips" aria-hidden>
         {[1, 2, 3, 4, 5].map((i) => (
           <span key={i} className={`imp-pip${i <= meta.pips ? " on" : ""}`} />
@@ -64,7 +64,7 @@ export function Importance({
 export function Credence({ value }: { value: number | null | undefined }) {
   if (typeof value !== "number") return null;
   return (
-    <span className="conf credence" title={CREDENCE_GLOSS}>
+    <span className="conf credence tip" data-tip={CREDENCE_GLOSS} tabIndex={0}>
       <span className="sc" style={{ marginRight: ".1rem" }}>credence</span>
       <span className="conf-track">
         <span className="conf-fill" style={{ width: `${Math.round(value * 100)}%` }} />
@@ -79,7 +79,7 @@ export function Credence({ value }: { value: number | null | undefined }) {
 export function VerdictConfidence({ value }: { value: number | null | undefined }) {
   if (typeof value !== "number") return null;
   return (
-    <span className="conf-quiet" title={VERDICT_CONFIDENCE_GLOSS}>
+    <span className="conf-quiet tip" data-tip={VERDICT_CONFIDENCE_GLOSS} tabIndex={0}>
       verdict confidence {value.toFixed(2)}
     </span>
   );
