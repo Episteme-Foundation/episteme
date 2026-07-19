@@ -292,7 +292,9 @@ export interface ContributorProfile {
   };
   recent_contributions: Array<{
     id: string;
-    claim_id: string;
+    // Null for intake proposals (propose_claim / propose_source) still
+    // awaiting review (#157).
+    claim_id: string | null;
     contribution_type: string;
     review_status: string;
     submitted_at: string;
@@ -305,4 +307,31 @@ export interface ContributorProfile {
     awarded_by: string;
     created_at: string;
   }>;
+}
+
+// The public record of one contribution and its review (#174): what was
+// submitted, and — once the reviewer has decided — the decision with the
+// reasoning that justifies it.
+export interface ContributionDetail {
+  contribution: {
+    id: string;
+    claim_id: string | null;
+    contributor_id: string;
+    contribution_type: string;
+    content: string;
+    evidence_urls: string[];
+    submitted_at: string;
+    review_status: string;
+    merge_target_claim_id: string | null;
+    proposed_canonical_form: string | null;
+  };
+  review: {
+    id: string;
+    decision: string;
+    reasoning: string;
+    confidence: number;
+    policy_citations: string[];
+    reviewed_at: string;
+    reviewed_by: string;
+  } | null;
 }

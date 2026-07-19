@@ -731,3 +731,37 @@ html { scroll-behavior: smooth; }
 }
 .account-table code { font-size: 0.8rem; }
 .usage-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+
+/* ---- contribution entry points (#174) ------------------------------------- */
+/* Visible to every reader, quiet on the page: the prompt advertises that the
+   page is challengeable; the action itself is gated behind sign-in. */
+
+.contribute-lede { font-family: var(--sans); font-size: 0.86rem; color: var(--muted); max-width: 36rem; }
+.contribute-open {
+  font-family: var(--sans); font-size: 0.86rem; font-weight: 600;
+  padding: 0.5rem 1rem; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--paper-card); color: var(--ink); cursor: pointer;
+  transition: background 0.12s ease;
+}
+.contribute-open:hover { background: var(--paper-sunk); }
+.contribute-box {
+  border: 1px solid var(--rule-soft); border-radius: 4px;
+  background: var(--paper-card); padding: 0.9rem 1.1rem 1rem;
+  max-width: 36rem; font-family: var(--sans); font-size: 0.88rem;
+}
+.contribute-label {
+  display: block; font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  margin: 0.9rem 0 0.3rem;
+}
+.contribute-box .contribute-label:first-child { margin-top: 0; }
+.contribute-optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.contribute-field {
+  width: 100%; box-sizing: border-box; font: inherit; font-size: 0.9rem;
+  padding: 0.45rem 0.6rem; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--paper); color: var(--ink);
+}
+textarea.contribute-field { resize: vertical; line-height: 1.45; }
+.contribute-hint { font-size: 0.8rem; color: var(--muted); margin: 0.35rem 0 0; }
+.contribute-actions { display: flex; align-items: center; gap: 0.9rem; margin-top: 1rem; }
+.contribute-error { font-size: 0.82rem; color: var(--st-contradicted); margin: 0.6rem 0 0; }
