@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   applyArbitrationOutcome: vi.fn(async () => null),
   materializeAcceptedIntake: vi.fn(),
   getContributionById: vi.fn(),
+  requestAudit: vi.fn(async () => "run-1"),
 }));
 
 vi.mock("../../../src/db/client.js", () => ({
@@ -25,13 +26,16 @@ vi.mock("../../../src/db/client.js", () => ({
       set: () => ({ where: async () => undefined }),
     }),
   }),
+  rawQuery: vi.fn(async () => []),
 }));
 vi.mock("../../../src/services/queue-service.js", () => ({
   enqueueSteward: vi.fn(),
+  requestAudit: mocks.requestAudit,
 }));
 vi.mock("../../../src/services/reputation-service.js", () => ({
   reverseReviewOutcome: mocks.reverseReviewOutcome,
   applyArbitrationOutcome: mocks.applyArbitrationOutcome,
+  AUDIT_SUSPENSION_PREFIX: "audit:",
 }));
 vi.mock("../../../src/services/intake-service.js", () => ({
   materializeAcceptedIntake: mocks.materializeAcceptedIntake,
@@ -50,6 +54,7 @@ beforeEach(() => {
   mocks.applyArbitrationOutcome.mockReset().mockResolvedValue(null);
   mocks.materializeAcceptedIntake.mockReset();
   mocks.getContributionById.mockReset();
+  mocks.requestAudit.mockClear();
 });
 
 describe("record_arbitration_decision on intake contributions", () => {
@@ -114,6 +119,31 @@ describe("record_arbitration_decision on intake contributions", () => {
     expect(result.success).toBe(true);
     expect(mocks.materializeAcceptedIntake).not.toHaveBeenCalled();
     expect(mocks.reverseReviewOutcome).toHaveBeenCalled();
+    // Every overturn triggers a decision audit of the overturned review
+    // (#180), at most once per contribution via the dedupe key.
+    expect(mocks.requestAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auditType: "decision_audit",
+        triggeredBy: "arbitration_overturn",
+        dedupeKey: "overturn:contrib-1",
+      })
+    );
+  });
+
+  it("does not request an audit when the original decision is upheld", async () => {
+    mocks.getContributionById.mockResolvedValue({
+      id: "contrib-1",
+      contributionType: "challenge",
+    });
+
+    await executeArbitratorTool("record_arbitration_decision", {
+      contribution_id: "contrib-1",
+      outcome: "uphold_original",
+      decision: "The rejection stands.",
+      reasoning: "The review was sound.",
+    });
+
+    expect(mocks.requestAudit).not.toHaveBeenCalled();
   });
 });
 

@@ -360,12 +360,14 @@ async function getContributionDetails(contributionId: string) {
     .where(eq(contributors.id, contribution.contributorId))
     .limit(1);
 
-  // Review if exists (latest first: a re-reviewed contribution should show
-  // the decision currently in force)
+  // Review if exists — the decision in force (a superseded row is history
+  // an audit re-review replaced, #180).
   const [review] = await db
     .select()
     .from(contributionReviews)
-    .where(eq(contributionReviews.contributionId, contributionId))
+    .where(
+      sql`${contributionReviews.contributionId} = ${contributionId} AND ${contributionReviews.superseded} = false`
+    )
     .orderBy(desc(contributionReviews.reviewedAt))
     .limit(1);
 
@@ -579,7 +581,9 @@ async function getRecentDecisions(
 ) {
   const db = getDb();
 
-  let conditions = sql`1=1`;
+  // Superseded reviews are history, not decisions in force — an audit
+  // re-review replaced them (#180).
+  let conditions = sql`${contributionReviews.superseded} = false`;
   if (decisionFilter) {
     conditions = sql`${conditions} AND ${contributionReviews.decision} = ${decisionFilter}`;
   }

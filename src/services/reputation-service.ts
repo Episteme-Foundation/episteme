@@ -63,13 +63,36 @@ export const REPUTATION_REASONS = {
   rejected: "contribution_rejected",
   badFaith: "bad_faith_flag",
   overturned: "appeal_overturned",
+  /** Audit Agent adjustment (#180) — contribution_id/review_id are null. */
+  auditAdjustment: "audit_adjustment",
+  /** Compensation when an audit re-review supersedes a decision (#180). */
+  superseded: "review_superseded",
 } as const;
 
 /** Marks suspensions this service imposed, so appeals can lift exactly those. */
 export const AUTO_SUSPENSION_PREFIX = "reputation:";
 
+/**
+ * Marks deliberate Audit Agent suspensions (#180): "audit:<finding_id> …".
+ * These are judgment calls, so no mechanical path lifts them — only the
+ * audit function itself or the Dispute Arbitrator adjudicating an appeal.
+ */
+export const AUDIT_SUSPENSION_PREFIX = "audit:";
+
 export function clampScore(score: number): number {
   return Math.min(REPUTATION_RULES.max, Math.max(REPUTATION_RULES.min, score));
+}
+
+/**
+ * The events belonging to a contribution's LIVE decision: everything after
+ * the last 'review_superseded' compensation (#180). Earlier segments were
+ * already zeroed by their supersession and must not be reversed again.
+ */
+function liveSegment<T extends { reason: string }>(events: T[]): T[] {
+  const last = events
+    .map((e) => e.reason)
+    .lastIndexOf(REPUTATION_REASONS.superseded);
+  return events.slice(last + 1);
 }
 
 export function reputationDeltaFor(
@@ -184,6 +207,7 @@ export async function applyReviewOutcome(
        bad_faith_flags = bad_faith_flags + $3,
        is_suspended = is_suspended OR $4,
        suspension_reason = CASE WHEN $4 THEN $5 ELSE suspension_reason END,
+       suspended_at = CASE WHEN $4 THEN now() ELSE suspended_at END,
        last_active_at = now()
      WHERE id = $6`,
     [
@@ -278,10 +302,15 @@ export async function applyArbitrationOutcome(input: {
   finalDecision: "accept" | "reject";
 }): Promise<ReviewOutcomeSummary | null> {
   const priorEvents = await rawQuery<{ reason: string }>(
-    `SELECT reason FROM reputation_events WHERE contribution_id = $1`,
+    `SELECT reason FROM reputation_events
+     WHERE contribution_id = $1
+     ORDER BY created_at`,
     [input.contributionId]
   );
-  if (priorEvents.length > 0) return null;
+  // Only the live segment counts (#180): events from a decision an audit
+  // re-review superseded were compensated to zero, so they must not block
+  // applying the outcome of the fresh escalation.
+  if (liveSegment(priorEvents).length > 0) return null;
 
   const [contribution] = await rawQuery<{
     contributor_id: string;
@@ -336,6 +365,7 @@ export async function applyArbitrationOutcome(input: {
        reputation_score = $1,
        is_suspended = is_suspended OR $2,
        suspension_reason = CASE WHEN $2 THEN $3 ELSE suspension_reason END,
+       suspended_at = CASE WHEN $2 THEN now() ELSE suspended_at END,
        last_active_at = now()
      WHERE id = $4`,
     [
@@ -419,10 +449,16 @@ export async function reverseReviewOutcome(input: {
   );
   if (!contribution) return null;
 
-  const events = await rawQuery<{ delta: number; reason: string }>(
-    `SELECT delta, reason FROM reputation_events WHERE contribution_id = $1`,
+  const allEvents = await rawQuery<{ delta: number; reason: string }>(
+    `SELECT delta, reason FROM reputation_events
+     WHERE contribution_id = $1
+     ORDER BY created_at`,
     [input.contributionId]
   );
+  // Only the live segment is reversible: an audit re-review compensates
+  // everything before its 'review_superseded' marker (#180), so events from
+  // superseded decisions must not be reversed a second time.
+  const events = liveSegment(allEvents);
   // Nothing to reverse (never penalized), or already reversed.
   const penalties = events.filter(
     (e) =>
@@ -478,7 +514,8 @@ export async function reverseReviewOutcome(input: {
        bad_faith_flags = $2,
        contribution_standing = $3,
        is_suspended = CASE WHEN $4 THEN false ELSE is_suspended END,
-       suspension_reason = CASE WHEN $4 THEN NULL ELSE suspension_reason END
+       suspension_reason = CASE WHEN $4 THEN NULL ELSE suspension_reason END,
+       suspended_at = CASE WHEN $4 THEN NULL ELSE suspended_at END
      WHERE id = $5`,
     [
       newScore,
@@ -519,6 +556,270 @@ export async function reverseReviewOutcome(input: {
     standingRestored,
     unsuspended: unsuspend,
     kudosAwarded,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Audit re-review → neutralize, then judge afresh
+// ---------------------------------------------------------------------------
+
+export interface NeutralizationSummary {
+  contributorId: string;
+  supersededReviewId: string;
+  previousScore: number;
+  newScore: number;
+  badFaithFlagCleared: boolean;
+  kudosReversed: number;
+  unsuspended: boolean;
+}
+
+/**
+ * Undo the standing consequences of a contribution's live review so an audit
+ * re-review can judge it afresh (#180). Without this, a re-review would call
+ * applyReviewOutcome a second time and stack a second set of reputation
+ * events, counters, and kudos on top of the first.
+ *
+ * Marks the review row(s) superseded (history stays; get_recent_decisions
+ * shows only live decisions), inserts one compensating reputation event that
+ * zeroes the contribution's net ledger effect, decrements the counter the
+ * original decision incremented, clears a still-active bad-faith flag, claws
+ * back kudos, and lifts a reputation-imposed suspension when the restored
+ * score clears the threshold (same rule as an appeal overturn). Idempotent:
+ * once no live review remains there is nothing to neutralize.
+ */
+export async function neutralizeReviewOutcome(input: {
+  contributionId: string;
+}): Promise<NeutralizationSummary | null> {
+  const [contribution] = await rawQuery<{
+    contributor_id: string;
+    review_status: string;
+  }>(
+    `SELECT contributor_id, review_status FROM contributions WHERE id = $1`,
+    [input.contributionId]
+  );
+  if (!contribution) return null;
+
+  const [liveReview] = await rawQuery<{
+    id: string;
+    decision: string;
+    suspected_bad_faith: boolean;
+  }>(
+    `SELECT id, decision, suspected_bad_faith
+     FROM contribution_reviews
+     WHERE contribution_id = $1 AND superseded = false
+     ORDER BY reviewed_at DESC LIMIT 1`,
+    [input.contributionId]
+  );
+  if (!liveReview) return null;
+
+  await rawQuery(
+    `UPDATE contribution_reviews SET superseded = true WHERE contribution_id = $1`,
+    [input.contributionId]
+  );
+
+  const [contributor] = await rawQuery<{
+    reputation_score: number;
+    bad_faith_flags: number;
+    contribution_standing: string;
+    is_suspended: boolean;
+    suspension_reason: string | null;
+  }>(
+    `SELECT reputation_score, bad_faith_flags, contribution_standing,
+            is_suspended, suspension_reason
+     FROM contributors WHERE id = $1`,
+    [contribution.contributor_id]
+  );
+  if (!contributor) return null;
+
+  const events = await rawQuery<{ delta: number; reason: string }>(
+    `SELECT delta, reason FROM reputation_events
+     WHERE contribution_id = $1
+     ORDER BY created_at`,
+    [input.contributionId]
+  );
+  // The overturn marker only matters if it belongs to the live decision;
+  // one from an earlier, already-superseded cycle says nothing about the
+  // current flag. The net delta, by contrast, sums the whole history: the
+  // compensation must zero the contribution's total ledger effect.
+  const overturned = liveSegment(events).some(
+    (e) => e.reason === REPUTATION_REASONS.overturned
+  );
+  const netDelta = events.reduce((sum, e) => sum + e.delta, 0);
+
+  // The flag is still standing only if the live review carried it and no
+  // overturn already cleared it.
+  const clearFlag = liveReview.suspected_bad_faith && !overturned;
+  const remainingFlags = clearFlag
+    ? Math.max(0, contributor.bad_faith_flags - 1)
+    : contributor.bad_faith_flags;
+  const standingRestored =
+    clearFlag &&
+    contributor.contribution_standing === "must_pay" &&
+    remainingFlags === 0;
+
+  // The contribution's current status names the counter holding it: an
+  // overturn moved rejected→accepted, and an arbitrated escalation resolved
+  // the escalated counter into the final disposition (#179) — the review
+  // row's own decision no longer says where the count sits.
+  const counterColumn =
+    contribution.review_status === "accepted"
+      ? "contributions_accepted"
+      : contribution.review_status === "rejected"
+        ? "contributions_rejected"
+        : "contributions_escalated";
+
+  const previousScore = contributor.reputation_score;
+  const newScore = clampScore(previousScore - netDelta);
+
+  const unsuspend =
+    contributor.is_suspended &&
+    (contributor.suspension_reason ?? "").startsWith(AUTO_SUSPENSION_PREFIX) &&
+    newScore >= REPUTATION_RULES.suspendBelow;
+
+  await rawQuery(
+    `UPDATE contributors SET
+       ${counterColumn} = GREATEST(0, ${counterColumn} - 1),
+       reputation_score = $1,
+       bad_faith_flags = $2,
+       contribution_standing = $3,
+       is_suspended = CASE WHEN $4 THEN false ELSE is_suspended END,
+       suspension_reason = CASE WHEN $4 THEN NULL ELSE suspension_reason END,
+       suspended_at = CASE WHEN $4 THEN NULL ELSE suspended_at END
+     WHERE id = $5`,
+    [
+      newScore,
+      remainingFlags,
+      standingRestored ? "good" : contributor.contribution_standing,
+      unsuspend,
+      contribution.contributor_id,
+    ]
+  );
+
+  if (netDelta !== 0) {
+    await rawQuery(
+      `INSERT INTO reputation_events
+         (contributor_id, contribution_id, review_id, delta, score_after, reason)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        contribution.contributor_id,
+        input.contributionId,
+        liveReview.id,
+        -netDelta,
+        newScore,
+        REPUTATION_REASONS.superseded,
+      ]
+    );
+  }
+
+  // Claw back kudos this contribution earned (acceptance and any
+  // survived-appeal bonus) with a compensating negative event, so a
+  // re-accepted contribution earns kudos once, not twice. awardKudos rejects
+  // non-positive amounts by design, so the compensation writes the ledger
+  // directly.
+  const [kudosRow] = await rawQuery<{ total: number }>(
+    `SELECT COALESCE(SUM(amount), 0)::int AS total
+     FROM kudos_events WHERE contribution_id = $1`,
+    [input.contributionId]
+  );
+  const kudosReversed = kudosRow?.total ?? 0;
+  if (kudosReversed > 0) {
+    await rawQuery(
+      `INSERT INTO kudos_events (contributor_id, contribution_id, amount, reason, awarded_by)
+       VALUES ($1, $2, $3, $4, 'system')`,
+      [
+        contribution.contributor_id,
+        input.contributionId,
+        -kudosReversed,
+        REPUTATION_REASONS.superseded,
+      ]
+    );
+    await rawQuery(
+      `UPDATE contributors SET kudos = kudos - $1 WHERE id = $2`,
+      [kudosReversed, contribution.contributor_id]
+    );
+  }
+
+  return {
+    contributorId: contribution.contributor_id,
+    supersededReviewId: liveReview.id,
+    previousScore,
+    newScore,
+    badFaithFlagCleared: clearFlag,
+    kudosReversed,
+    unsuspended: unsuspend,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Audit adjustment → ledger
+// ---------------------------------------------------------------------------
+
+export interface AdjustmentSummary {
+  contributorId: string;
+  previousScore: number;
+  newScore: number;
+  suspended: boolean;
+}
+
+/**
+ * Apply an Audit Agent reputation adjustment through the ledger (#180): the
+ * single write path for audit deltas, so every change stays reconstructible
+ * from reputation_events and visible to appeal reversal. Dropping below the
+ * threshold auto-suspends with the same 'reputation:' reason the review path
+ * uses, so the appeal machinery can lift it like any other score-based
+ * suspension. Raising a score never auto-unsuspends: lifting is a judgment
+ * (the audit's unsuspend tool, or arbitration).
+ */
+export async function adjustReputation(input: {
+  contributorId: string;
+  delta: number;
+}): Promise<AdjustmentSummary | null> {
+  const [contributor] = await rawQuery<{
+    reputation_score: number;
+    is_suspended: boolean;
+  }>(
+    `SELECT reputation_score, is_suspended FROM contributors WHERE id = $1`,
+    [input.contributorId]
+  );
+  if (!contributor) return null;
+
+  const previousScore = contributor.reputation_score;
+  const newScore = clampScore(previousScore + input.delta);
+  const suspend =
+    !contributor.is_suspended && newScore < REPUTATION_RULES.suspendBelow;
+
+  await rawQuery(
+    `UPDATE contributors SET
+       reputation_score = $1,
+       is_suspended = is_suspended OR $2,
+       suspension_reason = CASE WHEN $2 THEN $3 ELSE suspension_reason END,
+       suspended_at = CASE WHEN $2 THEN now() ELSE suspended_at END
+     WHERE id = $4`,
+    [
+      newScore,
+      suspend,
+      `${AUTO_SUSPENSION_PREFIX} score fell below ${REPUTATION_RULES.suspendBelow} after an audit adjustment`,
+      input.contributorId,
+    ]
+  );
+
+  await rawQuery(
+    `INSERT INTO reputation_events
+       (contributor_id, contribution_id, review_id, delta, score_after, reason)
+     VALUES ($1, NULL, NULL, $2, $3, $4)`,
+    [
+      input.contributorId,
+      input.delta,
+      newScore,
+      REPUTATION_REASONS.auditAdjustment,
+    ]
+  );
+
+  return {
+    contributorId: input.contributorId,
+    previousScore,
+    newScore,
+    suspended: contributor.is_suspended || suspend,
   };
 }
 

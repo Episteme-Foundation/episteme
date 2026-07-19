@@ -409,6 +409,10 @@ export const contributors = pgTable("contributors", {
   isVerified: boolean("is_verified").notNull().default(false),
   isSuspended: boolean("is_suspended").notNull().default(false),
   suspensionReason: text("suspension_reason"),
+  // When the current suspension was imposed (#180) — lets the audit sweep
+  // find suspensions that have stood unexamined for too long. Cleared on
+  // unsuspension so it always describes the live suspension.
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -675,6 +679,10 @@ export const contributionReviews = pgTable("contribution_reviews", {
     .notNull()
     .defaultNow(),
   reviewedBy: text("reviewed_by").notNull().default("contribution_reviewer"),
+  // True once an audit re-review replaced this decision (#180): the row stays
+  // as history, but exactly one non-superseded review is live per contribution
+  // and get_recent_decisions shows only live ones.
+  superseded: boolean("superseded").notNull().default(false),
 });
 
 // ---------------------------------------------------------------------------
@@ -860,6 +868,103 @@ export const auditLog = pgTable(
   (table) => [index("idx_audit_log_claim_time").on(table.claimId, table.createdAt)]
 );
 
+// ---------------------------------------------------------------------------
+// audit_runs
+//
+// One row per Audit Agent invocation (#180) — created when the audit is
+// requested, before it runs. Serves three jobs at once: it is the dedupe
+// gate (dedupe_key makes "one sweep per day" and "one audit per bad-faith
+// flag" a DB constraint, safe across concurrent ECS tasks), the run's
+// identity that findings attach to, and the heartbeat that makes a dormant
+// audit subsystem observable — this table being empty IS the #180 bug report.
+// ---------------------------------------------------------------------------
+export const auditRuns = pgTable(
+  "audit_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // 'decision_audit' | 'pattern_analysis' | 'contributor_review' |
+    // 'anomaly_investigation' — the AuditMessage interface.
+    auditType: text("audit_type").notNull(),
+    context: text("context").notNull().default(""),
+    // What caused the run: 'arbitration_overturn' | 'bad_faith_flag' |
+    // 'scheduled_sweep' | 'suspension_review' | 'manual'.
+    triggeredBy: text("triggered_by").notNull().default("manual"),
+    // Idempotency key for triggers that must fire at most once per subject
+    // (e.g. 'sweep:2026-07-18', 'bad-faith:<contribution_id>'). Null for
+    // triggers that may repeat.
+    dedupeKey: text("dedupe_key"),
+    requestedAt: timestamp("requested_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    // Set when the worker finishes the run; a stale null marks a run that
+    // was enqueued but never completed.
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    findingsCount: integer("findings_count").notNull().default(0),
+  },
+  (table) => [
+    uniqueIndex("uq_audit_runs_dedupe_key")
+      .on(table.dedupeKey)
+      .where(sql`dedupe_key IS NOT NULL`),
+    index("idx_audit_runs_requested").on(table.requestedAt),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// audit_findings
+//
+// Durable audit findings (#180): what flag_issue writes. A finding is the
+// decision record every audit consequence must trace to — the audit tools
+// that change contributor standing require a finding_id, mirroring the
+// every-change-traces-to-its-decision invariant of reputation_events. The
+// typed FK columns (claim/contribution/review/contributor) let findings feed
+// re-review and appeals; status gives later runs memory, so a sweep doesn't
+// rediscover and re-punish the same pattern.
+// ---------------------------------------------------------------------------
+export const auditFindings = pgTable(
+  "audit_findings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Nullable so the tool still records when invoked outside a tracked run.
+    runId: uuid("run_id").references(() => auditRuns.id, {
+      onDelete: "set null",
+    }),
+    // 'low' | 'medium' | 'high' | 'critical'
+    severity: text("severity").notNull(),
+    // 'decision_quality' | 'consistency' | 'process_compliance' |
+    // 'bias_detected' | 'manipulation_suspected'
+    category: text("category").notNull(),
+    description: text("description").notNull(),
+    evidence: text("evidence").notNull(),
+    recommendation: text("recommendation").notNull(),
+    // 'open' | 'resolved' | 'dismissed'
+    status: text("status").notNull().default("open"),
+    resolutionNote: text("resolution_note"),
+    resolvedBy: text("resolved_by"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    // Typed targets, all nullable — a finding names what it is about.
+    claimId: uuid("claim_id").references(() => claims.id, {
+      onDelete: "set null",
+    }),
+    contributionId: uuid("contribution_id").references(() => contributions.id, {
+      onDelete: "set null",
+    }),
+    reviewId: uuid("review_id").references(() => contributionReviews.id, {
+      onDelete: "set null",
+    }),
+    contributorId: uuid("contributor_id").references(() => contributors.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_audit_findings_status").on(table.status, table.createdAt),
+    index("idx_audit_findings_contributor").on(table.contributorId),
+    index("idx_audit_findings_contribution").on(table.contributionId),
+  ]
+);
+
 // Type exports
 export type Claim = typeof claims.$inferSelect;
 export type NewClaim = typeof claims.$inferInsert;
@@ -905,3 +1010,7 @@ export type KudosEvent = typeof kudosEvents.$inferSelect;
 export type NewKudosEvent = typeof kudosEvents.$inferInsert;
 export type AuditLogEntry = typeof auditLog.$inferSelect;
 export type NewAuditLogEntry = typeof auditLog.$inferInsert;
+export type AuditRun = typeof auditRuns.$inferSelect;
+export type NewAuditRun = typeof auditRuns.$inferInsert;
+export type AuditFinding = typeof auditFindings.$inferSelect;
+export type NewAuditFinding = typeof auditFindings.$inferInsert;

@@ -61,6 +61,13 @@ VIII: you own the judgment, not the ledger):
 - **human_review**: the case exceeds what arbitration should settle; an
   appeal moves to the human queue.
 
+One power sits outside the outcomes: lift_suspension. The mechanical
+restoration on an overturn lifts only score-based suspensions; a
+deliberate Audit suspension stands until judged. When adjudicating shows
+a suspension's basis no longer holds — the flagged conduct was sincere,
+the pattern dissolves on inspection — lift it explicitly, and the audit
+finding it rests on is resolved with your reasoning.
+
 Arbitration never writes to claims. If the outcome bears on a claim's
 assessment or structure, notify_claim_steward is the one channel: the
 Steward re-judges the claim, you do not (Part VIII, Working Together).

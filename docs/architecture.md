@@ -385,9 +385,22 @@ These act through tools over the life of a claim and the graph:
 - **Audit Agent** is quality control over the governance system itself. Each
   run is invoked with an audit type (a decision audit of specific review
   decisions, a pattern analysis across recent ones, a contributor review, or an
-  anomaly investigation) and a free-text context saying what prompted it. It
-  flags issues, can send a decision back for fresh review, adjusts reputation,
-  and can suspend bad actors.
+  anomaly investigation) and a free-text context saying what prompted it.
+  Runs are fed from two directions: event triggers at the places suspicion is
+  generated (every arbitration overturn and every bad-faith flag requests a
+  decision audit, at most once per contribution), and a scheduler that
+  requests a periodic sweep over recent decisions plus a re-examination of
+  any suspension that has stood unexamined too long — both idempotent through
+  a DB dedupe key, so concurrent processes never double-run an audit.
+  Findings are persisted rows (`audit_findings`, attached to their
+  `audit_runs` row), and every consequence — a re-review, a reputation
+  adjustment through the ledger, a suspension — requires the finding that
+  justifies it. A re-review first neutralizes the superseded decision's
+  consequences (reputation, counters, kudos, a still-active bad-faith flag)
+  so the fresh review's effects don't stack on the old ones. Audit
+  suspensions are severe but not one-way: the suspended contributor can
+  still appeal their own contributions, and the Arbitrator can lift a
+  suspension whose basis an appeal dissolves.
 
 One agent lives outside governance entirely. The **Extension Agent** is the
 read-only companion behind the browser extension: it judges the phrasings on a
@@ -474,7 +487,9 @@ Around that core sit the account and operations tables: `contributors` doubles
 as the account table, `api_keys` holds hashed keys, `llm_usage` meters every
 model call, `reputation_events` and `kudos_events` are the append-only score
 ledgers, `reconciliation_events` is the Curator's reversible audit log,
-`audit_log` is the Steward's append-only decision trail, and `jobs` tracks
+`audit_log` is the Steward's append-only decision trail, `audit_runs` and
+`audit_findings` are the Audit Agent's run ledger and durable findings (the
+run ledger doubles as the dedupe gate for audit triggers), and `jobs` tracks
 queued work.
 
 ### Search: vectors and full text

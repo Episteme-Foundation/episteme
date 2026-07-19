@@ -44,8 +44,8 @@
     "invokedWhen": "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 13440,
-    "fullChars": 53920
+    "roleChars": 13735,
+    "fullChars": 54215
   },
   {
     "key": "curator",
@@ -68,8 +68,8 @@
     "invokedWhen": "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 7034,
-    "fullChars": 47514
+    "roleChars": 7439,
+    "fullChars": 47919
   },
   {
     "key": "audit-agent",
@@ -80,7 +80,7 @@
     "invokedWhen": "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 6191,
-    "fullChars": 46671
+    "roleChars": 7213,
+    "fullChars": 47693
   }
 ]

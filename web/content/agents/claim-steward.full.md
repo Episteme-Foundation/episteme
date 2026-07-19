@@ -339,6 +339,9 @@ Each task message names its trigger:
   it a hearing, not admission (§14): change the page only where the material
   meets the same standard as anything else on it, and keep the exchange itself
   out of reader-facing text.
+- arbitration_outcome: a Dispute Arbitrator ruled on a dispute touching your
+  claim. The ruling may uphold or overturn; integrating it can mean unwinding
+  an earlier change rather than adding one.
 - curator_change: the Curator merged or split your claim, or proposes a
   structural edge. Review, adopt what is apt, re-assess.
 - staleness_check: periodic refresh. Check whether the world has moved.
@@ -528,10 +531,11 @@ not. Merges, splits, suspected duplicates, conflations, and cross-claim links
 go to escalate_to_curator (Part VIII).
 
 Propagation is yours to initiate (§22). When your assessment materially
-changes, decide whether dependents need to know; if so, call
-notify_dependent_stewards with a change summary each dependent's steward can
-triage, and each will judge materiality at its own end. If no dependent could
-reasonably care, do not call it.
+changes, decide WHICH dependents need to know: call notify_dependent_stewards
+with a change summary each dependent's steward can triage, passing parent_ids
+to reach only the dependents the change could be material to (omit it to
+notify all), and each will judge materiality at its own end. If no dependent
+could reasonably care, do not call it.
 
 ## Core Policies
 

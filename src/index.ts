@@ -7,6 +7,7 @@ import { loadConfig } from "./config.js";
 import { getDb, closeDb } from "./db/client.js";
 import { startPoller } from "./workers/poller.js";
 import { startLocalRunner } from "./workers/local-runner.js";
+import { startAuditScheduler } from "./workers/audit-scheduler.js";
 import { handleClaimPipeline } from "./workers/claim-pipeline.js";
 import { handleUrlExtraction } from "./workers/url-extraction.js";
 import { handleContributionMessage } from "./workers/contribution-pipeline.js";
@@ -99,6 +100,11 @@ async function main() {
   // have an SQS poller route through SQS, so their in-memory arrays stay empty
   // and this is a no-op for them (no double processing).
   pollers.push(startLocalRunner({ logger }));
+
+  // The audit scheduler (#180) feeds the audit queue on a cadence: periodic
+  // decision sweeps and stale-suspension re-reviews. Its dedupe keys live in
+  // the DB, so running it in every task is safe — exactly one request wins.
+  pollers.push(startAuditScheduler({ logger }));
 
   // Graceful shutdown
   const shutdown = async () => {

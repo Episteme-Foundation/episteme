@@ -15,6 +15,7 @@ import {
 import {
   enqueueArbitration,
   enqueueSteward,
+  requestAudit,
 } from "../../services/queue-service.js";
 import {
   applyReviewOutcome,
@@ -237,6 +238,31 @@ export async function executeReviewerTool(
           suspectedBadFaith,
           badFaithCategory,
         });
+
+        // A bad-faith flag is the reviewer's highest-stakes judgment, so the
+        // constitution's "reviews high-stakes cases fully" becomes concrete
+        // here: every flag gets a decision audit (#180). At most one per
+        // contribution, and a failure to enqueue must not fail the review
+        // that was already recorded.
+        if (suspectedBadFaith) {
+          try {
+            await requestAudit({
+              auditType: "decision_audit",
+              context:
+                `A bad-faith flag (${badFaithCategory}) was applied to ` +
+                `contribution ${contributionId}. Audit the decision fully: ` +
+                `does the evidence clear the deliberate-abuse bar, and is ` +
+                `the contributor's wider record consistent with it?`,
+              triggeredBy: "bad_faith_flag",
+              dedupeKey: `bad-faith:${contributionId}`,
+            });
+          } catch (auditErr) {
+            console.error(
+              "Failed to request bad-faith audit:",
+              auditErr instanceof Error ? auditErr.message : auditErr
+            );
+          }
+        }
 
         return JSON.stringify({
           success: true,

@@ -25,6 +25,8 @@ import {
   applyReviewOutcome,
   applyArbitrationOutcome,
   reverseReviewOutcome,
+  neutralizeReviewOutcome,
+  adjustReputation,
   clampScore,
   reputationDeltaFor,
   trustLevelFor,
@@ -481,6 +483,375 @@ describe("reverseReviewOutcome (appeal overturn)", () => {
     expect(
       await reverseReviewOutcome({ contributionId: CONTRIBUTION_ID })
     ).toBeNull();
+  });
+});
+
+describe("neutralizeReviewOutcome (audit re-review, #180)", () => {
+  /** Route the mock for the neutralization query shapes. */
+  function routeNeutralize(opts: {
+    reviewStatus?: string;
+    review?: {
+      id: string;
+      decision: string;
+      suspected_bad_faith: boolean;
+    } | null;
+    contributor?: Record<string, unknown>;
+    events?: Array<{ delta: number; reason: string }>;
+    kudosTotal?: number;
+  }) {
+    mocks.rawQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM contributions ")) {
+        return [
+          {
+            contributor_id: CONTRIBUTOR_ID,
+            review_status: opts.reviewStatus ?? "rejected",
+          },
+        ];
+      }
+      if (sql.includes("FROM contribution_reviews")) {
+        return opts.review ? [opts.review] : [];
+      }
+      if (sql.includes("FROM contributors")) {
+        return [primeContributor(opts.contributor)];
+      }
+      if (sql.includes("FROM reputation_events")) {
+        return opts.events ?? [];
+      }
+      if (sql.includes("FROM kudos_events")) {
+        return [{ total: opts.kudosTotal ?? 0 }];
+      }
+      return [];
+    });
+  }
+
+  function supersededMark(): unknown[] | undefined {
+    const call = mocks.rawQuery.mock.calls.find(([sql]) =>
+      (sql as string).includes("SET superseded = true")
+    );
+    return call?.[1] as unknown[] | undefined;
+  }
+
+  it("bad-faith rejection: zeroes the ledger, decrements the counter, clears flag and standing", async () => {
+    routeNeutralize({
+      review: { id: REVIEW_ID, decision: "reject", suspected_bad_faith: true },
+      contributor: primeContributor({
+        reputation_score: 34,
+        bad_faith_flags: 1,
+        contribution_standing: "must_pay",
+      }),
+      events: [
+        { delta: REPUTATION_RULES.rejected, reason: REPUTATION_REASONS.rejected },
+        { delta: REPUTATION_RULES.badFaithFlag, reason: REPUTATION_REASONS.badFaith },
+      ],
+    });
+
+    const result = await neutralizeReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+    });
+
+    expect(result).toMatchObject({
+      contributorId: CONTRIBUTOR_ID,
+      supersededReviewId: REVIEW_ID,
+      previousScore: 34,
+      newScore: 50, // 34 - (-16)
+      badFaithFlagCleared: true,
+    });
+    expect(supersededMark()).toEqual([CONTRIBUTION_ID]);
+
+    const { sql, params } = updateCall();
+    expect(sql).toContain(
+      "contributions_rejected = GREATEST(0, contributions_rejected - 1)"
+    );
+    expect(params[0]).toBe(50);
+    expect(params[1]).toBe(0); // remaining flags
+    expect(params[2]).toBe("good"); // standing restored
+
+    const events = eventInserts();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toContain(REPUTATION_REASONS.superseded);
+    expect(events[0]).toContain(16); // -netDelta
+  });
+
+  it("accepted contribution: reverses the credit and claws back kudos", async () => {
+    routeNeutralize({
+      reviewStatus: "accepted",
+      review: { id: REVIEW_ID, decision: "accept", suspected_bad_faith: false },
+      contributor: primeContributor({ reputation_score: 52 }),
+      events: [
+        { delta: REPUTATION_RULES.accepted, reason: REPUTATION_REASONS.accepted },
+      ],
+      kudosTotal: 5,
+    });
+
+    const result = await neutralizeReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+    });
+
+    expect(result!.newScore).toBe(50);
+    expect(result!.kudosReversed).toBe(5);
+    expect(updateCall().sql).toContain(
+      "contributions_accepted = GREATEST(0, contributions_accepted - 1)"
+    );
+
+    const kudosInsert = mocks.rawQuery.mock.calls.find(([sql]) =>
+      (sql as string).includes("INSERT INTO kudos_events")
+    );
+    expect(kudosInsert?.[1]).toContain(-5);
+  });
+
+  it("after an overturn, the accepted counter holds the contribution and the flag is already gone", async () => {
+    routeNeutralize({
+      reviewStatus: "accepted",
+      review: { id: REVIEW_ID, decision: "reject", suspected_bad_faith: true },
+      contributor: primeContributor({ reputation_score: 52 }),
+      events: [
+        { delta: REPUTATION_RULES.rejected, reason: REPUTATION_REASONS.rejected },
+        { delta: REPUTATION_RULES.badFaithFlag, reason: REPUTATION_REASONS.badFaith },
+        { delta: 18, reason: REPUTATION_REASONS.overturned },
+      ],
+    });
+
+    const result = await neutralizeReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+    });
+
+    // net = -1 - 15 + 18 = +2; the compensation removes it.
+    expect(result!.newScore).toBe(50);
+    expect(result!.badFaithFlagCleared).toBe(false);
+    expect(updateCall().sql).toContain(
+      "contributions_accepted = GREATEST(0, contributions_accepted - 1)"
+    );
+  });
+
+  it("no live review → nothing to neutralize", async () => {
+    routeNeutralize({ review: null });
+    expect(
+      await neutralizeReviewOutcome({ contributionId: CONTRIBUTION_ID })
+    ).toBeNull();
+  });
+
+  it("an arbitrated escalation: the final disposition's counter is the one decremented", async () => {
+    // Escalated review, then uphold_original resolved the escalated counter
+    // into rejected (#179) — review_status, not the review's own decision,
+    // says where the count sits now.
+    routeNeutralize({
+      reviewStatus: "rejected",
+      review: { id: REVIEW_ID, decision: "escalate", suspected_bad_faith: false },
+      contributor: primeContributor({ reputation_score: 49 }),
+      events: [
+        { delta: REPUTATION_RULES.rejected, reason: REPUTATION_REASONS.rejected },
+      ],
+    });
+
+    const result = await neutralizeReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+    });
+
+    expect(result!.newScore).toBe(50);
+    expect(updateCall().sql).toContain(
+      "contributions_rejected = GREATEST(0, contributions_rejected - 1)"
+    );
+  });
+});
+
+describe("adjustReputation (audit ledger, #180)", () => {
+  function routeAdjust(contributor: Record<string, unknown> | null) {
+    mocks.rawQuery.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM contributors")) {
+        return contributor ? [contributor] : [];
+      }
+      return [];
+    });
+  }
+
+  it("writes the delta through the ledger with the audit reason", async () => {
+    routeAdjust({ reputation_score: 50, is_suspended: false });
+    const result = await adjustReputation({
+      contributorId: CONTRIBUTOR_ID,
+      delta: -5,
+    });
+
+    expect(result).toMatchObject({
+      previousScore: 50,
+      newScore: 45,
+      suspended: false,
+    });
+    const events = eventInserts();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toContain(REPUTATION_REASONS.auditAdjustment);
+    expect(events[0]).toContain(45); // score_after
+  });
+
+  it("auto-suspends below the threshold with the reputation: reason", async () => {
+    routeAdjust({ reputation_score: 12, is_suspended: false });
+    const result = await adjustReputation({
+      contributorId: CONTRIBUTOR_ID,
+      delta: -5,
+    });
+
+    expect(result!.suspended).toBe(true);
+    const { params } = updateCall();
+    expect(params[1]).toBe(true);
+    expect(String(params[2])).toContain(AUTO_SUSPENSION_PREFIX);
+  });
+
+  it("raising a score never auto-unsuspends (lifting is a judgment)", async () => {
+    routeAdjust({ reputation_score: 5, is_suspended: true });
+    const result = await adjustReputation({
+      contributorId: CONTRIBUTOR_ID,
+      delta: 10,
+    });
+
+    expect(result!.suspended).toBe(true);
+    const { sql } = updateCall();
+    expect(sql).toContain("is_suspended = is_suspended OR");
+  });
+
+  it("clamps at the floor", async () => {
+    routeAdjust({ reputation_score: 3, is_suspended: true });
+    const result = await adjustReputation({
+      contributorId: CONTRIBUTOR_ID,
+      delta: -10,
+    });
+    expect(result!.newScore).toBe(0);
+  });
+
+  it("returns null for an unknown contributor", async () => {
+    routeAdjust(null);
+    expect(
+      await adjustReputation({ contributorId: CONTRIBUTOR_ID, delta: -5 })
+    ).toBeNull();
+  });
+});
+
+describe("ledger derivability (property, #180)", () => {
+  /**
+   * The invariant that makes reputation_events load-bearing: at every point,
+   * replaying the ledger from the initial score reproduces the stored score.
+   * Runs the full lifecycle — review, audit re-review, second review, appeal
+   * overturn, second re-review, final review — against a minimal fake DB
+   * that only stores what the service writes.
+   */
+  it("replaying events reproduces the score across review → re-review → overturn cycles", async () => {
+    const INITIAL = 50;
+    let score = INITIAL;
+    let liveReview: {
+      id: string;
+      decision: string;
+      suspected_bad_faith: boolean;
+    } | null = null;
+    let reviewStatus = "pending";
+    let kudosTotal = 0;
+    const ledger: Array<{ delta: number; reason: string }> = [];
+
+    mocks.rawQuery.mockImplementation(
+      async (sql: string, params?: unknown[]) => {
+        if (sql.includes("FROM contributions ") || sql.includes("FROM contributions\n")) {
+          return [
+            {
+              contributor_id: CONTRIBUTOR_ID,
+              importance: 0.5,
+              review_status: reviewStatus,
+            },
+          ];
+        }
+        if (sql.includes("FROM contribution_reviews")) {
+          return liveReview ? [liveReview] : [];
+        }
+        if (sql.includes("SET superseded = true")) {
+          liveReview = null;
+          return [];
+        }
+        if (sql.includes("FROM contributors")) {
+          return [primeContributor({ reputation_score: score })];
+        }
+        if (sql.includes("kudos = kudos")) {
+          return []; // kudos cache update — not a score write
+        }
+        if (sql.includes("UPDATE contributors")) {
+          // Every score-bearing UPDATE contributors shape writes it as $1.
+          score = params![0] as number;
+          return [];
+        }
+        if (sql.includes("INSERT INTO reputation_events")) {
+          // The three insert shapes inline NULLs differently, so the delta
+          // and reason sit at arity-dependent positions: 6 params (apply,
+          // neutralize), 5 (reverse: review_id literal NULL), 4 (adjust:
+          // contribution_id and review_id literal NULL).
+          const arity = params!.length;
+          const deltaIndex = arity === 6 ? 3 : arity === 5 ? 2 : 1;
+          ledger.push({
+            delta: params![deltaIndex] as number,
+            reason: params![arity - 1] as string,
+          });
+          return [];
+        }
+        if (sql.includes("FROM reputation_events")) {
+          return [...ledger];
+        }
+        if (sql.includes("FROM kudos_events")) {
+          return [{ total: kudosTotal }];
+        }
+        return [];
+      }
+    );
+
+    const replay = () =>
+      ledger.reduce((s, e) => clampScore(s + e.delta), INITIAL);
+    const assertDerivable = () => expect(replay()).toBe(score);
+
+    // 1. Reviewer rejects with a bad-faith flag.
+    await applyReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+      decision: "reject",
+      suspectedBadFaith: true,
+    });
+    liveReview = { id: "r1", decision: "reject", suspected_bad_faith: true };
+    reviewStatus = "rejected";
+    assertDerivable();
+    expect(score).toBe(34);
+
+    // 2. Audit sends it back; neutralization zeroes the net effect.
+    await neutralizeReviewOutcome({ contributionId: CONTRIBUTION_ID });
+    assertDerivable();
+    expect(score).toBe(INITIAL);
+
+    // 3. Fresh review rejects without the flag.
+    await applyReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+      decision: "reject",
+    });
+    liveReview = { id: "r2", decision: "reject", suspected_bad_faith: false };
+    reviewStatus = "rejected";
+    assertDerivable();
+    expect(score).toBe(49);
+
+    // 4. The contributor appeals; arbitration overturns. Only the live
+    //    segment's penalty reverses — the superseded flag must not be
+    //    reversed a second time.
+    await reverseReviewOutcome({ contributionId: CONTRIBUTION_ID });
+    reviewStatus = "accepted";
+    kudosTotal = 5;
+    assertDerivable();
+    expect(score).toBe(52); // 49 + 1 + accepted credit 2
+
+    // 5. Audit sends it back again (accepted counter holds it now).
+    await neutralizeReviewOutcome({ contributionId: CONTRIBUTION_ID });
+    assertDerivable();
+    expect(score).toBe(INITIAL);
+
+    // 6. Final review accepts.
+    await applyReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+      decision: "accept",
+    });
+    assertDerivable();
+    expect(score).toBe(52);
+
+    // Audit adjustments live in the same ledger.
+    await adjustReputation({ contributorId: CONTRIBUTOR_ID, delta: -3 });
+    assertDerivable();
+    expect(score).toBe(49);
   });
 });
 
