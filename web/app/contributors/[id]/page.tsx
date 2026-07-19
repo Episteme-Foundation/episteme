@@ -18,6 +18,8 @@ const TYPE_LABELS: Record<string, string> = {
   propose_edit: "edit proposal",
   add_instance: "source instance",
   propose_argument: "argument",
+  propose_claim: "proposed claim",
+  propose_source: "proposed source",
 };
 
 export async function generateMetadata({
@@ -102,11 +104,20 @@ export default async function ContributorPage({
             <tbody>
               {profile.recent_contributions.map((r) => (
                 <tr key={r.id}>
-                  <td>{TYPE_LABELS[r.contribution_type] ?? r.contribution_type}</td>
                   <td>
-                    <Link href={`/claims/${r.claim_id}`}>view claim</Link>
+                    {/* the record page carries the review's reasoning (#174) */}
+                    <Link href={`/contributions/${r.id}`}>
+                      {TYPE_LABELS[r.contribution_type] ?? r.contribution_type}
+                    </Link>
                   </td>
-                  <td>{r.review_status}</td>
+                  <td>
+                    {r.claim_id ? (
+                      <Link href={`/claims/${r.claim_id}`}>view claim</Link>
+                    ) : (
+                      <span style={{ color: "var(--faint)" }}>proposed</span>
+                    )}
+                  </td>
+                  <td>{r.review_status.replace(/_/g, " ")}</td>
                   <td>{r.submitted_at.slice(0, 10)}</td>
                 </tr>
               ))}

@@ -64,7 +64,7 @@ type TypeValue = (typeof TYPES)[number]["value"];
 type SubmitState =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "sent" }
+  | { kind: "sent"; contributionId: string | null }
   | { kind: "error"; message: string };
 
 function isTypeValue(v: string | null): v is TypeValue {
@@ -127,7 +127,13 @@ export function Contribute({ claimId }: { claimId: string }) {
         }),
       });
       if (res.ok) {
-        setStatus({ kind: "sent" });
+        const body = (await res.json().catch(() => null)) as {
+          contribution?: { id?: string };
+        } | null;
+        setStatus({
+          kind: "sent",
+          contributionId: body?.contribution?.id ?? null,
+        });
       } else {
         const body = (await res.json().catch(() => null)) as {
           error?: string;
@@ -195,9 +201,22 @@ export function Contribute({ claimId }: { claimId: string }) {
         <div className="contribute-box">
           <p style={{ margin: 0 }}>
             <strong>Received.</strong> The contribution is queued for review on
-            the merits. The decision and its reasoning will appear in the
-            claim&rsquo;s contribution record, and the outcome is tracked in{" "}
-            <a href="/account">your account</a>.
+            the merits.{" "}
+            {status.contributionId ? (
+              <>
+                The decision and its reasoning will appear on{" "}
+                <a href={`/contributions/${status.contributionId}`}>
+                  its public record
+                </a>
+                , and the outcome is tracked in{" "}
+                <a href="/account">your account</a>.
+              </>
+            ) : (
+              <>
+                The decision and its reasoning are tracked in{" "}
+                <a href="/account">your account</a>.
+              </>
+            )}
           </p>
         </div>
       )}

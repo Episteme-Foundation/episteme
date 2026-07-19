@@ -15,7 +15,7 @@ import { useViewerSession } from "./useViewerSession";
 type SubmitState =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "sent" }
+  | { kind: "sent"; contributionId: string | null }
   | { kind: "error"; message: string };
 
 export function ProposeClaim({ searchQuery }: { searchQuery?: string }) {
@@ -52,7 +52,13 @@ export function ProposeClaim({ searchQuery }: { searchQuery?: string }) {
         }),
       });
       if (res.ok) {
-        setStatus({ kind: "sent" });
+        const body = (await res.json().catch(() => null)) as {
+          contribution?: { id?: string };
+        } | null;
+        setStatus({
+          kind: "sent",
+          contributionId: body?.contribution?.id ?? null,
+        });
       } else {
         const body = (await res.json().catch(() => null)) as {
           error?: string;
@@ -119,7 +125,21 @@ export function ProposeClaim({ searchQuery }: { searchQuery?: string }) {
           <p style={{ margin: 0 }}>
             <strong>Received.</strong> The proposal is queued for review. If it
             is accepted, it is matched against existing claims and enters the
-            graph; the outcome is tracked in <a href="/account">your account</a>.
+            graph.{" "}
+            {status.contributionId ? (
+              <>
+                The decision and its reasoning will appear on{" "}
+                <a href={`/contributions/${status.contributionId}`}>
+                  its public record
+                </a>
+                , and the outcome is tracked in{" "}
+                <a href="/account">your account</a>.
+              </>
+            ) : (
+              <>
+                The outcome is tracked in <a href="/account">your account</a>.
+              </>
+            )}
           </p>
         </div>
       )}

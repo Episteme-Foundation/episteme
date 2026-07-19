@@ -2,6 +2,7 @@ import "server-only";
 import type {
   ClaimDetail,
   ClaimFilters,
+  ContributionDetail,
   ContributorProfile,
   LeaderboardContributor,
   SearchResultItem,
@@ -81,6 +82,19 @@ export async function fetchList(
     `/claims?${p.toString()}`,
   );
   return r.results;
+}
+
+export async function fetchContribution(
+  id: string,
+): Promise<ContributionDetail | null> {
+  try {
+    // A contribution's status flips when its review lands; the default
+    // 30-second window is fresh enough and keeps repeat reads cheap.
+    return await apiGet<ContributionDetail>(`/contributions/${id}`);
+  } catch {
+    // 404 (unknown contribution) renders as not-found upstream.
+    return null;
+  }
 }
 
 export async function fetchLeaderboard(
