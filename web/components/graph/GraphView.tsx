@@ -12,9 +12,11 @@ import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
   nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS,
+  DEFINED_IN, STEWARD_SOURCE,
 } from "@/lib/ontology";
 import { buildClaimTextMap } from "@/lib/claim-links";
 import { ArgumentText } from "@/components/ArgumentText";
+import { Term } from "@/components/Term";
 import {
   BEDROCK, bedrockOf, computeLayout, defaultExpanded,
   type ClaimBits, type LEdge, type LNode, type Layout,
@@ -856,15 +858,15 @@ export function GraphView({
       <div className={styles.legend}>
         <span className={styles.legendGroup}>
           {STATUS_ORDER.map((s) => (
-            <span key={s} className={styles.legendItem}>
+            <Term key={s} gloss={STATUS[s].def} href={DEFINED_IN.status} className={styles.legendItem}>
               <span className={`${styles.legendGlyph} ${STATUS[s].cls}`}>{STATUS[s].glyph}</span>
               {STATUS[s].label.toLowerCase()}
-            </span>
+            </Term>
           ))}
-          <span className={styles.legendItem} title={UNASSESSED_META.def}>
+          <Term gloss={UNASSESSED_META.def} href={DEFINED_IN.importance} className={styles.legendItem}>
             <span className={`${styles.legendGlyph} ${UNASSESSED_META.cls}`}>{UNASSESSED_META.glyph}</span>
             unassessed
-          </span>
+          </Term>
         </span>
         <span className={styles.legendRule} />
         <span className={styles.legendGroup}>
@@ -874,10 +876,18 @@ export function GraphView({
         </span>
         <span className={styles.legendRule} />
         <span className={styles.legendGroup}>
-          <span className={styles.legendItem}><span className={styles.legendEdge} style={{ borderColor: "rgba(79,125,74,.7)" }} /><span className="rel-supports">supports</span></span>
-          <span className={styles.legendItem}><span className={`${styles.legendEdge} ${styles.dashed}`} style={{ borderColor: "rgba(143,58,44,.7)" }} /><span className="rel-contradicts">contradicts</span></span>
-          <span className={styles.legendItem}><span className={`${styles.legendEdge} ${styles.dotted}`} style={{ borderColor: "rgba(154,109,18,.8)" }} /><span className="rel-presupposes">presupposes</span></span>
-          <span className={styles.legendItem}><span className={styles.legendEdge} style={{ borderColor: "var(--rule)" }} />requires</span>
+          <Term gloss={RELATION.supports.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
+            <span className={styles.legendEdge} style={{ borderColor: "rgba(79,125,74,.7)" }} /><span className="rel-supports">supports</span>
+          </Term>
+          <Term gloss={RELATION.contradicts.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
+            <span className={`${styles.legendEdge} ${styles.dashed}`} style={{ borderColor: "rgba(143,58,44,.7)" }} /><span className="rel-contradicts">contradicts</span>
+          </Term>
+          <Term gloss={RELATION.presupposes.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
+            <span className={`${styles.legendEdge} ${styles.dotted}`} style={{ borderColor: "rgba(154,109,18,.8)" }} /><span className="rel-presupposes">presupposes</span>
+          </Term>
+          <Term gloss={RELATION.requires.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
+            <span className={styles.legendEdge} style={{ borderColor: "var(--rule)" }} />requires
+          </Term>
         </span>
         <span className={styles.legendCaption}>Fig. — detail falls off with distance; every claim is an address.</span>
       </div>

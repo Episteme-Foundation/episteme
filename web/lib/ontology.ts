@@ -2,6 +2,25 @@ import type {
   ArgumentVerdict, AssessmentStatus, ClaimType, RelationType, Stance, TreeNode,
 } from "./types";
 
+// Where each vocabulary family is defined in the narrative sources, so any
+// rendered term can link the reader to the definition (#198). The constitution
+// anchors are the GitHub-style slugs <Markdown> assigns its headings; the
+// relation vocabulary is enumerated only in the Claim Steward's instructions,
+// so it links there instead.
+export const DEFINED_IN = {
+  status: "/docs/constitution#10-explicit-uncertainty",
+  confidence: "/docs/constitution#10-explicit-uncertainty",
+  claimType: "/docs/constitution#8-uniformity-across-claim-types",
+  relation: "/docs/agents/claim-steward#decomposition",
+  argument: "/docs/constitution#7-arguments",
+  importance: "/docs/constitution#claim-importance-and-proportional-effort",
+  effect: "/docs/constitution#6-decomposition",
+} as const;
+
+// The relation source is the steward's instructions, not the constitution;
+// terms show this label next to the link so the reader knows where they land.
+export const STEWARD_SOURCE = "steward instructions";
+
 // Status metadata. Definitions are verbatim from the Admin Constitution §7 so
 // the UI teaches the same vocabulary the agents reason in.
 export const STATUS: Record<
@@ -72,17 +91,56 @@ export const RELATION: Record<RelationType, { label: string; cls: string; gloss:
   presupposes: { label: "presupposes", cls: "rel-presupposes", gloss: "an assumption the parent makes" },
 };
 
-export const CLAIM_TYPE_LABEL: Record<ClaimType, string> = {
-  empirical_verifiable: "empirical · verifiable",
-  empirical_derived: "empirical · derived",
-  definitional: "definitional",
-  evaluative: "evaluative",
-  causal: "causal",
-  normative: "normative",
+// Claim types (constitution §2 and §8: the system treats all of these
+// uniformly). The two empirical variants are the pipeline's split of the
+// constitution's "factual" family: checkable directly, or only by inference.
+export const CLAIM_TYPE: Record<ClaimType, { label: string; gloss: string }> = {
+  empirical_verifiable: {
+    label: "empirical · verifiable",
+    gloss: "A factual claim that could be checked directly against observation or primary records.",
+  },
+  empirical_derived: {
+    label: "empirical · derived",
+    gloss: "A factual claim that rests on inference from other evidence rather than direct observation.",
+  },
+  definitional: {
+    label: "definitional",
+    gloss: "A claim about what a term means. It earns a node only when the definition itself is disputed.",
+  },
+  evaluative: {
+    label: "evaluative",
+    gloss: "A judgment of worth or quality against some standard: good, fair, effective.",
+  },
+  causal: {
+    label: "causal",
+    gloss: "A claim that one thing brings about another, not merely that the two go together.",
+  },
+  normative: {
+    label: "normative",
+    gloss: "A claim about what should be done or how things ought to be, settled by argument rather than evidence alone.",
+  },
 };
+
+export const CLAIM_TYPE_LABEL = Object.fromEntries(
+  Object.entries(CLAIM_TYPE).map(([k, v]) => [k, v.label]),
+) as Record<ClaimType, string>;
+
+// Live data can carry claim types from outside the enum; render those as a
+// plain label with no definition rather than throwing or guessing.
+export function claimTypeMeta(t: unknown): { label: string; gloss: string } | null {
+  return typeof t === "string" && t in CLAIM_TYPE ? CLAIM_TYPE[t as ClaimType] : null;
+}
 
 export const STANCE_LABEL: Record<Stance, string> = {
   for: "for", against: "against", neutral: "neutral",
+};
+
+// What an argument's stance says about its bearing on the claim it hangs from
+// (constitution §7).
+export const STANCE_GLOSS: Record<Stance, string> = {
+  for: "This argument, if it holds, bears in favour of the claim.",
+  against: "This argument, if it holds, weighs against the claim.",
+  neutral: "This argument informs or reframes the claim without taking a side.",
 };
 
 // The steward's evaluation of a named argument (issue #173): does the

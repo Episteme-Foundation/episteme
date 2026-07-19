@@ -6,10 +6,11 @@ import type { TreeNode } from "@/lib/types";
 import {
   RELATION, statusMeta, STANCE_LABEL, argumentVerdictMeta,
   decompositionEffects, effectCounts, groupByArgument, EFFECT, EFFECT_ORDER,
-  type ScoredNode, type ArgumentGroup,
+  DEFINED_IN, type ScoredNode, type ArgumentGroup,
 } from "@/lib/ontology";
 import { buildClaimTextMap, hasClaimLinks } from "@/lib/claim-links";
 import { ArgumentText } from "@/components/ArgumentText";
+import { Term } from "@/components/Term";
 import styles from "./margins.module.css";
 
 // One subclaim line in the revealed outline.
@@ -138,10 +139,12 @@ export function DecompositionCompass({ tree }: { tree: TreeNode }) {
       </div>
       <ul className={styles.legend}>
         {present.map((e) => (
-          <li key={e} className={EFFECT[e].cls} title={EFFECT[e].gloss}>
+          <li key={e} className={EFFECT[e].cls}>
             <span className={`swatch ${EFFECT[e].cls}`} aria-hidden />
             <span className={styles.legendN}>{counts[e]}</span>
-            <span className={styles.legendLbl}>{EFFECT[e].label}</span>
+            <Term gloss={EFFECT[e].gloss} href={DEFINED_IN.effect} className={styles.legendLbl} align="start">
+              {EFFECT[e].label}
+            </Term>
           </li>
         ))}
       </ul>

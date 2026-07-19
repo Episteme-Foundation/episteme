@@ -3,10 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { TreeNode, Stance } from "@/lib/types";
-import { RELATION, STANCE_LABEL, argumentVerdictMeta } from "@/lib/ontology";
+import {
+  RELATION, STANCE_LABEL, STANCE_GLOSS, argumentVerdictMeta, claimTypeMeta,
+  DEFINED_IN, STEWARD_SOURCE,
+} from "@/lib/ontology";
 import { buildClaimTextMap, hasClaimLinks } from "@/lib/claim-links";
 import { ArgumentText } from "./ArgumentText";
 import { Swatch } from "./Assessment";
+import { Term } from "./Term";
 
 // Group a node's children by the argument each decomposition edge belongs to,
 // preserving order. A claim's subclaims are organised under the named lines of
@@ -37,9 +41,18 @@ function ArgumentVerdictTag({ verdict }: { verdict: string | null }) {
   const meta = argumentVerdictMeta(verdict);
   if (!meta) return null;
   return (
-    <span className={`arg-verdict ${meta.cls}`} title={meta.gloss}>
+    <Term gloss={meta.gloss} href={DEFINED_IN.argument} className={`arg-verdict ${meta.cls}`}>
       {meta.label}
-    </span>
+    </Term>
+  );
+}
+
+// An argument's stance on the claim it hangs from, defined on hover/click.
+function StanceTag({ stance }: { stance: Stance }) {
+  return (
+    <Term gloss={STANCE_GLOSS[stance]} href={DEFINED_IN.argument} className={`arg-stance ${stance}`}>
+      {STANCE_LABEL[stance]}
+    </Term>
   );
 }
 
@@ -88,9 +101,14 @@ function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
         <div className="node-main">
           {node.assessment_status && <Swatch status={node.assessment_status} />}{" "}
           {rel && (
-            <span className={`relation ${rel.cls} node-relation`} title={rel.gloss}>
+            <Term
+              gloss={rel.gloss}
+              href={DEFINED_IN.relation}
+              source={STEWARD_SOURCE}
+              className={`relation ${rel.cls} node-relation`}
+            >
               {rel.label}
-            </span>
+            </Term>
           )}
           <span
             className={`node-text${node.reasoning ? " clickable" : ""}`}
@@ -122,7 +140,16 @@ function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
         </div>
 
         <span className="node-meta">
-          <span className="tag kind">{node.claim_type.replace(/_/g, " ")}</span>
+          {(() => {
+            const kind = claimTypeMeta(node.claim_type);
+            return kind ? (
+              <Term gloss={kind.gloss} href={DEFINED_IN.claimType} className="tag kind" align="end">
+                {kind.label}
+              </Term>
+            ) : (
+              <span className="tag kind">{node.claim_type.replace(/_/g, " ")}</span>
+            );
+          })()}
         </span>
       </div>
 
@@ -146,7 +173,7 @@ function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
                     <div className="arghead">
                       <span className="sc">argument</span>
                       <span className="argname">{g.name}</span>
-                      {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
+                      {g.stance && <StanceTag stance={g.stance} />}
                       <ArgumentVerdictTag verdict={g.verdict} />
                     </div>
                     <ArgumentProse content={g.content} texts={texts} />
@@ -182,7 +209,7 @@ export function DecompositionTree({ tree }: { tree: TreeNode }) {
                 <div className="arghead">
                   <span className="sc">argument</span>
                   <span className="argname">{g.name}</span>
-                  {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
+                  {g.stance && <StanceTag stance={g.stance} />}
                   <ArgumentVerdictTag verdict={g.verdict} />
                 </div>
                 <ArgumentProse content={g.content} texts={texts} />
