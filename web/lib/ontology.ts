@@ -1,6 +1,7 @@
 import type {
   ArgumentVerdict, AssessmentStatus, ClaimType, RelationType, Stance, TreeNode,
 } from "./types";
+import { orderByMention } from "./claim-links";
 
 // Where each vocabulary family is defined in the narrative sources, so any
 // rendered term can link the reader to the definition (#198). The constitution
@@ -420,6 +421,10 @@ export function groupByArgument(scored: ScoredNode[]): ArgumentGroup[] {
     g.nodes.push(s);
     g.counts[s.effect] += 1;
   }
-  for (const g of groups) g.net = netEffect(g.counts);
+  for (const g of groups) {
+    g.net = netEffect(g.counts);
+    // Within an argument, the written form's reading order wins (#201).
+    g.nodes = orderByMention(g.nodes, (s) => s.node.id, g.content);
+  }
   return groups;
 }
