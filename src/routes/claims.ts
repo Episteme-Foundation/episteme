@@ -6,8 +6,9 @@ import {
   claimInstances,
   sources,
 } from "../db/schema.js";
-import { claimSearchParams, claimListParams, claimGetParams, claimDependentsParams, claimProposeBody, claimPatchBody, assessmentHistoryParams } from "../schemas/claim.js";
+import { claimSearchParams, claimListParams, claimGetParams, claimDependentsParams, claimProposeBody, claimPatchBody, assessmentHistoryParams, claimEventsParams } from "../schemas/claim.js";
 import { getAssessmentHistory, getAssessmentTrajectory } from "../services/assessment-service.js";
+import { getClaimEvents } from "../services/claim-events-service.js";
 import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount, getClaimDependents, listClaimDependents } from "../services/tree-service.js";
 import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
@@ -669,6 +670,93 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
           total_assessments: trajectory.totalAssessments,
           status_transitions: trajectory.statusTransitions,
         });
+      },
+    }
+  );
+
+  // GET /claims/:claim_id/events — the unified per-claim history (issue #175):
+  // assessments, contributions and the decisions on them (reviews, appeals,
+  // arbitration), and Steward audit-log entries, merged newest-first. One flat
+  // typed list so a claim with one assessment and a claim with dozens of
+  // exchanges from several parties serialize identically.
+  app.get<{ Params: { claim_id: string }; Querystring: Record<string, string> }>(
+    "/:claim_id/events",
+    {
+      schema: {
+        tags: ["claims"],
+        summary: "Get the unified event history for a claim",
+        params: {
+          type: "object",
+          properties: {
+            claim_id: { type: "string", format: "uuid" },
+          },
+        },
+        querystring: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 200, default: 100 },
+            offset: { type: "integer", minimum: 0, default: 0 },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              events: {
+                type: "array",
+                items: {
+                  // A discriminated union on `kind`; serialized as one loose
+                  // object because fastify's serializer strips fields a strict
+                  // per-kind schema wouldn't enumerate.
+                  type: "object",
+                  required: ["kind", "id", "at", "actor"],
+                  additionalProperties: true,
+                  properties: {
+                    kind: {
+                      type: "string",
+                      enum: [
+                        "created",
+                        "assessment",
+                        "contribution",
+                        "review",
+                        "appeal",
+                        "arbitration",
+                        "steward_note",
+                      ],
+                    },
+                    id: { type: "string" },
+                    at: { type: "string", format: "date-time" },
+                    actor: { type: "string" },
+                  },
+                },
+              },
+              total: { type: "integer" },
+            },
+          },
+          404: errorEnvelope,
+        },
+      },
+      handler: async (request, reply) => {
+        const { claim_id } = request.params;
+        const params = claimEventsParams.parse(request.query);
+
+        const claim = await getClaimById(claim_id);
+        if (!claim) {
+          return reply.code(404).send({
+            error: {
+              code: "NOT_FOUND",
+              message: "Claim not found",
+              request_id: request.id,
+            },
+          });
+        }
+
+        const result = await getClaimEvents(claim, {
+          limit: params.limit,
+          offset: params.offset,
+        });
+
+        return reply.send(result);
       },
     }
   );

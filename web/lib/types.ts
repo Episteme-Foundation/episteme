@@ -187,6 +187,94 @@ export interface ClaimFilters {
   minImportance?: number;
 }
 
+// --- claim event history (#175) ----------------------------------------------
+
+// One entry in a claim's unified history: assessments, contributions, the
+// decisions made about them, and steward notes, merged newest-first by the
+// API's GET /claims/:id/events. A flat discriminated union — decisions come in
+// several forms from several parties, and new kinds should be renderable
+// without restructuring.
+export type ClaimEvent =
+  | { kind: "created"; id: string; at: string; actor: string }
+  | {
+      kind: "assessment";
+      id: string;
+      at: string;
+      actor: string;
+      assessment_id: string;
+      status: AssessmentStatus;
+      confidence: number;
+      claim_credence: number | null;
+      summary: string;
+      trigger: string | null;
+      trigger_context: string | null;
+      is_current: boolean;
+      prev_status: AssessmentStatus | null;
+      prev_confidence: number | null;
+    }
+  | {
+      kind: "contribution";
+      id: string;
+      at: string;
+      actor: string;
+      contribution_id: string;
+      contribution_type: string;
+      content: string;
+      evidence_urls: string[];
+      review_status: string;
+    }
+  | {
+      kind: "review";
+      id: string;
+      at: string;
+      actor: string;
+      review_id: string;
+      contribution_id: string;
+      contribution_type: string | null;
+      decision: string;
+      reasoning: string;
+      confidence: number;
+      policy_citations: string[];
+      suspected_bad_faith: boolean;
+    }
+  | {
+      kind: "appeal";
+      id: string;
+      at: string;
+      actor: string;
+      appeal_id: string;
+      contribution_id: string;
+      reasoning: string;
+      status: string;
+    }
+  | {
+      kind: "arbitration";
+      id: string;
+      at: string;
+      actor: string;
+      arbitration_id: string;
+      contribution_id: string;
+      appeal_id: string | null;
+      outcome: string;
+      reasoning: string;
+      consensus_achieved: boolean | null;
+      human_review_recommended: boolean;
+    }
+  | {
+      kind: "steward_note";
+      id: string;
+      at: string;
+      actor: string;
+      audit_id: string;
+      action: string;
+      reasoning: string;
+    };
+
+export interface ClaimEventsPage {
+  events: ClaimEvent[];
+  total: number;
+}
+
 // --- contributors (#71) ------------------------------------------------------
 
 export interface LeaderboardContributor {

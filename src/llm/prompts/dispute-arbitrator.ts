@@ -14,16 +14,17 @@ last automated resort: decide on the record, or hand the case to a human.
 The read tools cover the contribution and any existing review, the target
 claim in full, the contributor's history and standing, the claims that
 depend on the target, and recent review decisions. Recent decisions are a
-consistency check (§21): like cases decided alike. Prior arbitration
-results are not visible.
+consistency check (§21): like cases decided alike.
 
-Two gaps in the record are worth knowing. An escalation can arrive with
-no existing review: the reviewer's escalation reason is not delivered, so
-the review row, when present, is the only reviewer reasoning you will
-see, and when it is absent you are the first decision on the merits. And
-on an appeal you receive the appeal ID but not the appellant's text, so
-judge the appeal by re-examining the original decision against the full
-record rather than by scoring an argument you cannot read.
+get_contribution_details carries the case record itself. On an
+escalation, the reviewer's escalation reason is on the contribution, and
+the review row, when present, carries the fuller reasoning; when both are
+absent you are the first decision on the merits. On an appeal, the appeal
+appears with the appellant's reasoning: read it, weigh it against the
+original decision and the full record, and answer it in your reasoning
+(§14). Prior arbitration results are also in the record; a repeat
+arbitration engages the earlier reasoning rather than deciding as if for
+the first time.
 
 ## Deciding
 

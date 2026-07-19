@@ -1,0 +1,173 @@
+/* ==========================================================================
+   Claim history timeline (issue #175) — the page-scale sibling of the
+   HistoryRail sidenote. Same vocabulary (status swatches on a hairline spine),
+   scaled up for reading: most claims have a two-entry record, contested ones
+   accumulate dozens of entries from several parties, and both should read as
+   one quiet document rather than a feed.
+   ========================================================================== */
+
+.timeline {
+  list-style: none;
+  margin: 2.4rem 0 0;
+  padding: 0;
+}
+
+.entry {
+  position: relative;
+  display: flex;
+  gap: 1.15rem;
+  padding-bottom: 2.1rem;
+}
+.entry:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 1.15rem;
+  bottom: 0.3rem;
+  width: 1px;
+  background: var(--rule);
+}
+
+/* marker column: every kind gets a distinct, quiet glyph on the spine.
+   Solid status colour is reserved for assessments — everything else stays in
+   ink so the verdict trail pops out when scanning. */
+.marker {
+  flex: none;
+  width: 0.62rem;
+  display: flex;
+  justify-content: center;
+  margin-top: 0.34rem;
+}
+.mCreated {
+  width: 0.56rem; height: 0.56rem; border-radius: 50%;
+  border: 1px solid var(--faint); background: var(--paper);
+}
+.mActor {
+  /* contributor acts: contributions and appeals — hollow square */
+  width: 0.52rem; height: 0.52rem; border-radius: 2px; margin-top: 0.03rem;
+  border: 1px solid var(--ink-soft); background: var(--paper);
+}
+.mDecision {
+  /* adjudication: reviews and arbitration — filled ink dot */
+  width: 0.46rem; height: 0.46rem; border-radius: 50%; margin-top: 0.06rem;
+  background: var(--ink-soft);
+}
+.mNote {
+  /* steward audit notes — the quietest mark on the spine */
+  width: 0.36rem; height: 0.36rem; border-radius: 50%; margin-top: 0.11rem;
+  background: var(--faint);
+}
+
+.body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* date · actor · trigger — the entry's small-caps dateline */
+.meta {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.meta a { color: inherit; }
+.meta a:hover { color: var(--link); }
+.metaTrigger { color: var(--faint); font-weight: 500; }
+
+.headline {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 0.2rem 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* confidence / credence figures under an assessment headline */
+.figures {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--faint);
+  margin: 0.15rem 0 0;
+  cursor: help;
+}
+
+/* reader-facing body text: assessment summaries, decision reasoning */
+.prose {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0.4rem 0 0;
+  max-width: 34rem;
+}
+
+/* a contributor's own words are quoted, like a provenance instance */
+.quote {
+  border-left: 2px solid var(--rule);
+  padding: 0.05rem 0 0.05rem 0.9rem;
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  font-style: italic;
+  color: var(--ink-soft);
+  max-width: 34rem;
+}
+
+.evidence {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.citations {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin: 0.45rem 0 0;
+}
+
+/* rejected-for-bad-faith is the one flag that must not whisper */
+.badFaith {
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--st-contradicted);
+  margin: 0.35rem 0 0;
+}
+
+/* header block above the timeline */
+.head {
+  margin-bottom: 0.4rem;
+}
+.title {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin: 0.5rem 0 0.6rem;
+}
+.title a { color: var(--ink); }
+.title a:hover { color: var(--link); text-decoration: none; }
+.headMeta {
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.windowNote {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--faint);
+  margin: 1rem 0 0;
+}
