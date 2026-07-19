@@ -248,6 +248,53 @@ export const arguments_ = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// argument_evaluations
+// ---------------------------------------------------------------------------
+// The steward's judgment of a named argument (issue #173): whether the
+// inference goes through granting its premises, and which premises currently
+// bear the weight. The argument row itself stays structural (its written form
+// states the inference without judging it); this table is the epistemic
+// overlay, derived within the claim's assessment process so it tracks premise
+// assessments rather than drifting as a fire-once verdict.
+export const argumentEvaluations = pgTable(
+  "argument_evaluations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    argumentId: uuid("argument_id")
+      .notNull()
+      .references(() => arguments_.id, { onDelete: "cascade" }),
+    // Does the inference go through granting its premises?
+    //   holds | holds_with_caveats | fails | contested
+    // "contested" is for a framework whose validity is itself live-disputed
+    // (the PRESUPPOSES case, constitution §7).
+    verdict: text("verdict").notNull(),
+    // Reader-facing prose (2–4 sentences, §12 voice): whether the inference
+    // goes through and which premises, given their current assessments, the
+    // argument lives or dies on — those premises referenced inline as
+    // [[claim:<uuid>]], same syntax as the written form.
+    content: text("content").notNull(),
+    // Provenance: the claim assessment this evaluation was derived under. An
+    // evaluation whose assessment is no longer current is detectably stale.
+    // SET NULL (not cascade): assessment rows are append-only history, but an
+    // evaluation should survive its provenance pointer.
+    assessmentId: uuid("assessment_id").references(() => assessments.id, {
+      onDelete: "set null",
+    }),
+    isCurrent: boolean("is_current").notNull().default(true),
+    createdBy: text("created_by").notNull().default("claim_steward"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_argument_evaluations_argument").on(table.argumentId),
+    uniqueIndex("idx_argument_evaluations_current")
+      .on(table.argumentId)
+      .where(sql`${table.isCurrent} = true`),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // sources
 // ---------------------------------------------------------------------------
 export const sources = pgTable("sources", {
@@ -822,6 +869,8 @@ export type Assessment = typeof assessments.$inferSelect;
 export type NewAssessment = typeof assessments.$inferInsert;
 export type Argument = typeof arguments_.$inferSelect;
 export type NewArgument = typeof arguments_.$inferInsert;
+export type ArgumentEvaluation = typeof argumentEvaluations.$inferSelect;
+export type NewArgumentEvaluation = typeof argumentEvaluations.$inferInsert;
 export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
 export type ClaimInstance = typeof claimInstances.$inferSelect;

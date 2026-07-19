@@ -48,7 +48,10 @@ export interface StewardMessage {
     | "curator_change"
     // One-shot backfill (issue #129): named arguments predating write_argument
     // lack a written form — write one for each.
-    | "argument_written_form_backfill";
+    | "argument_written_form_backfill"
+    // One-shot backfill (issue #173): named arguments predating
+    // evaluate_argument lack an evaluation — evaluate each.
+    | "argument_evaluation_backfill";
   context: string;
 }
 

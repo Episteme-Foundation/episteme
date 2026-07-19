@@ -16,11 +16,15 @@ import {
 } from "../../db/schema.js";
 import { generateEmbedding } from "../../services/embedding-service.js";
 import {
+  ARGUMENT_VERDICTS,
   addArgument,
   getArgument,
   getArgumentSubclaims,
+  getEvaluationStateForClaim,
+  isArgumentVerdict,
   parseClaimLinks,
   setArgumentContent,
+  setArgumentEvaluation,
 } from "../../services/argument-service.js";
 import { loadConfig } from "../../config.js";
 import {
@@ -163,7 +167,8 @@ export function getStewardToolDefinitions(): Tool[] {
         "add_decomposition_edge to group subclaims under it. The description is a " +
         "label for the line of reasoning, not itself a proposition. An argument is " +
         "NOT finished at creation: once its subclaim edges are attached, you MUST " +
-        "give it a written form with write_argument.",
+        "give it a written form with write_argument, and when you record the " +
+        "claim's assessment you evaluate it with evaluate_argument.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -199,9 +204,10 @@ export function getStewardToolDefinitions(): Tool[] {
         "the argument inline as [[claim:<uuid>]] (or [[claim:<uuid>|inline " +
         "phrasing]] when grammar needs it); links resolve to the claims' " +
         "canonical text at render time. The written form is structural, not " +
-        "epistemic: state the inference, never a verdict on whether it holds. " +
+        "epistemic: state the inference, never a verdict on whether it holds; " +
+        "your judgment of the inference belongs in evaluate_argument. " +
         "Call this after attaching the argument's subclaim edges; call it again " +
-        "whenever the argument's subclaims change.",
+        "whenever the argument's subclaims change (and then re-evaluate).",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -217,6 +223,54 @@ export function getStewardToolDefinitions(): Tool[] {
           },
         },
         required: ["argument_id", "content"],
+      },
+    },
+    {
+      name: "evaluate_argument",
+      description:
+        "Record (or revise) your evaluation of a named argument: does the " +
+        "inference go through granting its premises, and which premises does " +
+        "the argument currently live or die on? This is the epistemic " +
+        "counterpart of the written form (which states the inference without " +
+        "judging it), derived as part of assessing the claim — call it for " +
+        "each named argument when you record an assessment, and again when a " +
+        "premise's standing changes. It is reader-facing prose in the same " +
+        "register as an assessment, not a discussion surface: contributor " +
+        "exchanges stay in the contribution record.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          argument_id: {
+            type: "string",
+            description: "The UUID of the argument (from add_argument)",
+          },
+          verdict: {
+            type: "string",
+            enum: [...ARGUMENT_VERDICTS],
+            description:
+              "Whether the inference goes through granting its premises. " +
+              "'holds': the conclusion follows if the premises hold. " +
+              "'holds_with_caveats': it goes through, but only under stated " +
+              "qualifications. 'fails': the conclusion does not follow even " +
+              "granting the premises. 'contested': the validity of the " +
+              "argument's framework is itself live-disputed (it should then " +
+              "also carry a presupposes subclaim, §7).",
+          },
+          evaluation: {
+            type: "string",
+            description:
+              "Two to four sentences, reader-facing (§12 voice): whether the " +
+              "inference goes through, and which premises, given their current " +
+              "assessments, bear the argument's weight — reference those " +
+              "load-bearing premises inline as [[claim:<uuid>]] (or " +
+              "[[claim:<uuid>|inline phrasing]]), the same syntax as the " +
+              "written form. E.g. 'The inference is valid; the argument " +
+              "stands or falls with [[claim:<uuid>]], which remains " +
+              "contested.' No tool names, no UUID prose, no verdict-label " +
+              "restating.",
+          },
+        },
+        required: ["argument_id", "verdict", "evaluation"],
       },
     },
     {
@@ -504,9 +558,35 @@ export async function executeStewardTool(
           trigger: "steward_reassessment",
         });
 
+        // Argument evaluations are derived within the assessment (issue #173),
+        // so a fresh verdict makes every named argument's evaluation due: list
+        // the ones that are missing or that predate this assessment. A nudge,
+        // not a gate — confirming an unchanged evaluation is a cheap re-call.
+        const evalStates = await getEvaluationStateForClaim(claimId);
+        const missing = evalStates.filter((s) => s.content === null);
+        const stale = evalStates.filter((s) => s.stale);
+        const parts: string[] = [];
+        if (missing.length > 0) {
+          parts.push(
+            `${missing.length} named argument(s) have no evaluation yet: ` +
+              missing.map((s) => `"${s.argument_name}"`).join(", ") +
+              `. Evaluate each with evaluate_argument.`
+          );
+        }
+        if (stale.length > 0) {
+          parts.push(
+            `${stale.length} argument evaluation(s) predate this assessment: ` +
+              stale.map((s) => `"${s.argument_name}"`).join(", ") +
+              `. Re-evaluate any whose premises' standing changed, or re-record ` +
+              `them unchanged to confirm they still hold.`
+          );
+        }
+
         return JSON.stringify({
           success: true,
-          message: `Assessment updated for claim ${claimId}: ${status} (${confidence})`,
+          message:
+            `Assessment updated for claim ${claimId}: ${status} (${confidence})` +
+            (parts.length > 0 ? ` ${parts.join(" ")}` : ""),
         });
       }
 
@@ -592,7 +672,9 @@ export async function executeStewardTool(
           success: true,
           message:
             `Created argument "${name}" (${stance}) on claim ${claimId}. ` +
-            `Attach its subclaim edges, then give it a written form with write_argument.`,
+            `Attach its subclaim edges, then give it a written form with ` +
+            `write_argument, and evaluate it with evaluate_argument when you ` +
+            `record the claim's assessment.`,
           argument_id: argument.id,
         });
       }
@@ -671,6 +753,120 @@ export async function executeStewardTool(
                 `. Reference every subclaim, or detach edges that no longer ` +
                 `belong to this line of reasoning.`
               : ""),
+        });
+      }
+
+      case "evaluate_argument": {
+        const argumentId = input.argument_id as string;
+        const verdict = String(input.verdict).toLowerCase();
+        const content = ((input.evaluation as string) ?? "").trim();
+
+        if (!isArgumentVerdict(verdict)) {
+          return JSON.stringify({
+            success: false,
+            message:
+              `Unknown verdict "${verdict}". Use one of: ` +
+              `${ARGUMENT_VERDICTS.join(", ")}.`,
+          });
+        }
+
+        const argument = await getArgument(argumentId);
+        if (!argument) {
+          return JSON.stringify({
+            success: false,
+            message: `Argument not found: ${argumentId}`,
+          });
+        }
+        if (!argument.name) {
+          return JSON.stringify({
+            success: false,
+            message:
+              "Only named arguments carry an evaluation; an unnamed grouping " +
+              "is judged in the claim's assessment itself.",
+          });
+        }
+
+        if (content.length === 0) {
+          return JSON.stringify({
+            success: false,
+            message: "The evaluation prose is required; a bare verdict is a label, not a judgment.",
+          });
+        }
+        // Same brevity budget as the written form: links cost ~46 chars each,
+        // so the cap is roomier than the 2–4 sentences it should hold.
+        if (content.length > 1200) {
+          return JSON.stringify({
+            success: false,
+            message:
+              `Evaluation is ${content.length} chars; keep it under 1200. ` +
+              `State whether the inference goes through and where the weight ` +
+              `lies; the full audit detail belongs in the claim's reasoning trace.`,
+          });
+        }
+
+        // Any linked claim must belong to this argument (or be the parent
+        // claim); and when the argument has attached subclaims, the
+        // load-bearing analysis should point at them — require at least one
+        // link then. An argument whose premises live only in its written-form
+        // prose has nothing to link, so zero links is allowed in that case.
+        const subclaims = await getArgumentSubclaims(argumentId);
+        const links = parseClaimLinks(content);
+        const subclaimIds = new Set(subclaims.map((s) => s.id));
+        const unknown = [...new Set(links.map((l) => l.claimId))].filter(
+          (id) => !subclaimIds.has(id) && id !== argument.claimId
+        );
+        if (unknown.length > 0) {
+          return JSON.stringify({
+            success: false,
+            message:
+              `These linked claims are not subclaims of this argument: ` +
+              `${unknown.join(", ")}. Link only claims attached to the argument ` +
+              `(or the claim it is about).`,
+          });
+        }
+        if (subclaims.length > 0 && links.length === 0) {
+          return JSON.stringify({
+            success: false,
+            message:
+              "The evaluation must say which premises bear the weight: " +
+              "reference the load-bearing subclaim(s) inline as " +
+              "[[claim:<uuid>]], as in the written form.",
+          });
+        }
+
+        // Provenance: stamp the claim assessment this evaluation was derived
+        // under, so an evaluation left behind by a later reassessment is
+        // detectably stale. Call evaluate_argument AFTER update_claim_assessment
+        // so the stamp lands on the fresh assessment.
+        const db = getDb();
+        const [currentAssessment] = await db
+          .select({ id: assessments.id })
+          .from(assessments)
+          .where(
+            and(
+              eq(assessments.claimId, argument.claimId),
+              eq(assessments.isCurrent, true)
+            )
+          )
+          .limit(1);
+
+        await setArgumentEvaluation({
+          argumentId,
+          verdict,
+          content,
+          assessmentId: currentAssessment?.id ?? null,
+          createdBy: "claim_steward",
+        });
+
+        return JSON.stringify({
+          success: true,
+          message:
+            `Evaluation recorded for argument "${argument.name}": ${verdict}.` +
+            (currentAssessment
+              ? ""
+              : ` Note: the claim has no current assessment yet; record one ` +
+                `with update_claim_assessment so the evaluation is anchored ` +
+                `to it.`),
         });
       }
 

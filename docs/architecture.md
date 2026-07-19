@@ -142,21 +142,40 @@ claims' canonical text at display time, following `merged_into`, so links never
 dangle after a merge. The connective language that the claim bar expels from
 claim texts ("therefore", "because", "given that") lives here and only here.
 
+**The evaluation.** The written form deliberately withholds judgment; the
+judgment lives in a separate steward-maintained evaluation
+(`argument_evaluations`, one `is_current` row per argument with prior rows
+kept as history). It records a verdict on the inference itself: `holds`,
+`holds_with_caveats`, `fails`, or `contested` (the framework's validity is
+itself live-disputed), plus two to four sentences of reader-facing prose
+saying whether the inference goes through granting its premises and which
+premises, given their current assessments, the argument lives or dies on,
+with those load-bearing premises linked inline exactly as in the written
+form. The evaluation is derived within the claim's assessment process, not
+as a fire-once verdict: the Steward's `evaluate_argument` tool stamps each
+evaluation with the assessment it was derived under, so an evaluation left
+behind by a later reassessment is detectably stale, and the assessment tool's
+result nudges the Steward to bring evaluations current whenever it records a
+new verdict.
+
 Two design decisions follow:
 
-- **Arguments are structural, not epistemic.** An argument has no validity
-  status of its own, and its written form states the inference, never a verdict
-  on whether it holds. "Is this argument sound?" is itself a claim in the graph,
-  not a field on the argument, so all epistemic weight stays in the claim layer.
+- **The written form is structural; the evaluation is epistemic.** The written
+  form states the inference, never a verdict on whether it holds; the verdict
+  and the load-bearing analysis live in the evaluation, which is maintained as
+  part of the claim's assessment and follows the same transparency rules
+  (reasoning visible, open to challenge). It is reader-facing prose, not a
+  discussion surface: contributor exchanges stay in the contribution record.
 - **Arguments are optional and non-exhaustive.** A claim with one natural
   decomposition needs no explicitly named argument; edges simply carry a null
   `argument_id`. Admins create arguments when a line of reasoning is live in
   the discourse, not preemptively.
 
-When the *validity of an argument's framework* is itself disputed, "this
-framework is valid" is added as a subclaim within that argument, typically with
-a `presupposes` relation. Meta-disputes stay inside the claim layer with no
-special machinery.
+When the *validity of an argument's framework* is itself disputed in the
+discourse, "this framework is valid" is added as a subclaim within that
+argument, typically with a `presupposes` relation, and the evaluation marks
+the verdict `contested`. The meta-dispute itself stays inside the claim
+layer, where decomposition, assessment, and contribution already operate.
 
 ### Decomposition edges
 
@@ -443,6 +462,8 @@ children by argument and render each argument's written form.
 claims ──< claim_relationships >── claims     (parent / child adjacency)
   │              │
   │              └── argument_id ─▶ arguments ──▶ claims
+  │                                    └──▶ argument_evaluations
+  │                                         (inference verdicts; one is_current per argument)
   ├──▶ assessments        (verdict history; one is_current per claim)
   ├──▶ claim_instances ──▶ sources   (provenance: quote + context + stance)
   └──▶ contributions ──▶ contribution_reviews ──▶ appeals ──▶ arbitration_results

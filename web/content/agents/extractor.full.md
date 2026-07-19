@@ -82,6 +82,8 @@ A claim may have several distinct arguments: coherent, self-contained lines of r
 
 Every named argument carries a written form: one to three sentences stating the inference plainly, referencing each of its attached subclaims inline. Connective language ("therefore," "because," "given that") lives here and only here; claims remain single propositions. The written form states the inference without judging it. Every attached subclaim appears in the prose, but the prose may also carry what the argument needs and the graph does not: minor premises, steps, and evidence that are not proper claims (§2). If such a step is later disputed, it can be promoted to a claim and attached; until then it lives in the prose.
 
+The judgment the written form withholds lives beside it, in the argument's evaluation. Every named argument carries one, maintained by the claim's steward within the claim's assessment rather than as a separate verdict, so it tracks the premises as their assessments change: whether the inference goes through granting its premises, and which premises, as currently assessed, the argument lives or dies on. The evaluation is held to the same standards as any assessment: its reasoning is visible, it is open to challenge, and it is revised when the claim is reassessed. It is reader-facing prose in the voice of the graph (§12), never a discussion surface; exchanges with contributors live in the contribution record.
+
 When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as a PRESUPPOSES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
 
 ### 8. Uniformity Across Claim Types
@@ -397,11 +399,12 @@ fifteen words, rarely more than twenty-five.
   low-confidence extractions as a backstop against non-claims entering the
   graph.
 - **importance**: 0 to 1, a provisional prior (below).
+- **contestation**: 0 to 1, a provisional prior (below).
 - **source_location**: where in the document the span occurs (a section or
   position reference), when the format makes that meaningful; the browser
   extension uses it to anchor claims back onto the page.
 
-## The importance prior
+## The importance and contestation priors
 
 Importance, consequence-if-wrong times contestability, is the Steward's
 judgment to make with graph-wide context (§19). Seeing one document, you
@@ -413,6 +416,13 @@ roughly 0.9 central, 0.6 major, 0.35 notable, 0.15 minor or settled. One
 rule bears repeating: a settled, uncontested fact scores low even when the
 document's whole logic leans on it. And importance is not confidence: a
 claim can be certainly well-formed and still minor.
+
+Also record contestation on its own: how live the dispute around the
+proposition is in the discourse, regardless of its stakes. A settled fact
+stated in passing sits near 0 even when everything leans on it; an actively
+argued crux with credible parties on both sides sits near 1. You have
+already weighed this inside importance; here you state it unfused, so the
+two ingredients of the importance formula stay separately visible.
 
 Emit only claims that pass the bar. A short list is the expected result; do
 not pad.

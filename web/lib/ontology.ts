@@ -1,5 +1,5 @@
 import type {
-  AssessmentStatus, ClaimType, RelationType, Stance, TreeNode,
+  ArgumentVerdict, AssessmentStatus, ClaimType, RelationType, Stance, TreeNode,
 } from "./types";
 
 // Status metadata. Definitions are verbatim from the Admin Constitution §7 so
@@ -84,6 +84,42 @@ export const CLAIM_TYPE_LABEL: Record<ClaimType, string> = {
 export const STANCE_LABEL: Record<Stance, string> = {
   for: "for", against: "against", neutral: "neutral",
 };
+
+// The steward's evaluation of a named argument (issue #173): does the
+// inference go through granting its premises? Distinct from the computed net
+// effect below — that mechanically rolls up premise statuses, while this is
+// the steward's recorded judgment of the inference itself. The two can
+// disagree, and the disagreement is itself informative.
+export const ARGUMENT_VERDICT: Record<
+  ArgumentVerdict,
+  { label: string; cls: string; gloss: string }
+> = {
+  holds: {
+    label: "inference holds", cls: "st-supported",
+    gloss: "Granting its premises, the conclusion follows.",
+  },
+  holds_with_caveats: {
+    label: "holds with caveats", cls: "st-contested",
+    gloss: "The inference goes through only under the qualifications the evaluation states.",
+  },
+  fails: {
+    label: "inference fails", cls: "st-contradicted",
+    gloss: "The conclusion does not follow even granting the premises.",
+  },
+  contested: {
+    label: "validity contested", cls: "st-contested",
+    gloss: "Whether this argument's framework is valid is itself disputed.",
+  },
+};
+
+export function isArgumentVerdict(v: unknown): v is ArgumentVerdict {
+  return typeof v === "string" && v in ARGUMENT_VERDICT;
+}
+
+// Null for an unevaluated argument (render nothing, not a default verdict).
+export function argumentVerdictMeta(v: unknown) {
+  return isArgumentVerdict(v) ? ARGUMENT_VERDICT[v] : null;
+}
 
 export function confidenceLabel(c: number): string {
   return c.toFixed(2).replace(/^0/, "·");
@@ -287,6 +323,10 @@ export interface ArgumentGroup {
   // the subclaims combine. Null for the unnamed group and legacy label-only
   // arguments (render via hasClaimLinks to skip the latter).
   content: string | null;
+  // The steward's evaluation (issue #173): verdict on the inference plus prose
+  // naming the load-bearing premises. Null until the argument is evaluated.
+  verdict: string | null;
+  evaluation: string | null;
   named: boolean;
   nodes: ScoredNode[];
   counts: Record<Effect, number>;
@@ -309,6 +349,8 @@ export function groupByArgument(scored: ScoredNode[]): ArgumentGroup[] {
         name: s.node.argument_name ?? null,
         stance: s.node.argument_stance ?? null,
         content: s.node.argument_content ?? null,
+        verdict: s.node.argument_verdict ?? null,
+        evaluation: s.node.argument_evaluation ?? null,
         named: Boolean(s.node.argument_name),
         nodes: [],
         counts: { supports: 0, against: 0, uncertain: 0, weak: 0 },
