@@ -212,7 +212,6 @@ const configSchema = z.object({
     .string()
     .transform((s) => s === "true")
     .default("false"),
-  escalationConfidenceThreshold: z.coerce.number().default(0.6),
   // Audit invocation (#180). The sweep period: at most one pattern_analysis
   // sweep per this many hours (skipped when the period saw no review
   // decisions). 0 disables the scheduler entirely — event-triggered audits
@@ -292,7 +291,6 @@ export function loadConfig(): Config {
     extensionModel: process.env.EXTENSION_MODEL,
     judgeModel: process.env.JUDGE_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
-    escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
     auditSweepIntervalHours: process.env.AUDIT_SWEEP_INTERVAL_HOURS,
     auditStaleSuspensionDays: process.env.AUDIT_STALE_SUSPENSION_DAYS,
     sqsContributionQueue: process.env.SQS_CONTRIBUTION_QUEUE,

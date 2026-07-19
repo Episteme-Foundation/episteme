@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb, rawQuery } from "../db/client.js";
-import { arguments_ } from "../db/schema.js";
+import { arguments_, argumentEvaluations } from "../db/schema.js";
 
 /**
  * Inline claim reference inside an argument's written form:
@@ -101,4 +101,106 @@ export async function setArgumentContent(argumentId: string, content: string) {
     .where(eq(arguments_.id, argumentId))
     .returning();
   return argument ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Argument evaluations (issue #173)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether the inference goes through granting its premises. "contested" is
+ * for a framework whose validity is itself live-disputed (constitution §7's
+ * PRESUPPOSES case).
+ */
+export const ARGUMENT_VERDICTS = [
+  "holds",
+  "holds_with_caveats",
+  "fails",
+  "contested",
+] as const;
+export type ArgumentVerdict = (typeof ARGUMENT_VERDICTS)[number];
+
+export function isArgumentVerdict(v: unknown): v is ArgumentVerdict {
+  return (
+    typeof v === "string" && (ARGUMENT_VERDICTS as readonly string[]).includes(v)
+  );
+}
+
+export async function getCurrentEvaluation(argumentId: string) {
+  const db = getDb();
+  const [evaluation] = await db
+    .select()
+    .from(argumentEvaluations)
+    .where(
+      and(
+        eq(argumentEvaluations.argumentId, argumentId),
+        eq(argumentEvaluations.isCurrent, true)
+      )
+    )
+    .limit(1);
+  return evaluation ?? null;
+}
+
+/**
+ * Record a new current evaluation for an argument, retiring the previous one
+ * (assessments-style history: prior rows stay, flagged non-current).
+ */
+export async function setArgumentEvaluation(input: {
+  argumentId: string;
+  verdict: ArgumentVerdict;
+  content: string;
+  assessmentId?: string | null;
+  createdBy?: string;
+}) {
+  const db = getDb();
+  await db
+    .update(argumentEvaluations)
+    .set({ isCurrent: false })
+    .where(eq(argumentEvaluations.argumentId, input.argumentId));
+  const [evaluation] = await db
+    .insert(argumentEvaluations)
+    .values({
+      argumentId: input.argumentId,
+      verdict: input.verdict,
+      content: input.content,
+      assessmentId: input.assessmentId ?? null,
+      isCurrent: true,
+      createdBy: input.createdBy ?? "claim_steward",
+    })
+    .returning();
+  return evaluation!;
+}
+
+export interface ArgumentEvaluationState {
+  argument_id: string;
+  argument_name: string | null;
+  verdict: string | null;
+  content: string | null;
+  /** True when the evaluation predates the claim's current assessment. */
+  stale: boolean;
+}
+
+/**
+ * The evaluation standing of every NAMED argument on a claim: its current
+ * evaluation (if any) and whether that evaluation was derived under the
+ * claim's current assessment. Drives the update_claim_assessment nudge and
+ * the backfill's detection query.
+ */
+export async function getEvaluationStateForClaim(
+  claimId: string
+): Promise<ArgumentEvaluationState[]> {
+  return rawQuery<ArgumentEvaluationState>(
+    `SELECT a.id AS argument_id, a.name AS argument_name,
+            ae.verdict, ae.content,
+            (ae.id IS NOT NULL AND (ca.id IS NULL OR ae.assessment_id IS DISTINCT FROM ca.id)) AS stale
+       FROM arguments a
+       LEFT JOIN argument_evaluations ae
+              ON ae.argument_id = a.id AND ae.is_current = true
+       LEFT JOIN assessments ca
+              ON ca.claim_id = a.claim_id AND ca.is_current = true
+      WHERE a.claim_id = $1
+        AND a.name IS NOT NULL
+      ORDER BY a.created_at`,
+    [claimId]
+  );
 }

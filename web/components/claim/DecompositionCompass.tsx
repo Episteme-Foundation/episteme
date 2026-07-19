@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { TreeNode } from "@/lib/types";
 import {
-  RELATION, statusMeta, STANCE_LABEL,
+  RELATION, statusMeta, STANCE_LABEL, argumentVerdictMeta,
   decompositionEffects, effectCounts, groupByArgument, EFFECT, EFFECT_ORDER,
   type ScoredNode, type ArgumentGroup,
 } from "@/lib/ontology";
@@ -42,6 +42,8 @@ function ArgumentBlock({
   // The written form: how these subclaims combine to bear on the claim, with
   // the subclaims linked inline. Label-only legacy content is skipped.
   const written = group.content && hasClaimLinks(group.content) ? group.content : null;
+  // The steward's evaluation of the inference (issue #173); null until judged.
+  const verdict = argumentVerdictMeta(group.verdict);
   return (
     <li className={styles.argGroup}>
       <button type="button" className={styles.argHead} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
@@ -53,6 +55,7 @@ function ArgumentBlock({
         />
         <span className={styles.argName}>{group.name}</span>
         {group.stance && <span className={`arg-stance ${group.stance}`}>{STANCE_LABEL[group.stance]}</span>}
+        {verdict && <span className={`arg-verdict ${verdict.cls}`} title={verdict.gloss}>{verdict.label}</span>}
         <span className={styles.argCount}>{n}</span>
       </button>
       {open && (
@@ -60,6 +63,11 @@ function ArgumentBlock({
           {written && (
             <p className={styles.argProse}>
               <ArgumentText content={written} texts={texts} />
+            </p>
+          )}
+          {group.evaluation && (
+            <p className={styles.argEval}>
+              <ArgumentText content={group.evaluation} texts={texts} />
             </p>
           )}
           <div className={styles.argBar} title="effect of this argument's subclaims on the claim" aria-hidden>

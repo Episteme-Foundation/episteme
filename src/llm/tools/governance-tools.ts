@@ -18,6 +18,8 @@ import {
   contributions,
   contributionReviews,
   contributors,
+  appeals,
+  arbitrationResults,
 } from "../../db/schema.js";
 import { trustLevelFor } from "../../services/reputation-service.js";
 import { hasWrittenForm } from "../../services/argument-service.js";
@@ -46,7 +48,9 @@ export function getGovernanceToolDefinitions(): Tool[] {
       name: "get_contribution_details",
       description:
         "Get full details about a contribution, including the contributor, " +
-        "the target claim, and any existing review.",
+        "the target claim, any existing review, the reviewer's escalation " +
+        "reason, any appeals (with the appellant's reasoning), and prior " +
+        "arbitration results.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -245,11 +249,31 @@ async function getClaimWithContext(claimId: string) {
     .innerJoin(sources, eq(sources.id, claimInstances.sourceId))
     .where(eq(claimInstances.claimId, claimId));
 
-  // Arguments
+  // Arguments, each with its current evaluation (issue #173) so a re-running
+  // steward sees its prior judgment of the inference and can revise or confirm.
   const args = await db
     .select()
     .from(arguments_)
     .where(eq(arguments_.claimId, claimId));
+
+  const evaluations = await rawQuery<{
+    argument_id: string;
+    verdict: string;
+    content: string;
+    stale: boolean;
+  }>(
+    `SELECT ae.argument_id, ae.verdict, ae.content,
+            (ca.id IS NULL OR ae.assessment_id IS DISTINCT FROM ca.id) AS stale
+       FROM argument_evaluations ae
+       JOIN arguments a ON a.id = ae.argument_id
+       LEFT JOIN assessments ca ON ca.claim_id = a.claim_id AND ca.is_current = true
+      WHERE a.claim_id = $1
+        AND ae.is_current = true`,
+    [claimId]
+  );
+  const evaluationByArgument = new Map(
+    evaluations.map((e) => [e.argument_id, e])
+  );
 
   return {
     claim: {
@@ -292,15 +316,28 @@ async function getClaimWithContext(claimId: string) {
       source_type: inst.sourceType,
       source_url: inst.sourceUrl,
     })),
-    arguments: args.map((a) => ({
-      id: a.id,
-      name: a.name,
-      stance: a.stance,
-      content: a.content,
-      // False when content is still just the creation-time label — the steward
-      // owes this argument a write_argument call (issue #129).
-      has_written_form: hasWrittenForm(a.content),
-    })),
+    arguments: args.map((a) => {
+      const evaluation = evaluationByArgument.get(a.id) ?? null;
+      return {
+        id: a.id,
+        name: a.name,
+        stance: a.stance,
+        content: a.content,
+        // False when content is still just the creation-time label — the steward
+        // owes this argument a write_argument call (issue #129).
+        has_written_form: hasWrittenForm(a.content),
+        // The steward's current judgment of the inference (issue #173); null
+        // when the argument has never been evaluated. `stale` means it was
+        // derived under an assessment that is no longer current.
+        evaluation: evaluation
+          ? {
+              verdict: evaluation.verdict,
+              content: evaluation.content,
+              stale: evaluation.stale,
+            }
+          : null,
+      };
+    }),
   };
 }
 
@@ -333,6 +370,33 @@ async function getContributionDetails(contributionId: string) {
     )
     .orderBy(desc(contributionReviews.reviewedAt))
     .limit(1);
+
+  // Appeals, newest first — the appellant's reasoning is the substance of an
+  // appeal adjudication, so the Arbitrator must be able to read it (#178).
+  const appealRows = await db
+    .select({
+      id: appeals.id,
+      appealReasoning: appeals.appealReasoning,
+      appellantId: appeals.appellantId,
+      appellantName: contributors.displayName,
+      originalReviewId: appeals.originalReviewId,
+      status: appeals.status,
+      submittedAt: appeals.submittedAt,
+    })
+    .from(appeals)
+    .leftJoin(contributors, eq(contributors.id, appeals.appellantId))
+    .where(eq(appeals.contributionId, contributionId))
+    .orderBy(desc(appeals.submittedAt));
+
+  // Prior arbitrations, newest first — repeat arbitration is a real path
+  // (uphold_original returns the contribution to 'rejected', which can be
+  // appealed again), and the second arbitrator should see the first's
+  // reasoning (#178).
+  const arbitrations = await db
+    .select()
+    .from(arbitrationResults)
+    .where(eq(arbitrationResults.contributionId, contributionId))
+    .orderBy(desc(arbitrationResults.arbitratedAt));
 
   // Target claim — null for pending intake contributions (#157), which
   // propose NEW content and have no claim until accepted and materialized.
@@ -375,6 +439,9 @@ async function getContributionDetails(contributionId: string) {
       submitted_at: contribution.submittedAt.toISOString(),
       proposed_canonical_form: contribution.proposedCanonicalForm,
       merge_target_claim_id: contribution.mergeTargetClaimId,
+      // Why the reviewer escalated — present even when the reviewer skipped
+      // record_review_decision, so an escalation never arrives reasonless.
+      escalation_reason: contribution.escalationReason,
     },
     ...(source
       ? {
@@ -411,6 +478,34 @@ async function getContributionDetails(contributionId: string) {
           reviewed_at: review.reviewedAt.toISOString(),
         }
       : null,
+    ...(appealRows.length > 0
+      ? {
+          appeals: appealRows.map((a) => ({
+            id: a.id,
+            appeal_reasoning: a.appealReasoning,
+            appellant: {
+              id: a.appellantId,
+              display_name: a.appellantName,
+            },
+            original_review_id: a.originalReviewId,
+            status: a.status,
+            submitted_at: a.submittedAt.toISOString(),
+          })),
+        }
+      : {}),
+    ...(arbitrations.length > 0
+      ? {
+          arbitration_history: arbitrations.map((r) => ({
+            id: r.id,
+            appeal_id: r.appealId,
+            outcome: r.outcome,
+            decision: r.decision,
+            reasoning: r.reasoning,
+            human_review_recommended: r.humanReviewRecommended,
+            arbitrated_at: r.arbitratedAt.toISOString(),
+          })),
+        }
+      : {}),
   };
 }
 

@@ -21,8 +21,9 @@ const SETUPS: { id: SetupId; label: string; code: string }[] = [
   {
     id: "cc", label: "Claude Code",
     code: `claude mcp add --transport http episteme \\
-  https://api.claimgraph.io/mcp \\
-  --header "x-api-key: YOUR_KEY"`,
+  https://api.claimgraph.io/mcp
+# Signs you in via OAuth on first use; or skip the
+# browser with --header "x-api-key: YOUR_KEY"`,
   },
   {
     id: "cursor", label: "Cursor",
@@ -41,7 +42,8 @@ const SETUPS: { id: SetupId; label: string; code: string }[] = [
     code: `# Claude.ai → Settings → Connectors → Add custom connector
 Name:  Episteme
 URL:   https://api.claimgraph.io/mcp
-# Authenticate with your Episteme API key.`,
+# Leave the OAuth client ID/secret fields empty: the connector
+# registers itself and walks you through sign-in and consent.`,
   },
   {
     id: "rest", label: "REST",

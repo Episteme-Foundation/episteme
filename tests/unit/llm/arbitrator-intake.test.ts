@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({
   insertValues: vi.fn(),
   reverseReviewOutcome: vi.fn(async () => null),
+  applyArbitrationOutcome: vi.fn(async () => null),
   materializeAcceptedIntake: vi.fn(),
   getContributionById: vi.fn(),
   requestAudit: vi.fn(async () => "run-1"),
@@ -33,6 +34,7 @@ vi.mock("../../../src/services/queue-service.js", () => ({
 }));
 vi.mock("../../../src/services/reputation-service.js", () => ({
   reverseReviewOutcome: mocks.reverseReviewOutcome,
+  applyArbitrationOutcome: mocks.applyArbitrationOutcome,
   AUDIT_SUSPENSION_PREFIX: "audit:",
 }));
 vi.mock("../../../src/services/intake-service.js", () => ({
@@ -49,6 +51,7 @@ import { executeArbitratorTool } from "../../../src/llm/tools/arbitrator-tools.j
 beforeEach(() => {
   mocks.insertValues.mockReset();
   mocks.reverseReviewOutcome.mockReset().mockResolvedValue(null);
+  mocks.applyArbitrationOutcome.mockReset().mockResolvedValue(null);
   mocks.materializeAcceptedIntake.mockReset();
   mocks.getContributionById.mockReset();
   mocks.requestAudit.mockClear();
@@ -141,5 +144,94 @@ describe("record_arbitration_decision on intake contributions", () => {
     });
 
     expect(mocks.requestAudit).not.toHaveBeenCalled();
+  });
+});
+
+// An escalated case was never decided, so there is nothing to reverse; the
+// final outcome must be applied directly or the contributor earns nothing
+// from an escalated-then-accepted contribution (#179).
+describe("record_arbitration_decision reputation wiring", () => {
+  beforeEach(() => {
+    mocks.getContributionById.mockResolvedValue({
+      id: "contrib-1",
+      contributionType: "challenge",
+    });
+  });
+
+  it("applies acceptance directly when an overturn finds nothing to reverse", async () => {
+    mocks.reverseReviewOutcome.mockResolvedValue(null);
+    mocks.applyArbitrationOutcome.mockResolvedValue({
+      contributorId: "c-1",
+      previousScore: 50,
+      newScore: 52,
+      standing: "good",
+      suspended: false,
+      kudosAwarded: 3,
+    });
+
+    const result = JSON.parse(
+      await executeArbitratorTool("record_arbitration_decision", {
+        contribution_id: "contrib-1",
+        outcome: "overturn",
+        decision: "The contribution should be accepted.",
+        reasoning: "The escalated question resolves in the contributor's favor.",
+      })
+    );
+
+    expect(mocks.applyArbitrationOutcome).toHaveBeenCalledWith({
+      contributionId: "contrib-1",
+      finalDecision: "accept",
+    });
+    expect(result.contributor_outcome_applied).toMatchObject({
+      reputation: 52,
+      kudos_awarded: 3,
+    });
+  });
+
+  it("does not apply acceptance again when a reversal restored the contributor", async () => {
+    mocks.reverseReviewOutcome.mockResolvedValue({
+      contributorId: "c-1",
+      previousScore: 34,
+      newScore: 52,
+      standingRestored: true,
+      unsuspended: false,
+      kudosAwarded: 5,
+    });
+
+    await executeArbitratorTool("record_arbitration_decision", {
+      contribution_id: "contrib-1",
+      outcome: "overturn",
+      decision: "Rejection overturned.",
+      reasoning: "The rejection misread the evidence.",
+    });
+
+    expect(mocks.applyArbitrationOutcome).not.toHaveBeenCalled();
+  });
+
+  it("applies the rejection outcome on uphold_original", async () => {
+    await executeArbitratorTool("record_arbitration_decision", {
+      contribution_id: "contrib-1",
+      outcome: "uphold_original",
+      decision: "The rejection stands.",
+      reasoning: "The escalated question resolves against the contribution.",
+    });
+
+    expect(mocks.applyArbitrationOutcome).toHaveBeenCalledWith({
+      contributionId: "contrib-1",
+      finalDecision: "reject",
+    });
+    expect(mocks.reverseReviewOutcome).not.toHaveBeenCalled();
+  });
+
+  it("touches no reputation path on mark_contested", async () => {
+    await executeArbitratorTool("record_arbitration_decision", {
+      contribution_id: "contrib-1",
+      outcome: "mark_contested",
+      decision: "A real disagreement.",
+      reasoning: "Both readings survive scrutiny.",
+    });
+
+    expect(mocks.applyArbitrationOutcome).not.toHaveBeenCalled();
+    expect(mocks.reverseReviewOutcome).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,7 @@ import { CLAIM_TYPE_LABEL, IMPORTANCE_FLOORS, importanceFloorMin } from "@/lib/o
 import type { ImportanceFloor } from "@/lib/ontology";
 import { StatusBadge, Unassessed, Importance } from "@/components/Assessment";
 import { ClaimsControls } from "@/components/ClaimsControls";
+import { ProposeClaim } from "@/components/ProposeClaim";
 import type { AssessedFilter } from "@/lib/types";
 
 export default async function ClaimsIndex({
@@ -48,7 +49,7 @@ export default async function ClaimsIndex({
           {filtersActive
             ? "No claims match these filters. Try widening the importance band or the assessment filter."
             : q
-              ? "No claims match that search."
+              ? "No claims match that search. If it is a real claim the graph should hold, propose it below."
               : "No assessed claims yet."}
         </p>
       ) : (
@@ -77,6 +78,10 @@ export default async function ClaimsIndex({
           ))}
         </div>
       )}
+
+      {/* the "I know something the graph is missing" entry (#174); claim-scoped
+          contributions live on each claim's own page */}
+      <ProposeClaim searchQuery={claims.length === 0 ? q : undefined} />
     </div>
   );
 }

@@ -107,10 +107,17 @@ export async function processNextStewardTask(
       model,
     });
     // Success clears the error state AND the attempt counter, so a claim that
-    // failed transiently before is treated fresh next time.
+    // failed transiently before is treated fresh next time. The state write is
+    // guarded on the row still being 'running': if a new message re-pended the
+    // claim mid-run, completing THIS run must not clobber that pending slot
+    // (#182) — the message would be silently lost.
     await rawQuery(
       `UPDATE claims
-          SET steward_state = 'done', steward_error = NULL, steward_attempts = 0
+          SET steward_state = CASE
+                WHEN steward_state = 'running' THEN 'done'
+                ELSE steward_state
+              END,
+              steward_error = NULL, steward_attempts = 0
         WHERE id = $1`,
       [task.id]
     );
@@ -145,9 +152,17 @@ export async function processNextStewardTask(
     // then park as 'error' so the drain stops spinning on a poison claim.
     const nextAttempts = attempts + 1;
     if (nextAttempts >= MAX_STEWARD_ATTEMPTS) {
+      // Same mid-run guard as the success path: a message that re-pended the
+      // claim during this run survives the park. The attempt counter is still
+      // recorded, so a genuinely poisoned claim converges to 'error' anyway
+      // after its retriggered runs also fail.
       await rawQuery(
         `UPDATE claims
-            SET steward_state = 'error', steward_error = $2, steward_attempts = $3
+            SET steward_state = CASE
+                  WHEN steward_state = 'running' THEN 'error'
+                  ELSE steward_state
+                END,
+                steward_error = $2, steward_attempts = $3
           WHERE id = $1`,
         [task.id, msg, nextAttempts]
       );

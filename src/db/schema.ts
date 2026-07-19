@@ -71,6 +71,15 @@ export const claims = pgTable(
     // important claims are processed first under a run budget (§"Claim Importance
     // and Proportional Effort"). 0.5 = default/medium until judged.
     importance: real("importance").notNull().default(0.5),
+    // How live the dispute around the claim is (0..1), recorded separately from
+    // importance (#172 phase 1). Today importance fuses consequence-if-wrong
+    // with contestability; splitting the contestability half out is the first
+    // step toward scheduling on stakes × expected-yield instead of one fused
+    // score. Recorded by the Extractor (prior) and the Steward (authoritative)
+    // but NOT yet read by the queue, the deferral brake, or effort selection —
+    // phase 2/3 of #172. NULL = not yet judged, deliberately distinct from 0
+    // ("judged settled").
+    contestation: real("contestation"),
     // --- Steward work-queue state: the claim row IS the queue ---
     // A claim with steward_state='pending' is awaiting (re)processing by its
     // Steward; the drain always picks the highest-`importance` pending claim, so
@@ -191,6 +200,15 @@ export const assessments = pgTable(
     // written before this split fall back to reasoningTrace in the UI.
     summary: text("summary"),
     reasoningTrace: text("reasoning_trace").notNull(),
+    // Marginal yield (0..1): the Steward's exit judgment of how much another,
+    // stronger pass would improve this assessment (#172 phase 1). Near zero
+    // once an uncontested fact is assessed or a values dispute is mapped to
+    // its terminal disagreement; high when the pass hit evidence it could not
+    // fully digest. Recorded but not yet read by scheduling — phase 3 of #172
+    // will derive re-assessment priority from it. NULL = not stated (legacy
+    // assessments predate the field); an unassessed claim's yield is treated
+    // as maximal by convention.
+    marginalYield: real("marginal_yield"),
     isCurrent: boolean("is_current").notNull().default(true),
     subclaimSummary: jsonb("subclaim_summary").notNull().default({}),
     trigger: text("trigger"),
@@ -227,6 +245,53 @@ export const arguments_ = pgTable(
       .defaultNow(),
   },
   (table) => [index("idx_arguments_claim").on(table.claimId)]
+);
+
+// ---------------------------------------------------------------------------
+// argument_evaluations
+// ---------------------------------------------------------------------------
+// The steward's judgment of a named argument (issue #173): whether the
+// inference goes through granting its premises, and which premises currently
+// bear the weight. The argument row itself stays structural (its written form
+// states the inference without judging it); this table is the epistemic
+// overlay, derived within the claim's assessment process so it tracks premise
+// assessments rather than drifting as a fire-once verdict.
+export const argumentEvaluations = pgTable(
+  "argument_evaluations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    argumentId: uuid("argument_id")
+      .notNull()
+      .references(() => arguments_.id, { onDelete: "cascade" }),
+    // Does the inference go through granting its premises?
+    //   holds | holds_with_caveats | fails | contested
+    // "contested" is for a framework whose validity is itself live-disputed
+    // (the PRESUPPOSES case, constitution §7).
+    verdict: text("verdict").notNull(),
+    // Reader-facing prose (2–4 sentences, §12 voice): whether the inference
+    // goes through and which premises, given their current assessments, the
+    // argument lives or dies on — those premises referenced inline as
+    // [[claim:<uuid>]], same syntax as the written form.
+    content: text("content").notNull(),
+    // Provenance: the claim assessment this evaluation was derived under. An
+    // evaluation whose assessment is no longer current is detectably stale.
+    // SET NULL (not cascade): assessment rows are append-only history, but an
+    // evaluation should survive its provenance pointer.
+    assessmentId: uuid("assessment_id").references(() => assessments.id, {
+      onDelete: "set null",
+    }),
+    isCurrent: boolean("is_current").notNull().default(true),
+    createdBy: text("created_by").notNull().default("claim_steward"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_argument_evaluations_argument").on(table.argumentId),
+    uniqueIndex("idx_argument_evaluations_current")
+      .on(table.argumentId)
+      .where(sql`${table.isCurrent} = true`),
+  ]
 );
 
 // ---------------------------------------------------------------------------
@@ -571,6 +636,10 @@ export const contributions = pgTable(
       .notNull()
       .defaultNow(),
     reviewStatus: text("review_status").notNull().default("pending"),
+    // Why the reviewer escalated (#178). Written by escalate_to_arbitrator so
+    // the reason reaches the Arbitrator even when no review row was recorded;
+    // the review record, when present, carries the fuller reasoning.
+    escalationReason: text("escalation_reason"),
     mergeTargetClaimId: uuid("merge_target_claim_id").references(
       () => claims.id
     ),
@@ -905,6 +974,8 @@ export type Assessment = typeof assessments.$inferSelect;
 export type NewAssessment = typeof assessments.$inferInsert;
 export type Argument = typeof arguments_.$inferSelect;
 export type NewArgument = typeof arguments_.$inferInsert;
+export type ArgumentEvaluation = typeof argumentEvaluations.$inferSelect;
+export type NewArgumentEvaluation = typeof argumentEvaluations.$inferInsert;
 export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
 export type ClaimInstance = typeof claimInstances.$inferSelect;

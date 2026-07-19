@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { TreeNode, Stance } from "@/lib/types";
-import { RELATION, STANCE_LABEL } from "@/lib/ontology";
+import { RELATION, STANCE_LABEL, argumentVerdictMeta } from "@/lib/ontology";
 import { buildClaimTextMap, hasClaimLinks } from "@/lib/claim-links";
 import { ArgumentText } from "./ArgumentText";
 import { Swatch } from "./Assessment";
@@ -14,17 +14,33 @@ import { Swatch } from "./Assessment";
 function groupByArgument(children: TreeNode[]) {
   const groups: {
     id: string | null; name: string | null; stance: Stance | null;
-    content: string | null; nodes: TreeNode[];
+    content: string | null; verdict: string | null; evaluation: string | null;
+    nodes: TreeNode[];
   }[] = [];
   for (const c of children) {
     const last = groups[groups.length - 1];
     if (last && last.id === c.argument_id) last.nodes.push(c);
     else groups.push({
       id: c.argument_id, name: c.argument_name, stance: c.argument_stance,
-      content: c.argument_content ?? null, nodes: [c],
+      content: c.argument_content ?? null,
+      verdict: c.argument_verdict ?? null,
+      evaluation: c.argument_evaluation ?? null,
+      nodes: [c],
     });
   }
   return groups;
+}
+
+// The steward's verdict on the inference (issue #173), as a quiet tag beside
+// the stance. Nothing renders until the argument has been evaluated.
+function ArgumentVerdictTag({ verdict }: { verdict: string | null }) {
+  const meta = argumentVerdictMeta(verdict);
+  if (!meta) return null;
+  return (
+    <span className={`arg-verdict ${meta.cls}`} title={meta.gloss}>
+      {meta.label}
+    </span>
+  );
 }
 
 // The argument's written form, when it has one: prose with the subclaims
@@ -35,6 +51,18 @@ function ArgumentProse({ content, texts }: { content: string | null; texts: Map<
   return (
     <p className="argform">
       <ArgumentText content={content} texts={texts} />
+    </p>
+  );
+}
+
+// The steward's evaluation (issue #173), set off from the written form: the
+// written form states the inference, this judges it, with the load-bearing
+// premises linked inline.
+function ArgumentEvaluationProse({ evaluation, texts }: { evaluation: string | null; texts: Map<string, string> }) {
+  if (!evaluation) return null;
+  return (
+    <p className="argeval">
+      <ArgumentText content={evaluation} texts={texts} />
     </p>
   );
 }
@@ -116,8 +144,10 @@ function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
                       <span className="sc">argument</span>
                       <span className="argname">{g.name}</span>
                       {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
+                      <ArgumentVerdictTag verdict={g.verdict} />
                     </div>
                     <ArgumentProse content={g.content} texts={texts} />
+                    <ArgumentEvaluationProse evaluation={g.evaluation} texts={texts} />
                   </>
                 )}
                 {g.nodes.map((n) => (
@@ -150,8 +180,10 @@ export function DecompositionTree({ tree }: { tree: TreeNode }) {
                   <span className="sc">argument</span>
                   <span className="argname">{g.name}</span>
                   {g.stance && <span className={`arg-stance ${g.stance}`}>{STANCE_LABEL[g.stance]}</span>}
+                  <ArgumentVerdictTag verdict={g.verdict} />
                 </div>
                 <ArgumentProse content={g.content} texts={texts} />
+                <ArgumentEvaluationProse evaluation={g.evaluation} texts={texts} />
               </>
             )}
             {g.nodes.map((n) => (

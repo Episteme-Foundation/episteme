@@ -1,7 +1,10 @@
 import "server-only";
 import type {
   ClaimDetail,
+  ClaimEventsPage,
   ClaimFilters,
+  ContributionDetail,
+  ContributionExchange,
   ContributorProfile,
   LeaderboardContributor,
   SearchResultItem,
@@ -41,12 +44,25 @@ interface TrajectoryResponse {
 }
 
 export async function fetchClaimDetail(id: string): Promise<ClaimDetail> {
-  // Detail (deep) and trajectory are separate endpoints; fetch in parallel.
-  const [detail, trajectory] = await Promise.all([
+  // Detail (deep), trajectory, and the contribution record (#171) are separate
+  // endpoints; fetch in parallel. Trajectory and record degrade to absent
+  // rather than failing the page (e.g. an API deploy racing the frontend).
+  const [detail, trajectory, record] = await Promise.all([
     apiGet<ClaimDetail>(`/claims/${id}?information_depth=deep`),
     apiGet<TrajectoryResponse>(`/claims/${id}/assessments/trajectory`).catch(() => null),
+    apiGet<{ record: ContributionExchange[] }>(`/claims/${id}/record`).catch(() => null),
   ]);
-  return trajectory ? { ...detail, trajectory } : detail;
+  return {
+    ...detail,
+    ...(trajectory ? { trajectory } : {}),
+    ...(record ? { record: record.record } : {}),
+  };
+}
+
+// The unified per-claim history (#175): assessments, contributions, decisions,
+// steward notes, newest-first. The API caps a window at 200 events.
+export async function fetchClaimEvents(id: string): Promise<ClaimEventsPage> {
+  return apiGet<ClaimEventsPage>(`/claims/${id}/events?limit=200`);
 }
 
 // Serialize the active filters into API query params. Defaults (all / 0) are
@@ -81,6 +97,19 @@ export async function fetchList(
     `/claims?${p.toString()}`,
   );
   return r.results;
+}
+
+export async function fetchContribution(
+  id: string,
+): Promise<ContributionDetail | null> {
+  try {
+    // A contribution's status flips when its review lands; the default
+    // 30-second window is fresh enough and keeps repeat reads cheap.
+    return await apiGet<ContributionDetail>(`/contributions/${id}`);
+  } catch {
+    // 404 (unknown contribution) renders as not-found upstream.
+    return null;
+  }
 }
 
 export async function fetchLeaderboard(

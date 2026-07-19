@@ -82,6 +82,8 @@ A claim may have several distinct arguments: coherent, self-contained lines of r
 
 Every named argument carries a written form: one to three sentences stating the inference plainly, referencing each of its attached subclaims inline. Connective language ("therefore," "because," "given that") lives here and only here; claims remain single propositions. The written form states the inference without judging it. Every attached subclaim appears in the prose, but the prose may also carry what the argument needs and the graph does not: minor premises, steps, and evidence that are not proper claims (§2). If such a step is later disputed, it can be promoted to a claim and attached; until then it lives in the prose.
 
+The judgment the written form withholds lives beside it, in the argument's evaluation. Every named argument carries one, maintained by the claim's steward within the claim's assessment rather than as a separate verdict, so it tracks the premises as their assessments change: whether the inference goes through granting its premises, and which premises, as currently assessed, the argument lives or dies on. The evaluation is held to the same standards as any assessment: its reasoning is visible, it is open to challenge, and it is revised when the claim is reassessed. It is reader-facing prose in the voice of the graph (§12), never a discussion surface; exchanges with contributors live in the contribution record.
+
 When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as a PRESUPPOSES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
 
 ### 8. Uniformity Across Claim Types
@@ -347,11 +349,12 @@ The context tells you where to start; follow the evidence from there.
 
 Read first. get_recent_decisions lists review decisions with their
 reasoning and policy citations, filterable by decision or contributor.
-get_contribution_details loads a single case in full, including any
-existing review. get_claim_with_context and get_claim_dependents show
-the claim a decision touched and what rests on it. get_contributor_profile
-shows reputation, standing, and acceptance history. Arbitration results
-are not visible to you; the review record is what you audit.
+get_contribution_details loads a single case in full: the contribution,
+any existing review, the reviewer's escalation reason, appeals with the
+appellant's reasoning, and arbitration results. get_claim_with_context
+and get_claim_dependents show the claim a decision touched and what
+rests on it. get_contributor_profile shows reputation, standing, and
+acceptance history.
 
 Read your own record too: get_audit_findings lists prior findings with
 their status. An issue already found and acted on must not be punished

@@ -63,7 +63,7 @@ function flags(canonical: string, type: string): string {
 function printClaim(i: number, c: ExtractedClaim): void {
   const w = words(c.proposed_canonical_form);
   console.log(
-    `\n${String(i + 1).padStart(2)}. (${c.claim_type}, conf ${c.confidence}, imp ${c.importance}, ${w}w)` +
+    `\n${String(i + 1).padStart(2)}. (${c.claim_type}, conf ${c.confidence}, imp ${c.importance}, cont ${c.contestation}, ${w}w)` +
       flags(c.proposed_canonical_form, c.claim_type)
   );
   console.log(`    orig:  ${c.original_text.slice(0, 160)}`);

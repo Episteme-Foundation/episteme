@@ -116,6 +116,13 @@ export const treeNodeResponse: z.ZodType<TreeNode> = z.lazy(() =>
     // The argument's written form (issue #129): brief prose with inline
     // [[claim:<uuid>]] references, stating how the grouped subclaims combine.
     argument_content: z.string().nullable(),
+    // The steward's current evaluation of the argument (issue #173): whether
+    // the inference goes through granting its premises (verdict: holds |
+    // holds_with_caveats | fails | contested) and which premises bear the
+    // weight (prose with inline [[claim:<uuid>]] references). Null until the
+    // steward has evaluated the argument.
+    argument_verdict: z.string().nullable(),
+    argument_evaluation: z.string().nullable(),
     children: z.array(treeNodeResponse),
     // Set (true) only on a repeated occurrence of a shared subclaim: the graph
     // is a DAG, and the node's children are rendered at its first occurrence
@@ -142,6 +149,8 @@ export interface TreeNode {
   argument_name: string | null;
   argument_stance: string | null;
   argument_content: string | null;
+  argument_verdict: string | null;
+  argument_evaluation: string | null;
   children: TreeNode[];
   subtree_collapsed?: boolean;
   children_truncated?: boolean;
@@ -161,6 +170,9 @@ export const claimDetailResponse = z.object({
         evidence_urls: z.array(z.string()),
         created_by: z.string(),
         created_at: z.string(),
+        // Steward evaluation of the inference (issue #173); null until judged.
+        verdict: z.string().nullable().optional(),
+        evaluation: z.string().nullable().optional(),
       })
     )
     .optional(),
@@ -221,6 +233,15 @@ export const assessmentTrajectoryResponse = z.object({
   history: z.array(trajectoryPoint),
   total_assessments: z.number(),
   status_transitions: z.number(),
+});
+
+// ---- Unified claim event log (issue #175) ----
+
+// The window is generous because the page renders the whole record at once;
+// heavily contested claims are exactly the ones whose history matters most.
+export const claimEventsParams = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 export const claimProposeResponse = z.object({

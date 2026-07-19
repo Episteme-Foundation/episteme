@@ -365,6 +365,23 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 }
 .argform-link { text-decoration-style: dotted; text-underline-offset: 2px; }
 
+/* The steward's evaluation of a named argument (issue #173): whether the
+   inference goes through granting its premises, and which premises bear the
+   weight. Epistemic where the written form is structural, so it is set off
+   with a quiet left rule; the verdict renders as a tag in the arghead. */
+.argeval {
+  margin: 0 0 0.8rem;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--rule);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.arg-verdict {
+  font-family: var(--sans); font-size: 0.64rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
 .node { position: relative; }
 .node-children {
   margin-left: 0.7rem; padding-left: 1.0rem;
@@ -412,6 +429,38 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   font-family: var(--sans); font-size: 0.76rem; color: var(--muted);
   display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
 }
+
+/* ----- contribution record (#171) ----- */
+.exchange {
+  border-left: 2px solid var(--rule); padding: 0.1rem 0 0.1rem 1.1rem;
+  margin: 0 0 1.8rem;
+}
+.exchange-head {
+  font-family: var(--sans); font-size: 0.8rem; color: var(--muted);
+  display: flex; gap: 0.55rem; align-items: baseline; flex-wrap: wrap;
+}
+.exchange blockquote {
+  margin: 0.45rem 0 0.5rem; font-size: 1.02rem; color: var(--ink);
+  font-style: italic;
+}
+.exchange blockquote::before { content: "“"; }
+.exchange blockquote::after  { content: "”"; }
+.exchange-evidence {
+  font-family: var(--sans); font-size: 0.76rem; color: var(--muted);
+  display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.exchange-reply {
+  margin: 0.85rem 0 0 0.9rem; padding-left: 0.95rem;
+  border-left: 1px solid var(--rule);
+}
+.exchange-reply .sc { display: block; margin-bottom: 0.3rem; }
+.exchange-reply p {
+  font-family: var(--sans); font-size: 0.84rem; color: var(--ink-soft);
+  margin: 0 0 0.55rem;
+}
+.exchange-reply p:last-child { margin-bottom: 0; }
+.exchange-cite { font-family: var(--sans); font-size: 0.72rem; color: var(--faint); }
 
 /* ----- trajectory (margin timeline) ----- */
 .traj { display: flex; flex-direction: column; gap: 0; }
@@ -731,3 +780,37 @@ html { scroll-behavior: smooth; }
 }
 .account-table code { font-size: 0.8rem; }
 .usage-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+
+/* ---- contribution entry points (#174) ------------------------------------- */
+/* Visible to every reader, quiet on the page: the prompt advertises that the
+   page is challengeable; the action itself is gated behind sign-in. */
+
+.contribute-lede { font-family: var(--sans); font-size: 0.86rem; color: var(--muted); max-width: 36rem; }
+.contribute-open {
+  font-family: var(--sans); font-size: 0.86rem; font-weight: 600;
+  padding: 0.5rem 1rem; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--paper-card); color: var(--ink); cursor: pointer;
+  transition: background 0.12s ease;
+}
+.contribute-open:hover { background: var(--paper-sunk); }
+.contribute-box {
+  border: 1px solid var(--rule-soft); border-radius: 4px;
+  background: var(--paper-card); padding: 0.9rem 1.1rem 1rem;
+  max-width: 36rem; font-family: var(--sans); font-size: 0.88rem;
+}
+.contribute-label {
+  display: block; font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  margin: 0.9rem 0 0.3rem;
+}
+.contribute-box .contribute-label:first-child { margin-top: 0; }
+.contribute-optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.contribute-field {
+  width: 100%; box-sizing: border-box; font: inherit; font-size: 0.9rem;
+  padding: 0.45rem 0.6rem; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--paper); color: var(--ink);
+}
+textarea.contribute-field { resize: vertical; line-height: 1.45; }
+.contribute-hint { font-size: 0.8rem; color: var(--muted); margin: 0.35rem 0 0; }
+.contribute-actions { display: flex; align-items: center; gap: 0.9rem; margin-top: 1rem; }
+.contribute-error { font-size: 0.82rem; color: var(--st-contradicted); margin: 0.6rem 0 0; }

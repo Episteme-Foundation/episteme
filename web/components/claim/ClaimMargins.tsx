@@ -24,6 +24,11 @@ export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: 
               ▸ view as map
             </Link>
           </p>
+          <p style={{ marginTop: "0.3rem" }}>
+            <Link className="sc" href={`/claims/${detail.claim.id}/history`}>
+              ▸ view history
+            </Link>
+          </p>
         </div>
 
         {/* CENTRE — the reading column */}
@@ -43,7 +48,9 @@ export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: 
             normal flow so nothing overlaps */}
         <div className={styles.rightRail}>
           <DependentsRail dependents={detail.dependents ?? []} />
-          {detail.trajectory && <HistoryRail trajectory={detail.trajectory} />}
+          {detail.trajectory && (
+            <HistoryRail trajectory={detail.trajectory} claimId={detail.claim.id} />
+          )}
         </div>
       </div>
     </div>

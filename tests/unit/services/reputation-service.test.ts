@@ -23,6 +23,7 @@ vi.mock("../../../src/services/kudos-service.js", async (importOriginal) => {
 
 import {
   applyReviewOutcome,
+  applyArbitrationOutcome,
   reverseReviewOutcome,
   neutralizeReviewOutcome,
   adjustReputation,
@@ -56,8 +57,12 @@ function routeQueries(opts: {
   contributor?: Record<string, unknown>;
   importance?: number;
   events?: Array<{ delta: number; reason: string }>;
+  escalationReview?: boolean;
 }) {
   mocks.rawQuery.mockImplementation(async (sql: string) => {
+    if (sql.includes("FROM contribution_reviews")) {
+      return opts.escalationReview ? [{ id: REVIEW_ID }] : [];
+    }
     if (sql.includes("FROM contributions")) {
       return [
         {
@@ -74,6 +79,14 @@ function routeQueries(opts: {
     }
     return [];
   });
+}
+
+function contributionQuery(): string {
+  const call = mocks.rawQuery.mock.calls.find(([sql]) =>
+    (sql as string).includes("FROM contributions")
+  );
+  expect(call).toBeDefined();
+  return call![0] as string;
 }
 
 function updateCall(): { sql: string; params: unknown[] } {
@@ -242,6 +255,124 @@ describe("applyReviewOutcome", () => {
       })
     ).toBeNull();
   });
+
+  // Intake contributions can carry no claim_id (#179): a rejected
+  // propose_claim never materializes and propose_source never gets one, yet
+  // reputation and the bad-faith defense (#157) must still apply.
+  it("penalizes claim-less intake rejections: LEFT JOIN, full bad-faith consequences", async () => {
+    routeQueries({ importance: 0 });
+    const outcome = await applyReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+      decision: "reject",
+      suspectedBadFaith: true,
+      badFaithCategory: "spam",
+    });
+
+    expect(outcome!.standing).toBe("must_pay");
+    expect(outcome!.newScore).toBe(
+      50 + REPUTATION_RULES.rejected + REPUTATION_RULES.badFaithFlag
+    );
+    expect(contributionQuery()).toContain("LEFT JOIN claims");
+    expect(contributionQuery()).toContain("COALESCE(cl.importance, 0)");
+  });
+
+  it("credits a claim-less acceptance with the minimum kudos", async () => {
+    routeQueries({ importance: 0 });
+    const outcome = await applyReviewOutcome({
+      contributionId: CONTRIBUTION_ID,
+      decision: "accept",
+    });
+    expect(outcome!.newScore).toBe(50 + REPUTATION_RULES.accepted);
+    expect(outcome!.kudosAwarded).toBe(1);
+  });
+});
+
+describe("applyArbitrationOutcome (escalation resolution)", () => {
+  it("accept: credits the acceptance, resolves the escalated counter, awards kudos", async () => {
+    routeQueries({ importance: 0.5, escalationReview: true });
+    const outcome = await applyArbitrationOutcome({
+      contributionId: CONTRIBUTION_ID,
+      finalDecision: "accept",
+    });
+
+    expect(outcome).toMatchObject({
+      contributorId: CONTRIBUTOR_ID,
+      previousScore: 50,
+      newScore: 50 + REPUTATION_RULES.accepted,
+      standing: "good",
+      suspended: false,
+      kudosAwarded: 3, // importance 0.5, no survived-appeal bonus
+    });
+
+    const { sql } = updateCall();
+    expect(sql).toContain(
+      "contributions_escalated = GREATEST(0, contributions_escalated - 1)"
+    );
+    expect(sql).toContain("contributions_accepted = contributions_accepted + 1");
+
+    const events = eventInserts();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toContain(REPUTATION_REASONS.accepted);
+    expect(mocks.awardKudos).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 3, reason: "accepted_contribution" })
+    );
+  });
+
+  it("reject: applies the ordinary rejection penalty", async () => {
+    routeQueries({ escalationReview: true });
+    const outcome = await applyArbitrationOutcome({
+      contributionId: CONTRIBUTION_ID,
+      finalDecision: "reject",
+    });
+
+    expect(outcome!.newScore).toBe(50 + REPUTATION_RULES.rejected);
+    expect(updateCall().sql).toContain(
+      "contributions_rejected = contributions_rejected + 1"
+    );
+    const events = eventInserts();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toContain(REPUTATION_REASONS.rejected);
+    expect(mocks.awardKudos).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when the review already applied an outcome", async () => {
+    routeQueries({
+      events: [
+        { delta: REPUTATION_RULES.rejected, reason: REPUTATION_REASONS.rejected },
+      ],
+    });
+    expect(
+      await applyArbitrationOutcome({
+        contributionId: CONTRIBUTION_ID,
+        finalDecision: "accept",
+      })
+    ).toBeNull();
+    expect(eventInserts()).toHaveLength(0);
+    expect(mocks.awardKudos).not.toHaveBeenCalled();
+  });
+
+  it("is idempotent: a second resolution finds its own event and no-ops", async () => {
+    routeQueries({
+      events: [
+        { delta: REPUTATION_RULES.accepted, reason: REPUTATION_REASONS.accepted },
+      ],
+    });
+    expect(
+      await applyArbitrationOutcome({
+        contributionId: CONTRIBUTION_ID,
+        finalDecision: "accept",
+      })
+    ).toBeNull();
+  });
+
+  it("skips the escalated-counter move when no escalate review was recorded", async () => {
+    routeQueries({ escalationReview: false });
+    await applyArbitrationOutcome({
+      contributionId: CONTRIBUTION_ID,
+      finalDecision: "accept",
+    });
+    expect(updateCall().sql).not.toContain("contributions_escalated");
+  });
 });
 
 describe("reverseReviewOutcome (appeal overturn)", () => {
@@ -317,6 +448,20 @@ describe("reverseReviewOutcome (appeal overturn)", () => {
     expect(result!.unsuspended).toBe(false);
   });
 
+  it("reverses claim-less intake rejections (LEFT JOIN)", async () => {
+    routeQueries({
+      importance: 0,
+      events: [
+        { delta: REPUTATION_RULES.rejected, reason: REPUTATION_REASONS.rejected },
+      ],
+    });
+    const result = await reverseReviewOutcome({ contributionId: CONTRIBUTION_ID });
+    // 50 - (-1) + 2 = 53
+    expect(result!.newScore).toBe(53);
+    expect(result!.kudosAwarded).toBe(1 + 2); // minimum kudos + appeal bonus
+    expect(contributionQuery()).toContain("LEFT JOIN claims");
+  });
+
   it("is idempotent: a second overturn is a no-op", async () => {
     routeQueries({
       events: [
@@ -344,7 +489,7 @@ describe("reverseReviewOutcome (appeal overturn)", () => {
 describe("neutralizeReviewOutcome (audit re-review, #180)", () => {
   /** Route the mock for the neutralization query shapes. */
   function routeNeutralize(opts: {
-    claimId?: string | null;
+    reviewStatus?: string;
     review?: {
       id: string;
       decision: string;
@@ -359,7 +504,7 @@ describe("neutralizeReviewOutcome (audit re-review, #180)", () => {
         return [
           {
             contributor_id: CONTRIBUTOR_ID,
-            claim_id: opts.claimId === undefined ? "claim-1" : opts.claimId,
+            review_status: opts.reviewStatus ?? "rejected",
           },
         ];
       }
@@ -429,6 +574,7 @@ describe("neutralizeReviewOutcome (audit re-review, #180)", () => {
 
   it("accepted contribution: reverses the credit and claws back kudos", async () => {
     routeNeutralize({
+      reviewStatus: "accepted",
       review: { id: REVIEW_ID, decision: "accept", suspected_bad_faith: false },
       contributor: primeContributor({ reputation_score: 52 }),
       events: [
@@ -455,6 +601,7 @@ describe("neutralizeReviewOutcome (audit re-review, #180)", () => {
 
   it("after an overturn, the accepted counter holds the contribution and the flag is already gone", async () => {
     routeNeutralize({
+      reviewStatus: "accepted",
       review: { id: REVIEW_ID, decision: "reject", suspected_bad_faith: true },
       contributor: primeContributor({ reputation_score: 52 }),
       events: [
@@ -483,23 +630,27 @@ describe("neutralizeReviewOutcome (audit re-review, #180)", () => {
     ).toBeNull();
   });
 
-  it("claim-less intake: supersedes the review but touches no standing", async () => {
+  it("an arbitrated escalation: the final disposition's counter is the one decremented", async () => {
+    // Escalated review, then uphold_original resolved the escalated counter
+    // into rejected (#179) — review_status, not the review's own decision,
+    // says where the count sits now.
     routeNeutralize({
-      claimId: null,
-      review: { id: REVIEW_ID, decision: "reject", suspected_bad_faith: false },
+      reviewStatus: "rejected",
+      review: { id: REVIEW_ID, decision: "escalate", suspected_bad_faith: false },
+      contributor: primeContributor({ reputation_score: 49 }),
+      events: [
+        { delta: REPUTATION_RULES.rejected, reason: REPUTATION_REASONS.rejected },
+      ],
     });
 
     const result = await neutralizeReviewOutcome({
       contributionId: CONTRIBUTION_ID,
     });
 
-    expect(result).toMatchObject({ newScore: 50, kudosReversed: 0 });
-    expect(supersededMark()).toEqual([CONTRIBUTION_ID]);
-    expect(
-      mocks.rawQuery.mock.calls.find(([sql]) =>
-        (sql as string).includes("UPDATE contributors")
-      )
-    ).toBeUndefined();
+    expect(result!.newScore).toBe(50);
+    expect(updateCall().sql).toContain(
+      "contributions_rejected = GREATEST(0, contributions_rejected - 1)"
+    );
   });
 });
 
@@ -589,6 +740,7 @@ describe("ledger derivability (property, #180)", () => {
       decision: string;
       suspected_bad_faith: boolean;
     } | null = null;
+    let reviewStatus = "pending";
     let kudosTotal = 0;
     const ledger: Array<{ delta: number; reason: string }> = [];
 
@@ -599,7 +751,7 @@ describe("ledger derivability (property, #180)", () => {
             {
               contributor_id: CONTRIBUTOR_ID,
               importance: 0.5,
-              claim_id: "claim-1",
+              review_status: reviewStatus,
             },
           ];
         }
@@ -655,6 +807,7 @@ describe("ledger derivability (property, #180)", () => {
       suspectedBadFaith: true,
     });
     liveReview = { id: "r1", decision: "reject", suspected_bad_faith: true };
+    reviewStatus = "rejected";
     assertDerivable();
     expect(score).toBe(34);
 
@@ -669,6 +822,7 @@ describe("ledger derivability (property, #180)", () => {
       decision: "reject",
     });
     liveReview = { id: "r2", decision: "reject", suspected_bad_faith: false };
+    reviewStatus = "rejected";
     assertDerivable();
     expect(score).toBe(49);
 
@@ -676,6 +830,7 @@ describe("ledger derivability (property, #180)", () => {
     //    segment's penalty reverses — the superseded flag must not be
     //    reversed a second time.
     await reverseReviewOutcome({ contributionId: CONTRIBUTION_ID });
+    reviewStatus = "accepted";
     kudosTotal = 5;
     assertDerivable();
     expect(score).toBe(52); // 49 + 1 + accepted credit 2

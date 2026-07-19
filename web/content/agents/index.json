@@ -8,8 +8,8 @@
     "invokedWhen": "A URL or document is submitted for ingestion.",
     "model": "Claude Sonnet 5",
     "hasConstitution": true,
-    "roleChars": 5031,
-    "fullChars": 44792
+    "roleChars": 5537,
+    "fullChars": 46017
   },
   {
     "key": "matcher",
@@ -21,7 +21,7 @@
     "model": "Claude Haiku 4.5",
     "hasConstitution": true,
     "roleChars": 3870,
-    "fullChars": 43631
+    "fullChars": 44350
   },
   {
     "key": "contribution-reviewer",
@@ -32,8 +32,8 @@
     "invokedWhen": "A contributor submits a challenge, support, merge, edit, instance, or argument.",
     "model": "Claude Sonnet 5",
     "hasConstitution": true,
-    "roleChars": 9980,
-    "fullChars": 49741
+    "roleChars": 10085,
+    "fullChars": 50565
   },
   {
     "key": "claim-steward",
@@ -44,8 +44,8 @@
     "invokedWhen": "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 11122,
-    "fullChars": 50883
+    "roleChars": 13735,
+    "fullChars": 54215
   },
   {
     "key": "curator",
@@ -57,7 +57,7 @@
     "model": "Claude Fable 5",
     "hasConstitution": true,
     "roleChars": 3511,
-    "fullChars": 43272
+    "fullChars": 43991
   },
   {
     "key": "dispute-arbitrator",
@@ -68,8 +68,8 @@
     "invokedWhen": "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 7121,
-    "fullChars": 46882
+    "roleChars": 7439,
+    "fullChars": 47919
   },
   {
     "key": "audit-agent",
@@ -80,7 +80,7 @@
     "invokedWhen": "Random 5% sampling, high-reputation decisions, complaints, or anomalies.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 7187,
-    "fullChars": 46948
+    "roleChars": 7213,
+    "fullChars": 47693
   }
 ]

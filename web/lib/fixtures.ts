@@ -1,4 +1,4 @@
-import type { ClaimDetail, SearchResultItem } from "./types";
+import type { ClaimDetail, ClaimEventsPage, SearchResultItem } from "./types";
 
 // Fixture data for design iteration before the API is wired in. Built on the
 // Admin Constitution's own worked example (§2, §16): "inflation was high"
@@ -113,6 +113,78 @@ const FLAGSHIP: ClaimDetail = {
       assessment_confidence: 0.72,
     },
   ],
+  // The public contribution record (#171), newest first. The accepted
+  // challenge is the one behind the trajectory's 2026-03-18 reassessment
+  // (trigger: contribution_accepted), so the fixture tells one coherent story:
+  // a contributor challenged the Verified verdict, review accepted the
+  // challenge, and the claim moved to Supported.
+  record: [
+    {
+      contribution: {
+        id: "co-1",
+        contributor: { id: "contrib-okafor", display_name: "M. Okafor" },
+        contribution_type: "challenge",
+        content:
+          "The Verified status overstates the case. The 6.5% figure is beyond dispute, but “high” has no settled threshold: the verdict rests on a definitional choice the assessment itself marks as contested. A claim whose truth turns on a contested definition should be Supported, not Verified.",
+        evidence_urls: [],
+        submitted_at: "2026-03-16T18:40:00Z",
+        review_status: "accepted",
+      },
+      review: {
+        id: "rev-1",
+        decision: "accept",
+        reasoning:
+          "The challenge is well taken. The measured-magnitude leg is verified, but the threshold subclaim is definitional and genuinely contested; under the constitution a verdict cannot be stronger than its weakest load-bearing premise. The claim has been queued for reassessment with the definitional dependence weighted explicitly.",
+        confidence: 0.86,
+        policy_citations: ["§7 (calibration)", "§16 (worked example)"],
+        reviewed_at: "2026-03-17T09:05:00Z",
+        reviewed_by: "contribution_reviewer",
+      },
+      appeal: null,
+      arbitration: null,
+    },
+    {
+      contribution: {
+        id: "co-2",
+        contributor: { id: "contrib-hb", display_name: "hb_truthwatch" },
+        contribution_type: "challenge",
+        content:
+          "The BLS number is fabricated. Real inflation in 2022 was over 15% and the official CPI series is manipulated to hide it.",
+        evidence_urls: ["https://example.com/shadow-cpi"],
+        submitted_at: "2025-09-04T14:11:00Z",
+        review_status: "rejected",
+      },
+      review: {
+        id: "rev-2",
+        decision: "reject",
+        reasoning:
+          "The challenge disputes a verified bedrock fact without engaging the primary release. The cited page recomputes a private index with an undisclosed methodology; it does not identify any error in the BLS series. A challenge to primary data needs evidence at the level of the data.",
+        confidence: 0.93,
+        policy_citations: ["§4 (evidence standards)"],
+        reviewed_at: "2025-09-04T20:30:00Z",
+        reviewed_by: "contribution_reviewer",
+      },
+      appeal: {
+        id: "ap-1",
+        appellant: { id: "contrib-hb", display_name: "hb_truthwatch" },
+        appeal_reasoning:
+          "The rejection assumes official statistics are trustworthy, which is the very point in dispute.",
+        submitted_at: "2025-09-06T08:02:00Z",
+        status: "resolved",
+      },
+      arbitration: {
+        id: "arb-1",
+        outcome: "uphold_original",
+        decision: "Rejection upheld.",
+        reasoning:
+          "The appeal restates the original claim rather than addressing the review's grounds. No arbiter found the alternative index methodologically credible; distrust of a source is not itself evidence against it.",
+        consensus_achieved: true,
+        human_review_recommended: false,
+        arbitrated_at: "2025-09-07T16:45:00Z",
+        arbitrated_by: "dispute_arbitrator",
+      },
+    },
+  ],
   instances: [
     {
       id: "inst-1",
@@ -206,6 +278,175 @@ const FLAGSHIP: ClaimDetail = {
   },
 };
 
+// The flagship claim's unified event history (issue #175), as the API's
+// GET /claims/:id/events returns it: newest first, every kind represented.
+// The assessment events agree with the trajectory fixture above; woven around
+// them is the adjudication story the trajectory only hints at — a rejected
+// methodological challenge that survived appeal, and an accepted definitional
+// challenge that pulled the verdict from Verified back to Supported.
+const FLAGSHIP_EVENTS: ClaimEventsPage = {
+  total: 12,
+  events: [
+    {
+      kind: "assessment",
+      id: "assessment:a-1",
+      at: "2026-03-18T09:12:00Z",
+      actor: "claim_steward",
+      assessment_id: "a-1",
+      status: "supported",
+      confidence: 0.78,
+      claim_credence: 0.9,
+      summary:
+        "The 6.5% figure is beyond dispute, but the accepted challenge is right that “high” rests on a contested definitional threshold. Supported, not Verified: the conclusion holds under any mainstream threshold, while the threshold itself remains a definitional choice.",
+      trigger: "contribution_accepted",
+      trigger_context:
+        "Accepted challenge: the “high” threshold is definitional and contested; Verified overstated the settled part.",
+      is_current: true,
+      prev_status: "verified",
+      prev_confidence: 0.71,
+    },
+    {
+      kind: "review",
+      id: "review:rv-2",
+      at: "2026-03-12T18:05:00Z",
+      actor: "contribution_reviewer",
+      review_id: "rv-2",
+      contribution_id: "ct-2",
+      contribution_type: "challenge",
+      decision: "accept",
+      reasoning:
+        "The challenge engages the decomposition directly: the threshold subclaim is already Contested, and the parent's Verified status did not reflect that dependence. Accepted and forwarded to the Steward for reassessment.",
+      confidence: 0.9,
+      policy_citations: ["Burden of Engagement", "§7 (false precision)"],
+      suspected_bad_faith: false,
+    },
+    {
+      kind: "contribution",
+      id: "contribution:ct-2",
+      at: "2026-03-12T16:40:00Z",
+      actor: "marisol-vega",
+      contribution_id: "ct-2",
+      contribution_type: "challenge",
+      content:
+        "“Verified” overstates this. The 6.5% figure is bedrock, but whether it clears the bar for “high” turns on a definitional threshold that is genuinely contested: a minority usage reserves “high” for double-digit regimes. The verdict should reflect that the conclusion rests on a contested definition, not a settled fact.",
+      evidence_urls: [],
+      review_status: "accepted",
+    },
+    {
+      kind: "steward_note",
+      id: "steward_note:au-2",
+      at: "2025-08-21T11:32:00Z",
+      actor: "claim_steward",
+      audit_id: "au-2",
+      action: "no_action_needed",
+      reasoning:
+        "Arbitration upheld the rejection of the shelter-lag challenge; the assessment already notes that the measured figure is not in dispute. No reassessment required.",
+    },
+    {
+      kind: "arbitration",
+      id: "arbitration:ar-1",
+      at: "2025-08-21T11:20:00Z",
+      actor: "dispute_arbitrator",
+      arbitration_id: "ar-1",
+      contribution_id: "ct-1",
+      appeal_id: "ap-1",
+      outcome: "uphold_original",
+      reasoning:
+        "The claim, as canonicalised, is about the CPI figure as published. A methodological critique of CPI construction bears on a different claim, which the challenger remains free to propose. All three panel models read it the same way.",
+      consensus_achieved: true,
+      human_review_recommended: false,
+    },
+    {
+      kind: "appeal",
+      id: "appeal:ap-1",
+      at: "2025-08-20T09:02:00Z",
+      actor: "shelter-lag-skeptic",
+      appeal_id: "ap-1",
+      contribution_id: "ct-1",
+      reasoning:
+        "The review misreads the challenge. If the input measure is systematically biased, a claim derived from it cannot be treated as settled; the lag literature I cited is peer-reviewed, not opinion.",
+      status: "resolved",
+    },
+    {
+      kind: "review",
+      id: "review:rv-1",
+      at: "2025-08-14T20:15:00Z",
+      actor: "contribution_reviewer",
+      review_id: "rv-1",
+      contribution_id: "ct-1",
+      contribution_type: "challenge",
+      decision: "reject",
+      reasoning:
+        "The challenge disputes CPI methodology, not the reported figure. The claim references the index as published; the shelter-lag critique belongs on a separate methodological claim rather than undermining this one. No cited source disputes that the BLS reported 6.5%.",
+      confidence: 0.84,
+      policy_citations: ["Burden of Engagement"],
+      suspected_bad_faith: false,
+    },
+    {
+      kind: "contribution",
+      id: "contribution:ct-1",
+      at: "2025-08-14T19:47:00Z",
+      actor: "shelter-lag-skeptic",
+      contribution_id: "ct-1",
+      contribution_type: "challenge",
+      content:
+        "CPI overstates 2022 inflation: the shelter component lags observed market rents by roughly a year, so the 6.5% print partly reflects 2021 housing dynamics. The claim should not treat the headline figure as settled.",
+      evidence_urls: ["https://example.com/shelter-lag-working-paper"],
+      review_status: "rejected",
+    },
+    {
+      kind: "assessment",
+      id: "assessment:a-0b",
+      at: "2025-06-01T00:00:00Z",
+      actor: "claim_steward",
+      assessment_id: "a-0b",
+      status: "verified",
+      confidence: 0.71,
+      claim_credence: 0.93,
+      summary:
+        "The BLS bedrock subclaim resolved to Verified and the arithmetic is trivial; with every leg of the decomposition settled, the parent follows.",
+      trigger: "subclaim_change",
+      trigger_context: "Subclaim bls-cpi resolved: verified against the primary BLS release.",
+      is_current: false,
+      prev_status: "unknown",
+      prev_confidence: 0.4,
+    },
+    {
+      kind: "steward_note",
+      id: "steward_note:au-1",
+      at: "2025-05-20T08:00:00Z",
+      actor: "claim_steward",
+      audit_id: "au-1",
+      action: "updated_canonical_form",
+      reasoning:
+        "Canonicalised from “inflation was high in 2022” to the explicit threshold form. The original wording hid the definitional dependence that the decomposition now makes assessable.",
+    },
+    {
+      kind: "assessment",
+      id: "assessment:a-0a",
+      at: "2024-11-02T14:20:00Z",
+      actor: "claim_steward",
+      assessment_id: "a-0a",
+      status: "unknown",
+      confidence: 0.4,
+      claim_credence: null,
+      summary:
+        "Freshly extracted; the decomposition has not yet resolved the measured figure or the threshold, so no verdict is warranted.",
+      trigger: "pipeline_assessment",
+      trigger_context: null,
+      is_current: false,
+      prev_status: null,
+      prev_confidence: null,
+    },
+    {
+      kind: "created",
+      id: "created:inflation-2022",
+      at: "2024-11-02T14:20:00Z",
+      actor: "extractor",
+    },
+  ],
+};
+
 const INDEX: SearchResultItem[] = [
   { id: "inflation-2022", text: FLAGSHIP.claim.text, claim_type: "empirical_derived", state: "active", similarity_score: 0.91, importance: 0.9, assessment_status: "supported", assessment_confidence: 0.78 },
   { id: "min-wage", text: "The federal minimum wage should be raised to $15 per hour.", claim_type: "normative", state: "active", similarity_score: 0.74, importance: 0.7, assessment_status: "contested", assessment_confidence: 0.62 },
@@ -218,6 +459,10 @@ const INDEX: SearchResultItem[] = [
 
 export function getClaim(id: string): ClaimDetail | null {
   return id === FLAGSHIP.claim.id ? FLAGSHIP : null;
+}
+
+export function getClaimEvents(id: string): ClaimEventsPage | null {
+  return id === FLAGSHIP.claim.id ? FLAGSHIP_EVENTS : null;
 }
 
 export function listClaims(): SearchResultItem[] {

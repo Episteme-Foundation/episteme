@@ -5,6 +5,8 @@ import {
 } from "@/lib/ontology";
 import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
+import { ContributionRecord } from "./claim/ContributionRecord";
+import { Contribute } from "./claim/Contribute";
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -14,7 +16,7 @@ function fmtDate(iso: string) {
 }
 
 export function ClaimView({ detail }: { detail: ClaimDetail }) {
-  const { claim, tree, instances, trajectory, subclaim_count } = detail;
+  const { claim, tree, instances, trajectory, subclaim_count, record } = detail;
   // Live data can be mid-pipeline: an assessment row may exist with a null
   // status. Only treat it as a real assessment when the status is on-enum.
   const assessment =
@@ -177,6 +179,17 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         </section>
       )}
 
+      {/* contribution record (#171) — the public exchanges, rendered as
+          history after the claim's own content. Hidden entirely when no
+          contribution has been made. */}
+      {record && record.length > 0 && <ContributionRecord record={record} />}
+
+      {/* contribution entry (#174): the companion of the contribution record
+          above — the record shows past exchanges, this is where a new one
+          starts. Kept at the end of the reading column so the page itself
+          stays unmarked by the exchanges behind it. */}
+      <Contribute claimId={claim.id} />
+
       <hr className="thin" />
       <p style={{ fontFamily: "var(--sans)", fontSize: ".74rem", color: "var(--faint)" }}>
         Created by {claim.created_by} · {fmtDate(claim.created_at)}.
@@ -184,7 +197,7 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
             rewording, decomposition bookkeeping); only assessed_at is honestly
             "last assessed" (#160). */}
         {assessment && <> Last assessed {fmtDate(assessment.assessed_at)}.</>}
-        {" "}Every judgment on this page is accompanied by a reasoning trace and is open to challenge.
+        {" "}Every judgment on this page is accompanied by a reasoning trace.
       </p>
     </article>
   );

@@ -150,13 +150,18 @@ export interface ReviewOutcomeSummary {
 export async function applyReviewOutcome(
   input: ReviewOutcomeInput
 ): Promise<ReviewOutcomeSummary | null> {
+  // LEFT JOIN, not JOIN (#179): intake contributions can carry no claim_id
+  // (a rejected propose_claim never materializes; propose_source never gets
+  // one), and reputation, standing, and the bad-faith defense (#157) must
+  // apply to them all the same. A claim-less acceptance earns the minimum
+  // kudos via importance 0.
   const [contribution] = await rawQuery<{
     contributor_id: string;
     importance: number;
   }>(
-    `SELECT c.contributor_id, cl.importance
+    `SELECT c.contributor_id, COALESCE(cl.importance, 0) AS importance
      FROM contributions c
-     JOIN claims cl ON cl.id = c.claim_id
+     LEFT JOIN claims cl ON cl.id = c.claim_id
      WHERE c.id = $1`,
     [input.contributionId]
   );
@@ -273,6 +278,141 @@ export async function applyReviewOutcome(
 }
 
 // ---------------------------------------------------------------------------
+// Escalation resolution → final outcome
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply the final outcome of an arbitrated escalation (#179). An 'escalate'
+ * review is not a judgment and writes no reputation events, so when the
+ * Arbitrator later decides the merits the contributor has been neither
+ * credited nor penalized; without this path an escalated-then-accepted
+ * contribution earned nothing, unlike a direct accept. This applies the
+ * consequences the original review would have carried: the reputation event,
+ * counters (resolving the escalated counter into the final disposition), and
+ * kudos on acceptance.
+ *
+ * No-op (null) when the contribution already carries any reputation event: a
+ * decided outcome was applied at review time (undoing it is
+ * reverseReviewOutcome's job), or this resolution already ran. That check is
+ * what makes the call idempotent and safe to attempt on every uphold or
+ * overturn.
+ */
+export async function applyArbitrationOutcome(input: {
+  contributionId: string;
+  finalDecision: "accept" | "reject";
+}): Promise<ReviewOutcomeSummary | null> {
+  const priorEvents = await rawQuery<{ reason: string }>(
+    `SELECT reason FROM reputation_events
+     WHERE contribution_id = $1
+     ORDER BY created_at`,
+    [input.contributionId]
+  );
+  // Only the live segment counts (#180): events from a decision an audit
+  // re-review superseded were compensated to zero, so they must not block
+  // applying the outcome of the fresh escalation.
+  if (liveSegment(priorEvents).length > 0) return null;
+
+  const [contribution] = await rawQuery<{
+    contributor_id: string;
+    importance: number;
+  }>(
+    `SELECT c.contributor_id, COALESCE(cl.importance, 0) AS importance
+     FROM contributions c
+     LEFT JOIN claims cl ON cl.id = c.claim_id
+     WHERE c.id = $1`,
+    [input.contributionId]
+  );
+  if (!contribution) return null;
+
+  const [contributor] = await rawQuery<{
+    reputation_score: number;
+    contribution_standing: string;
+    is_suspended: boolean;
+  }>(
+    `SELECT reputation_score, contribution_standing, is_suspended
+     FROM contributors WHERE id = $1`,
+    [contribution.contributor_id]
+  );
+  if (!contributor) return null;
+
+  const delta = reputationDeltaFor(input.finalDecision);
+  const previousScore = contributor.reputation_score;
+  const newScore = clampScore(previousScore + delta);
+  const suspend =
+    !contributor.is_suspended && newScore < REPUTATION_RULES.suspendBelow;
+
+  // The escalated counter resolves into the final disposition, but only when
+  // the escalation was recorded as a review — the counter's only source.
+  const [escalationReview] = await rawQuery<{ id: string }>(
+    `SELECT id FROM contribution_reviews
+     WHERE contribution_id = $1 AND decision = 'escalate'
+     LIMIT 1`,
+    [input.contributionId]
+  );
+  const finalCounter =
+    input.finalDecision === "accept"
+      ? "contributions_accepted"
+      : "contributions_rejected";
+
+  await rawQuery(
+    `UPDATE contributors SET
+       ${
+         escalationReview
+           ? "contributions_escalated = GREATEST(0, contributions_escalated - 1),"
+           : ""
+       }
+       ${finalCounter} = ${finalCounter} + 1,
+       reputation_score = $1,
+       is_suspended = is_suspended OR $2,
+       suspension_reason = CASE WHEN $2 THEN $3 ELSE suspension_reason END,
+       suspended_at = CASE WHEN $2 THEN now() ELSE suspended_at END,
+       last_active_at = now()
+     WHERE id = $4`,
+    [
+      newScore,
+      suspend,
+      `${AUTO_SUSPENSION_PREFIX} score fell below ${REPUTATION_RULES.suspendBelow} after repeated rejections`,
+      contribution.contributor_id,
+    ]
+  );
+
+  await rawQuery(
+    `INSERT INTO reputation_events
+       (contributor_id, contribution_id, review_id, delta, score_after, reason)
+     VALUES ($1, $2, NULL, $3, $4, $5)`,
+    [
+      contribution.contributor_id,
+      input.contributionId,
+      delta,
+      newScore,
+      input.finalDecision === "accept"
+        ? REPUTATION_REASONS.accepted
+        : REPUTATION_REASONS.rejected,
+    ]
+  );
+
+  let kudosAwarded = 0;
+  if (input.finalDecision === "accept") {
+    kudosAwarded = kudosForImportance(contribution.importance);
+    await awardKudos({
+      contributorId: contribution.contributor_id,
+      contributionId: input.contributionId,
+      amount: kudosAwarded,
+      reason: KUDOS_REASONS.acceptedContribution,
+    });
+  }
+
+  return {
+    contributorId: contribution.contributor_id,
+    previousScore,
+    newScore,
+    standing: contributor.contribution_standing,
+    suspended: contributor.is_suspended || suspend,
+    kudosAwarded,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Appeal overturn → restore
 // ---------------------------------------------------------------------------
 
@@ -295,13 +435,15 @@ export interface ReversalSummary {
 export async function reverseReviewOutcome(input: {
   contributionId: string;
 }): Promise<ReversalSummary | null> {
+  // LEFT JOIN for the same reason as applyReviewOutcome (#179): an
+  // overturned intake rejection may have no claim yet at reversal time.
   const [contribution] = await rawQuery<{
     contributor_id: string;
     importance: number;
   }>(
-    `SELECT c.contributor_id, cl.importance
+    `SELECT c.contributor_id, COALESCE(cl.importance, 0) AS importance
      FROM contributions c
-     JOIN claims cl ON cl.id = c.claim_id
+     LEFT JOIN claims cl ON cl.id = c.claim_id
      WHERE c.id = $1`,
     [input.contributionId]
   );
@@ -450,9 +592,9 @@ export async function neutralizeReviewOutcome(input: {
 }): Promise<NeutralizationSummary | null> {
   const [contribution] = await rawQuery<{
     contributor_id: string;
-    claim_id: string | null;
+    review_status: string;
   }>(
-    `SELECT contributor_id, claim_id FROM contributions WHERE id = $1`,
+    `SELECT contributor_id, review_status FROM contributions WHERE id = $1`,
     [input.contributionId]
   );
   if (!contribution) return null;
@@ -489,21 +631,6 @@ export async function neutralizeReviewOutcome(input: {
   );
   if (!contributor) return null;
 
-  // A claim-less contribution never reached applyReviewOutcome (its
-  // contributions→claims join finds nothing), so there are no consequences
-  // to unwind — superseding the review row is the whole job.
-  if (!contribution.claim_id) {
-    return {
-      contributorId: contribution.contributor_id,
-      supersededReviewId: liveReview.id,
-      previousScore: contributor.reputation_score,
-      newScore: contributor.reputation_score,
-      badFaithFlagCleared: false,
-      kudosReversed: 0,
-      unsuspended: false,
-    };
-  }
-
   const events = await rawQuery<{ delta: number; reason: string }>(
     `SELECT delta, reason FROM reputation_events
      WHERE contribution_id = $1
@@ -530,14 +657,14 @@ export async function neutralizeReviewOutcome(input: {
     contributor.contribution_standing === "must_pay" &&
     remainingFlags === 0;
 
-  // An overturn already moved the rejected counter to accepted, so the
-  // accepted counter is the one holding this contribution; otherwise it is
-  // whichever counter the live decision incremented.
-  const counterColumn = overturned
-    ? "contributions_accepted"
-    : liveReview.decision === "accept"
+  // The contribution's current status names the counter holding it: an
+  // overturn moved rejected→accepted, and an arbitrated escalation resolved
+  // the escalated counter into the final disposition (#179) — the review
+  // row's own decision no longer says where the count sits.
+  const counterColumn =
+    contribution.review_status === "accepted"
       ? "contributions_accepted"
-      : liveReview.decision === "reject"
+      : contribution.review_status === "rejected"
         ? "contributions_rejected"
         : "contributions_escalated";
 

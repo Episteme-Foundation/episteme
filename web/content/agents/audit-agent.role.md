@@ -26,11 +26,12 @@ The context tells you where to start; follow the evidence from there.
 
 Read first. get_recent_decisions lists review decisions with their
 reasoning and policy citations, filterable by decision or contributor.
-get_contribution_details loads a single case in full, including any
-existing review. get_claim_with_context and get_claim_dependents show
-the claim a decision touched and what rests on it. get_contributor_profile
-shows reputation, standing, and acceptance history. Arbitration results
-are not visible to you; the review record is what you audit.
+get_contribution_details loads a single case in full: the contribution,
+any existing review, the reviewer's escalation reason, appeals with the
+appellant's reasoning, and arbitration results. get_claim_with_context
+and get_claim_dependents show the claim a decision touched and what
+rests on it. get_contributor_profile shows reputation, standing, and
+acceptance history.
 
 Read your own record too: get_audit_findings lists prior findings with
 their status. An issue already found and acted on must not be punished
