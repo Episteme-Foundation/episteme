@@ -136,6 +136,52 @@ export interface DependentClaim {
   assessment_confidence: number | null;
 }
 
+// --- contribution record (#171) ---------------------------------------------
+
+// One exchange in a claim's public contribution record: what a contributor
+// submitted, the reviewer's decision and reasoning, and any appeal and
+// arbitration that followed. The constitution's Burden of Engagement makes
+// the exchange part of the claim's public record; it renders as history,
+// separate from the assessment prose (which never absorbs contributor
+// dialogue).
+export interface ContributionExchange {
+  contribution: {
+    id: string;
+    contributor: { id: string; display_name: string };
+    contribution_type: string;
+    content: string;
+    evidence_urls: string[];
+    submitted_at: string;
+    review_status: string;
+  };
+  review: {
+    id: string;
+    decision: string; // accept | reject | escalate
+    reasoning: string;
+    confidence: number | null;
+    policy_citations: string[];
+    reviewed_at: string;
+    reviewed_by: string;
+  } | null;
+  appeal: {
+    id: string;
+    appellant: { id: string; display_name: string };
+    appeal_reasoning: string;
+    submitted_at: string;
+    status: string; // pending | resolved | pending_human
+  } | null;
+  arbitration: {
+    id: string;
+    outcome: string; // uphold_original | overturn | modify | mark_contested | human_review
+    decision: string;
+    reasoning: string;
+    consensus_achieved: boolean | null;
+    human_review_recommended: boolean;
+    arbitrated_at: string;
+    arbitrated_by: string;
+  } | null;
+}
+
 export interface ClaimDetail {
   claim: ClaimCore;
   assessment: Assessment | null;
@@ -150,6 +196,9 @@ export interface ClaimDetail {
     total_assessments: number;
     status_transitions: number;
   };
+  // The public contribution record (#171); absent when the API predates the
+  // /claims/:id/record endpoint or the fetch fails.
+  record?: ContributionExchange[];
 }
 
 export interface SearchResultItem {

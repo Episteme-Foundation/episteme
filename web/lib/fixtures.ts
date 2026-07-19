@@ -113,6 +113,78 @@ const FLAGSHIP: ClaimDetail = {
       assessment_confidence: 0.72,
     },
   ],
+  // The public contribution record (#171), newest first. The accepted
+  // challenge is the one behind the trajectory's 2026-03-18 reassessment
+  // (trigger: contribution_accepted), so the fixture tells one coherent story:
+  // a contributor challenged the Verified verdict, review accepted the
+  // challenge, and the claim moved to Supported.
+  record: [
+    {
+      contribution: {
+        id: "co-1",
+        contributor: { id: "contrib-okafor", display_name: "M. Okafor" },
+        contribution_type: "challenge",
+        content:
+          "The Verified status overstates the case. The 6.5% figure is beyond dispute, but “high” has no settled threshold: the verdict rests on a definitional choice the assessment itself marks as contested. A claim whose truth turns on a contested definition should be Supported, not Verified.",
+        evidence_urls: [],
+        submitted_at: "2026-03-16T18:40:00Z",
+        review_status: "accepted",
+      },
+      review: {
+        id: "rev-1",
+        decision: "accept",
+        reasoning:
+          "The challenge is well taken. The measured-magnitude leg is verified, but the threshold subclaim is definitional and genuinely contested; under the constitution a verdict cannot be stronger than its weakest load-bearing premise. The claim has been queued for reassessment with the definitional dependence weighted explicitly.",
+        confidence: 0.86,
+        policy_citations: ["§7 (calibration)", "§16 (worked example)"],
+        reviewed_at: "2026-03-17T09:05:00Z",
+        reviewed_by: "contribution_reviewer",
+      },
+      appeal: null,
+      arbitration: null,
+    },
+    {
+      contribution: {
+        id: "co-2",
+        contributor: { id: "contrib-hb", display_name: "hb_truthwatch" },
+        contribution_type: "challenge",
+        content:
+          "The BLS number is fabricated. Real inflation in 2022 was over 15% and the official CPI series is manipulated to hide it.",
+        evidence_urls: ["https://example.com/shadow-cpi"],
+        submitted_at: "2025-09-04T14:11:00Z",
+        review_status: "rejected",
+      },
+      review: {
+        id: "rev-2",
+        decision: "reject",
+        reasoning:
+          "The challenge disputes a verified bedrock fact without engaging the primary release. The cited page recomputes a private index with an undisclosed methodology; it does not identify any error in the BLS series. A challenge to primary data needs evidence at the level of the data.",
+        confidence: 0.93,
+        policy_citations: ["§4 (evidence standards)"],
+        reviewed_at: "2025-09-04T20:30:00Z",
+        reviewed_by: "contribution_reviewer",
+      },
+      appeal: {
+        id: "ap-1",
+        appellant: { id: "contrib-hb", display_name: "hb_truthwatch" },
+        appeal_reasoning:
+          "The rejection assumes official statistics are trustworthy, which is the very point in dispute.",
+        submitted_at: "2025-09-06T08:02:00Z",
+        status: "resolved",
+      },
+      arbitration: {
+        id: "arb-1",
+        outcome: "uphold_original",
+        decision: "Rejection upheld.",
+        reasoning:
+          "The appeal restates the original claim rather than addressing the review's grounds. No arbiter found the alternative index methodologically credible; distrust of a source is not itself evidence against it.",
+        consensus_achieved: true,
+        human_review_recommended: false,
+        arbitrated_at: "2025-09-07T16:45:00Z",
+        arbitrated_by: "dispute_arbitrator",
+      },
+    },
+  ],
   instances: [
     {
       id: "inst-1",

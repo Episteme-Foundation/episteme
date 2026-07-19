@@ -413,6 +413,38 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
 }
 
+/* ----- contribution record (#171) ----- */
+.exchange {
+  border-left: 2px solid var(--rule); padding: 0.1rem 0 0.1rem 1.1rem;
+  margin: 0 0 1.8rem;
+}
+.exchange-head {
+  font-family: var(--sans); font-size: 0.8rem; color: var(--muted);
+  display: flex; gap: 0.55rem; align-items: baseline; flex-wrap: wrap;
+}
+.exchange blockquote {
+  margin: 0.45rem 0 0.5rem; font-size: 1.02rem; color: var(--ink);
+  font-style: italic;
+}
+.exchange blockquote::before { content: "“"; }
+.exchange blockquote::after  { content: "”"; }
+.exchange-evidence {
+  font-family: var(--sans); font-size: 0.76rem; color: var(--muted);
+  display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.exchange-reply {
+  margin: 0.85rem 0 0 0.9rem; padding-left: 0.95rem;
+  border-left: 1px solid var(--rule);
+}
+.exchange-reply .sc { display: block; margin-bottom: 0.3rem; }
+.exchange-reply p {
+  font-family: var(--sans); font-size: 0.84rem; color: var(--ink-soft);
+  margin: 0 0 0.55rem;
+}
+.exchange-reply p:last-child { margin-bottom: 0; }
+.exchange-cite { font-family: var(--sans); font-size: 0.72rem; color: var(--faint); }
+
 /* ----- trajectory (margin timeline) ----- */
 .traj { display: flex; flex-direction: column; gap: 0; }
 .traj-point { display: flex; gap: 0.5rem; align-items: flex-start; position: relative; padding-bottom: 0.7rem; }

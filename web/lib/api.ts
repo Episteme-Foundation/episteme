@@ -2,6 +2,7 @@ import "server-only";
 import type {
   ClaimDetail,
   ClaimFilters,
+  ContributionExchange,
   ContributorProfile,
   LeaderboardContributor,
   SearchResultItem,
@@ -41,12 +42,19 @@ interface TrajectoryResponse {
 }
 
 export async function fetchClaimDetail(id: string): Promise<ClaimDetail> {
-  // Detail (deep) and trajectory are separate endpoints; fetch in parallel.
-  const [detail, trajectory] = await Promise.all([
+  // Detail (deep), trajectory, and the contribution record (#171) are separate
+  // endpoints; fetch in parallel. Trajectory and record degrade to absent
+  // rather than failing the page (e.g. an API deploy racing the frontend).
+  const [detail, trajectory, record] = await Promise.all([
     apiGet<ClaimDetail>(`/claims/${id}?information_depth=deep`),
     apiGet<TrajectoryResponse>(`/claims/${id}/assessments/trajectory`).catch(() => null),
+    apiGet<{ record: ContributionExchange[] }>(`/claims/${id}/record`).catch(() => null),
   ]);
-  return trajectory ? { ...detail, trajectory } : detail;
+  return {
+    ...detail,
+    ...(trajectory ? { trajectory } : {}),
+    ...(record ? { record: record.record } : {}),
+  };
 }
 
 // Serialize the active filters into API query params. Defaults (all / 0) are

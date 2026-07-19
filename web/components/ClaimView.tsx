@@ -5,6 +5,7 @@ import {
 } from "@/lib/ontology";
 import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
+import { ContributionRecord } from "./claim/ContributionRecord";
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -14,7 +15,7 @@ function fmtDate(iso: string) {
 }
 
 export function ClaimView({ detail }: { detail: ClaimDetail }) {
-  const { claim, tree, instances, trajectory, subclaim_count } = detail;
+  const { claim, tree, instances, trajectory, subclaim_count, record } = detail;
   // Live data can be mid-pipeline: an assessment row may exist with a null
   // status. Only treat it as a real assessment when the status is on-enum.
   const assessment =
@@ -176,6 +177,12 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
           ))}
         </section>
       )}
+
+      {/* contribution record (#171) — the public exchanges, rendered as
+          history after the claim's own content. Hidden entirely when no
+          contribution has been made; the footer line already says the page is
+          open to challenge. */}
+      {record && record.length > 0 && <ContributionRecord record={record} />}
 
       <hr className="thin" />
       <p style={{ fontFamily: "var(--sans)", fontSize: ".74rem", color: "var(--faint)" }}>
