@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ClaimDetail } from "@/lib/types";
 import { statusMeta, VERDICT_CONFIDENCE_GLOSS } from "@/lib/ontology";
 import { Swatch } from "@/components/Assessment";
@@ -16,7 +17,11 @@ function fmtDate(iso: string) {
 // dependents (where ClaimView's floated sidenote used to be). Styled as the
 // original Tufte sidenote — quiet sans at sidenote scale — and dropping down in
 // normal flow when the dependents above it expand, so nothing overlaps.
-export function HistoryRail({ trajectory }: { trajectory: Trajectory }) {
+// This is the at-a-glance summary; the full record (contributions, decisions,
+// arbitration) lives at /claims/:id/history (issue #175).
+export function HistoryRail({
+  trajectory, claimId,
+}: { trajectory: Trajectory; claimId?: string }) {
   const history = trajectory.history ?? [];
   if (history.length <= 1) return null;
 
@@ -42,6 +47,13 @@ export function HistoryRail({ trajectory }: { trajectory: Trajectory }) {
         {trajectory.status_transitions} status change{trajectory.status_transitions === 1 ? "" : "s"} over{" "}
         {trajectory.total_assessments} assessments.
       </span>
+      {claimId && (
+        <p style={{ margin: "0.45rem 0 0" }}>
+          <Link className="sc" href={`/claims/${claimId}/history`}>
+            ▸ full history
+          </Link>
+        </p>
+      )}
     </aside>
   );
 }

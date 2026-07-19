@@ -1,6 +1,7 @@
 import "server-only";
 import type {
   ClaimDetail,
+  ClaimEventsPage,
   ClaimFilters,
   ContributorProfile,
   LeaderboardContributor,
@@ -47,6 +48,12 @@ export async function fetchClaimDetail(id: string): Promise<ClaimDetail> {
     apiGet<TrajectoryResponse>(`/claims/${id}/assessments/trajectory`).catch(() => null),
   ]);
   return trajectory ? { ...detail, trajectory } : detail;
+}
+
+// The unified per-claim history (#175): assessments, contributions, decisions,
+// steward notes, newest-first. The API caps a window at 200 events.
+export async function fetchClaimEvents(id: string): Promise<ClaimEventsPage> {
+  return apiGet<ClaimEventsPage>(`/claims/${id}/events?limit=200`);
 }
 
 // Serialize the active filters into API query params. Defaults (all / 0) are
