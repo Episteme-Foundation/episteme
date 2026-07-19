@@ -225,7 +225,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
           status: r.dep.assessment_status,
           confidence: r.dep.assessment_confidence,
           relation: r.dep.relation_type,
-          reasoning: null,
+          reasoning: r.dep.reasoning ?? null,
           argumentId: null, argumentName: null, argumentStance: null,
           childCount: 0,
           bedrock: null,

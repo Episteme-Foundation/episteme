@@ -183,6 +183,7 @@ describe("tree-service", () => {
       text: `Claim ${id}`,
       claim_type: "causal",
       relation_type: "requires",
+      reasoning: `why ${id} leans on the child`,
       importance,
       assessment_status: "contested",
       assessment_confidence: 0.5,
@@ -197,6 +198,8 @@ describe("tree-service", () => {
       expect(result.dependents).toHaveLength(2);
       expect(result.dependents[0]).not.toHaveProperty("total");
       expect(result.dependents[0]!.importance).toBe(0.9);
+      // The per-edge reasoning rides along for the claim-page rail (#199).
+      expect(result.dependents[0]!.reasoning).toBe("why a leans on the child");
 
       // limit/offset are passed through to the query
       expect(mockRawQuery).toHaveBeenCalledWith(

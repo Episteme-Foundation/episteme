@@ -124,6 +124,8 @@ export interface DependentClaim {
   text: string;
   claim_type: string;
   relation_type: string;
+  // Why the dependent leans on this claim, per the edge (issue #199).
+  reasoning: string;
   importance: number;
   assessment_status: string | null;
   assessment_confidence: number | null;
@@ -141,7 +143,7 @@ export interface DependentClaim {
 export async function getClaimDependents(claimId: string): Promise<DependentClaim[]> {
   return rawQuery<DependentClaim>(
     `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
-            cr.relation_type, c.importance,
+            cr.relation_type, cr.reasoning, c.importance,
             a.status AS assessment_status, a.confidence AS assessment_confidence
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.parent_claim_id
@@ -168,7 +170,7 @@ export async function listClaimDependents(
   const offset = opts.offset ?? 0;
   const rows = await rawQuery<DependentClaim & { total: string }>(
     `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
-            cr.relation_type, c.importance,
+            cr.relation_type, cr.reasoning, c.importance,
             a.status AS assessment_status, a.confidence AS assessment_confidence,
             COUNT(*) OVER ()::text AS total
      FROM claim_relationships cr

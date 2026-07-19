@@ -77,6 +77,8 @@ const FLAGSHIP: ClaimDetail = {
       text: "The Federal Reserve was justified in raising interest rates aggressively through 2022–2023.",
       claim_type: "evaluative",
       relation_type: "requires",
+      reasoning:
+        "The case for aggressive tightening rests on inflation actually having been high: if 2022 inflation were within the normal range, the rate path needs a different justification entirely.",
       assessment_status: "supported",
       assessment_confidence: 0.66,
     },
@@ -85,6 +87,8 @@ const FLAGSHIP: ClaimDetail = {
       text: "Real (inflation-adjusted) wages fell for most US workers in 2022.",
       claim_type: "empirical_derived",
       relation_type: "requires",
+      reasoning:
+        "Real-wage arithmetic subtracts the inflation rate from nominal wage growth, so the derived claim needs the underlying inflation figure to hold.",
       assessment_status: "verified",
       assessment_confidence: 0.9,
     },
@@ -93,6 +97,8 @@ const FLAGSHIP: ClaimDetail = {
       text: "2022 was the worst US cost-of-living squeeze in four decades.",
       claim_type: "evaluative",
       relation_type: "supports",
+      reasoning:
+        "A forty-year-high inflation print is the strongest single piece of evidence for calling 2022 the worst squeeze in four decades, though the squeeze claim also weighs wages and transfers.",
       assessment_status: "contested",
       assessment_confidence: 0.58,
     },
@@ -101,6 +107,8 @@ const FLAGSHIP: ClaimDetail = {
       text: "The 2022 monetary tightening was a policy overreaction to transitory inflation.",
       claim_type: "causal",
       relation_type: "contradicts",
+      reasoning:
+        "The overreaction thesis frames 2022 inflation as transitory and mild in hindsight, which sits in tension with characterising the year's inflation as historically high.",
       assessment_status: "contested",
       assessment_confidence: 0.47,
     },
@@ -109,6 +117,8 @@ const FLAGSHIP: ClaimDetail = {
       text: "Inflation in 2022 materially eroded the value of US household cash savings.",
       claim_type: "empirical_derived",
       relation_type: "presupposes",
+      reasoning:
+        "Erosion of cash savings presupposes that prices rose materially over the year; the size of the loss is read straight off the inflation rate this claim states.",
       assessment_status: "supported",
       assessment_confidence: 0.72,
     },
