@@ -221,7 +221,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
           type: "object",
           properties: {
             information_depth: { type: "string", enum: ["cursory", "standard", "deep"], default: "standard" },
-            depth: { type: "integer", minimum: 1, maximum: 5, description: "Cap the decomposition tree depth (default 5)" },
+            depth: { type: "integer", minimum: 1, maximum: 20, default: 10, description: "Cap the decomposition tree depth (default 10). The node cap, not depth, bounds cost." },
           },
         },
         response: {
@@ -277,7 +277,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
           params.information_depth === "standard" ||
           params.information_depth === "deep"
         ) {
-          response.tree = await getClaimTree(claim_id, params.depth ?? 5);
+          response.tree = await getClaimTree(claim_id, params.depth ?? 10);
         }
 
         // Deep: + arguments + source instances
@@ -367,6 +367,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     importance: { type: "number" },
                     assessment_status: { type: "string", nullable: true },
                     assessment_confidence: { type: "number", nullable: true },
+                    assessment_credence: { type: "number", nullable: true },
                   },
                 },
               },

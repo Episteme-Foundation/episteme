@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { loadClaim, loadClaimEvents } from "@/lib/data";
+import { buildClaimTextMap } from "@/lib/claim-links";
 import { ClaimTimeline, summarizeEvents } from "@/components/claim/ClaimTimeline";
 import styles from "@/components/claim/timeline.module.css";
 
@@ -74,14 +75,14 @@ export default async function ClaimHistoryPage({
         </p>
       ) : events.events.length <= 1 ? (
         <>
-          <ClaimTimeline page={events} />
+          <ClaimTimeline page={events} texts={buildClaimTextMap(detail.tree)} />
           <p style={{ color: "var(--muted)" }}>
             Nothing has happened to this claim yet beyond its creation: no
             assessments, contributions, or decisions are on record.
           </p>
         </>
       ) : (
-        <ClaimTimeline page={events} />
+        <ClaimTimeline page={events} texts={buildClaimTextMap(detail.tree)} />
       )}
     </div>
   );

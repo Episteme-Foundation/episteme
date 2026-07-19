@@ -11,7 +11,7 @@ import type { DataSource } from "@/lib/data";
 import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
-  nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS,
+  nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS, CREDENCE_GLOSS,
   DEFINED_IN, STEWARD_SOURCE, isAssumesRelation,
 } from "@/lib/ontology";
 import { buildClaimTextMap } from "@/lib/claim-links";
@@ -74,6 +74,7 @@ function partialFrom(bits: ClaimBits, node?: TreeNode): ClaimDetail {
     assessment: bits.status
       ? {
           id: "", status: bits.status, confidence: bits.confidence ?? 0,
+          claim_credence: bits.credence,
           summary: "", reasoning_trace: "", subclaim_summary: {}, assessed_at: "",
         }
       : null,
@@ -217,6 +218,7 @@ export function GraphView({
           ? {
               id: node.id, text: node.text, claimType: node.claim_type,
               status: node.assessment_status, confidence: node.assessment_confidence,
+              credence: node.assessment_credence ?? null,
               relation: node.relation_type, reasoning: node.reasoning,
               argumentId: node.argument_id, argumentName: node.argument_name,
               argumentStance: node.argument_stance,
@@ -235,6 +237,7 @@ export function GraphView({
               .map((d): ClaimBits => ({
                 id: d.id, text: d.text, claimType: d.claim_type,
                 status: d.assessment_status, confidence: d.assessment_confidence,
+                credence: d.assessment_credence ?? null,
                 relation: d.relation_type, reasoning: null,
                 argumentId: null, argumentName: null, argumentStance: null,
                 childCount: 0, bedrock: null, up: true,
@@ -819,15 +822,24 @@ export function GraphView({
                         {c.status && <span className="badge-glyph">{meta.glyph}</span>}
                         {meta.label}
                       </span>
-                      {/* Labelled and meterless: a bar here read as how true
-                          the claim is, when the number is only how sure the
-                          Steward is of the verdict (#160). */}
-                      {c.confidence != null && (
-                        <span className={styles.confNum} title={VERDICT_CONFIDENCE_GLOSS}>
-                          verdict confidence {c.confidence.toFixed(2)}
+                      {/* Credence beside the badge (#238): the reader's number,
+                          P(claim true), mirroring the claim page's hierarchy.
+                          Labelled and meterless (#160); rendered only when the
+                          Steward stated one — per constitution §10 the omission
+                          is itself information, so no placeholder. */}
+                      {c.credence != null && (
+                        <span className={styles.confNum} title={CREDENCE_GLOSS}>
+                          credence {c.credence.toFixed(2)}
                         </span>
                       )}
                     </div>
+                    {/* Verdict confidence is meta ("is the badge right?"), so
+                        it steps back to a quiet line of its own (#238). */}
+                    {c.confidence != null && (
+                      <div className={styles.previewQuiet} title={VERDICT_CONFIDENCE_GLOSS}>
+                        verdict confidence {c.confidence.toFixed(2)}
+                      </div>
+                    )}
                     {rel && (
                       <div className={styles.previewNote}>
                         <span className={`relation ${rel.cls} ${styles.relLine}`}>

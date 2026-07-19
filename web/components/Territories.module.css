@@ -1,0 +1,179 @@
+/* The /claims territory overview (#206). Paper-and-serif to match the app; the
+   status colours are the shared --st-* tokens from globals.css. */
+
+.section {
+  margin-top: 0.4rem;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3rem;
+  margin: 0 0 1.3rem;
+}
+.head h2 {
+  font-size: 1.5rem;
+  letter-spacing: -0.008em;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.aside {
+  font-family: var(--sans);
+  font-size: 0.76rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+@media (max-width: 52rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1.15rem 1.25rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 15rem;
+}
+
+.kicker {
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.name {
+  font-family: var(--serif);
+  font-size: 1.16rem;
+  font-weight: 600;
+  letter-spacing: -0.004em;
+  margin: 0.5rem 0 0.15rem;
+}
+.question {
+  font-size: 0.92rem;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0 0 0.85rem;
+}
+.core {
+  font-size: 0.96rem;
+  color: var(--ink);
+  line-height: 1.42;
+  margin: 0;
+}
+.quote {
+  color: var(--faint);
+}
+/* Keep the verdict badge on the same baseline as the closing quote. */
+.core :global(.badge) {
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.mix {
+  margin: 0.7rem 0 0.5rem;
+}
+.bar {
+  display: flex;
+  height: 7px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+.bar span {
+  display: block;
+  min-width: 2px;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 0.42rem;
+}
+.legend i {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  margin-right: 0.3rem;
+  vertical-align: 0.02em;
+}
+
+.foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--rule-soft);
+}
+.count {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.total {
+  color: var(--faint);
+}
+.walk {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Recently added — the demoted newest strip. */
+.recent {
+  margin-top: 2.6rem;
+}
+.recentTitle {
+  font-size: 1.15rem !important;
+}
+.recentList {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+}
+.recentItem {
+  display: flex;
+  gap: 0.9rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.recentText {
+  color: var(--ink);
+  font-size: 0.96rem;
+  line-height: 1.4;
+}
+.recentText:hover {
+  color: var(--link);
+  text-decoration: none;
+}
+.recentBadge {
+  flex: none;
+}
+

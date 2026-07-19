@@ -60,7 +60,8 @@ export interface ClaimBits {
   text: string;
   claimType: ClaimType | null;
   status: AssessmentStatus | null;
-  confidence: number | null;
+  confidence: number | null;       // verdict confidence — meta, not P(true)
+  credence: number | null;         // the Steward's P(claim true), when stated (#238)
   relation: RelationType | null;   // the edge that connects it toward the focus
   reasoning: string | null;        // why that edge holds (claim_relationships.reasoning)
   argumentId: string | null;
@@ -165,6 +166,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
     claimType: n.claim_type,
     status: n.assessment_status,
     confidence: n.assessment_confidence,
+    credence: n.assessment_credence ?? null,
     relation: n.relation_type,
     reasoning: n.reasoning,
     argumentId: n.argument_id,
@@ -226,6 +228,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
           claimType: r.dep.claim_type,
           status: r.dep.assessment_status,
           confidence: r.dep.assessment_confidence,
+          credence: r.dep.assessment_credence ?? null,
           relation: r.dep.relation_type,
           reasoning: r.dep.reasoning ?? null,
           argumentId: null, argumentName: null, argumentStance: null,
@@ -448,6 +451,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
       claimType: detail.claim.claim_type,
       status: detail.assessment?.status ?? null,
       confidence: detail.assessment?.confidence ?? null,
+      credence: detail.assessment?.claim_credence ?? null,
       relation: null,
       reasoning: null,
       argumentId: null, argumentName: null, argumentStance: null,

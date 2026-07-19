@@ -40,6 +40,10 @@ export interface TreeNode {
   confidence: number | null;
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
+  // Credence that this node's claim is true (#238); null where the Steward
+  // stated none (the omission is information, constitution §10). Optional so
+  // a frontend deploy ahead of the API degrades to no figure.
+  assessment_credence?: number | null;
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: Stance | null;
@@ -153,6 +157,8 @@ export interface DependentClaim {
   reasoning?: string | null;
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
+  // Credence for the dependent claim (#238); same optionality as above.
+  assessment_credence?: number | null;
 }
 
 // --- contribution record (#171) ---------------------------------------------

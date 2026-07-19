@@ -100,7 +100,10 @@ export function getStewardToolDefinitions(): Tool[] {
               "edge), no importance numbers, no 'per the constitution', no first-" +
               "person 'I', and no narration of your own bookkeeping (merges, " +
               "canonical-form edits, importance changes go in " +
-              "log_stewardship_decision).",
+              "log_stewardship_decision). When a sentence references a subclaim, " +
+              "link it inline as [[claim:<uuid>|the phrase you would use anyway]] " +
+              "(same syntax as argument written forms); renderers turn it into a " +
+              "link to that claim's page.",
           },
           reasoning_trace: {
             type: "string",
@@ -110,7 +113,10 @@ export function getStewardToolDefinitions(): Tool[] {
               "source instances, and how the material subclaims weigh. This is about " +
               "the CLAIM'S TRUTH: keep structural bookkeeping out of it. Refer to " +
               "subclaims by their text (quoted or paraphrased), never by bare UUID; " +
-              "ids are opaque to the human readers this trace exists for.",
+              "ids are opaque to the human readers this trace exists for. To make a " +
+              "reference followable, link it inline as [[claim:<uuid>|its text]]. " +
+              "Bare source URLs render as links; cite them where the evidence rests " +
+              "on them.",
           },
           marginal_yield: {
             type: "number",
@@ -526,6 +532,36 @@ export async function executeStewardTool(
         // keeping the column populated means a later render never has to.
         const summary =
           ((input.assessment ?? input.summary) as string | undefined)?.trim() || reasoningTrace;
+
+        // Both texts may reference claims inline as [[claim:<uuid>|phrase]]
+        // (issue #203). A link to a claim that does not exist would sit as a
+        // dead link in front of every reader, so a hallucinated id bounces the
+        // write back — the steward re-calls with the id fixed or the reference
+        // in plain text.
+        const linkedIds = [
+          ...new Set(
+            [...parseClaimLinks(summary), ...parseClaimLinks(reasoningTrace)].map(
+              (l) => l.claimId
+            )
+          ),
+        ];
+        if (linkedIds.length > 0) {
+          const found = await rawQuery<{ id: string }>(
+            `SELECT id FROM claims WHERE id = ANY($1::uuid[])`,
+            [linkedIds]
+          );
+          const foundIds = new Set(found.map((r) => r.id));
+          const unknown = linkedIds.filter((id) => !foundIds.has(id));
+          if (unknown.length > 0) {
+            return JSON.stringify({
+              success: false,
+              message:
+                `These linked claims do not exist: ${unknown.join(", ")}. ` +
+                `Link only real claims (ids from get_claim_subclaims or from ` +
+                `this run), or drop the link and name the claim in plain text.`,
+            });
+          }
+        }
 
         const db = getDb();
 
