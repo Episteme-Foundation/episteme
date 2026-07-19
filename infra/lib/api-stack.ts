@@ -89,13 +89,14 @@ export class ApiStack extends cdk.Stack {
         // the drain works the highest-importance claims each window and pauses
         // when spent). Tune to taste — these counters are per-process, so they
         // scale with the autoscaled task count. NOTE: Fable is priced 2x Opus
-        // per token ($10/$50 vs $5/$25 per MTok), so unchanged token limits
-        // allow ~2x the dollar spend on the load-bearing agents — left as-is
-        // deliberately (issue #77); revisit after the first production window.
-        LLM_HOURLY_CALL_LIMIT: "500",
-        LLM_DAILY_CALL_LIMIT: "5000",
-        LLM_HOURLY_TOKEN_LIMIT: "400000",
-        LLM_DAILY_TOKEN_LIMIT: "1500000",
+        // per token ($10/$50 vs $5/$25 per MTok). Raised from the first-window
+        // values (500/5000 calls, 400k/1.5M tokens — issue #77) to drain the
+        // assessment queue faster: 2x hourly, and a daily ceiling that now
+        // sustains ~5 full-tilt hours instead of ~3.75.
+        LLM_HOURLY_CALL_LIMIT: "1000",
+        LLM_DAILY_CALL_LIMIT: "12000",
+        LLM_HOURLY_TOKEN_LIMIT: "800000",
+        LLM_DAILY_TOKEN_LIMIT: "4000000",
         // Bound fan-out per document (the dominant cost multiplier). 0 = unlimited.
         EXTRACTION_MAX_CLAIMS: "8",
         // Extension page analysis is synchronous behind the ALB (#91): cap
