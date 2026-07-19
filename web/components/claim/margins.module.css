@@ -187,6 +187,21 @@
   border: 1px dashed var(--st-unassessed);
 }
 
+/* ----- right: the "expand on demand" toggle ------------------------------ */
+.railToggle {
+  background: none;
+  border: none;
+  padding: 0.1rem 0;
+  margin: 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.railToggle:hover { color: var(--link); }
+
 /* ----- left: the argument jump-list (#204) -------------------------------
    The top-level lines of reasoning as a prose-free navigation list: clicking an
    entry scrolls the reading column to that argument, and the entry the reader is
