@@ -5,6 +5,7 @@ import {
 } from "@/lib/ontology";
 import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
 import { DecompositionTree } from "./DecompositionTree";
+import { ContributionRecord } from "./claim/ContributionRecord";
 import { Contribute } from "./claim/Contribute";
 
 function fmtDate(iso: string) {
@@ -15,7 +16,7 @@ function fmtDate(iso: string) {
 }
 
 export function ClaimView({ detail }: { detail: ClaimDetail }) {
-  const { claim, tree, instances, trajectory, subclaim_count } = detail;
+  const { claim, tree, instances, trajectory, subclaim_count, record } = detail;
   // Live data can be mid-pipeline: an assessment row may exist with a null
   // status. Only treat it as a real assessment when the status is on-enum.
   const assessment =
@@ -178,10 +179,15 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         </section>
       )}
 
-      {/* contribution entry (#174): the natural companion of the coming
-          contribution record (#171) — the record shows past exchanges, this is
-          where a new one starts. Kept at the end of the reading column so the
-          page itself stays unmarked by the exchanges behind it. */}
+      {/* contribution record (#171) — the public exchanges, rendered as
+          history after the claim's own content. Hidden entirely when no
+          contribution has been made. */}
+      {record && record.length > 0 && <ContributionRecord record={record} />}
+
+      {/* contribution entry (#174): the companion of the contribution record
+          above — the record shows past exchanges, this is where a new one
+          starts. Kept at the end of the reading column so the page itself
+          stays unmarked by the exchanges behind it. */}
       <Contribute claimId={claim.id} />
 
       <hr className="thin" />

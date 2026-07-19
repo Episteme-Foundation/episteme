@@ -12,6 +12,7 @@ import { getClaimEvents } from "../services/claim-events-service.js";
 import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount, getClaimDependents, listClaimDependents } from "../services/tree-service.js";
 import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
+import { getContributionRecordForClaim } from "../services/contribution-service.js";
 import { addArgument, getArgumentsForClaim } from "../services/argument-service.js";
 import { createClaimProposal } from "../services/intake-service.js";
 import { gateContributor } from "../server/contributor-gate.js";
@@ -383,6 +384,182 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
         });
 
         return reply.send({ dependents, total });
+      },
+    }
+  );
+
+  // GET /claims/:claim_id/record — the public contribution record (issue
+  // #171). Each entry is one exchange: contribution → review decision +
+  // reasoning → any appeal → arbitration outcome. The constitution's Burden
+  // of Engagement makes these exchanges part of the claim's public record;
+  // this endpoint assembles them so the claim page can render the record
+  // without stitching together the single-record endpoints. Standalone rather
+  // than folded into the deep payload so the record can load (and fail)
+  // independently of the reading column.
+  //
+  // The response schema doubles as the public-field filter: internal review
+  // fields (suspected_bad_faith, bad_faith_category) and arbitration
+  // model_votes are absent here and therefore never serialized.
+  app.get<{ Params: { claim_id: string } }>(
+    "/:claim_id/record",
+    {
+      schema: {
+        tags: ["claims"],
+        summary: "The public contribution record for a claim",
+        params: {
+          type: "object",
+          properties: {
+            claim_id: { type: "string", format: "uuid" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              record: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    contribution: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string", format: "uuid" },
+                        contributor: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string", format: "uuid" },
+                            display_name: { type: "string" },
+                          },
+                        },
+                        contribution_type: { type: "string" },
+                        content: { type: "string" },
+                        evidence_urls: { type: "array", items: { type: "string" } },
+                        submitted_at: { type: "string", format: "date-time" },
+                        review_status: { type: "string" },
+                      },
+                    },
+                    review: {
+                      type: "object",
+                      nullable: true,
+                      properties: {
+                        id: { type: "string", format: "uuid" },
+                        decision: { type: "string" },
+                        reasoning: { type: "string" },
+                        confidence: { type: "number", nullable: true },
+                        policy_citations: { type: "array", items: { type: "string" } },
+                        reviewed_at: { type: "string", format: "date-time" },
+                        reviewed_by: { type: "string" },
+                      },
+                    },
+                    appeal: {
+                      type: "object",
+                      nullable: true,
+                      properties: {
+                        id: { type: "string", format: "uuid" },
+                        appellant: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string", format: "uuid" },
+                            display_name: { type: "string" },
+                          },
+                        },
+                        appeal_reasoning: { type: "string" },
+                        submitted_at: { type: "string", format: "date-time" },
+                        status: { type: "string" },
+                      },
+                    },
+                    arbitration: {
+                      type: "object",
+                      nullable: true,
+                      properties: {
+                        id: { type: "string", format: "uuid" },
+                        outcome: { type: "string" },
+                        decision: { type: "string" },
+                        reasoning: { type: "string" },
+                        consensus_achieved: { type: "boolean", nullable: true },
+                        human_review_recommended: { type: "boolean" },
+                        arbitrated_at: { type: "string", format: "date-time" },
+                        arbitrated_by: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+              total: { type: "integer" },
+            },
+          },
+          404: errorEnvelope,
+        },
+      },
+      handler: async (request, reply) => {
+        const { claim_id } = request.params;
+
+        const claim = await getClaimById(claim_id);
+        if (!claim) {
+          return reply.code(404).send({
+            error: {
+              code: "NOT_FOUND",
+              message: "Claim not found",
+              request_id: request.id,
+            },
+          });
+        }
+
+        const record = await getContributionRecordForClaim(claim_id);
+
+        return reply.send({
+          record: record.map((entry) => ({
+            contribution: {
+              id: entry.contribution.id,
+              contributor: {
+                id: entry.contribution.contributorId,
+                display_name: entry.contributorDisplayName,
+              },
+              contribution_type: entry.contribution.contributionType,
+              content: entry.contribution.content,
+              evidence_urls: entry.contribution.evidenceUrls,
+              submitted_at: entry.contribution.submittedAt.toISOString(),
+              review_status: entry.contribution.reviewStatus,
+            },
+            review: entry.review
+              ? {
+                  id: entry.review.id,
+                  decision: entry.review.decision,
+                  reasoning: entry.review.reasoning,
+                  confidence: entry.review.confidence,
+                  policy_citations: entry.review.policyCitations,
+                  reviewed_at: entry.review.reviewedAt.toISOString(),
+                  reviewed_by: entry.review.reviewedBy,
+                }
+              : null,
+            appeal: entry.appeal
+              ? {
+                  id: entry.appeal.id,
+                  appellant: {
+                    id: entry.appeal.appellantId,
+                    display_name: entry.appeal.appellantDisplayName,
+                  },
+                  appeal_reasoning: entry.appeal.appealReasoning,
+                  submitted_at: entry.appeal.submittedAt.toISOString(),
+                  status: entry.appeal.status,
+                }
+              : null,
+            arbitration: entry.arbitration
+              ? {
+                  id: entry.arbitration.id,
+                  outcome: entry.arbitration.outcome,
+                  decision: entry.arbitration.decision,
+                  reasoning: entry.arbitration.reasoning,
+                  consensus_achieved: entry.arbitration.consensusAchieved,
+                  human_review_recommended: entry.arbitration.humanReviewRecommended,
+                  arbitrated_at: entry.arbitration.arbitratedAt.toISOString(),
+                  arbitrated_by: entry.arbitration.arbitratedBy,
+                }
+              : null,
+          })),
+          total: record.length,
+        });
       },
     }
   );
