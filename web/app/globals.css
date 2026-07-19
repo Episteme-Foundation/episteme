@@ -330,6 +330,13 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   padding: 0.9rem 0; border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule); margin-bottom: 1.6rem;
 }
+/* the last-assessed date, at the band's far end (#196): the one fact most
+   readers want from the assessment history */
+.assess-when {
+  margin-left: auto;
+  font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.02em;
+  color: var(--muted); white-space: nowrap;
+}
 
 /* The reader-facing assessment — the substance of the page, so it reads as
    primary lead prose: full ink, a touch larger than body, sitting on the paper.

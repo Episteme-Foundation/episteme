@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ClaimDetail } from "@/lib/types";
 import {
   statusMeta, isStatus, CLAIM_TYPE_LABEL, decompositionNote,
@@ -57,6 +58,10 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
               so the two are never mistaken for each other (#160). */}
           <Credence value={assessment.claim_credence} />
           <VerdictConfidence value={assessment.confidence} />
+          {/* The one date most readers want (#196). assessed_at, not
+              updated_at: only the former honestly means "last assessed"
+              (#160). */}
+          <span className="assess-when">last assessed {fmtDate(assessment.assessed_at)}</span>
           {/* No subclaim-status chips here: subclaim_summary is never computed
               by the pipeline (always {}), so the chips only ever rendered for
               fixtures — a feature that looked implemented but wasn't (#160).
@@ -65,32 +70,9 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         </div>
       )}
 
-      {/* reasoning trace + trajectory sidenote */}
+      {/* reasoning trace */}
       {assessment && (
         <section>
-          {trajectory && trajectory.history.length > 1 && (
-            <aside className="sidenote">
-              <span className="sc">Assessment history</span>
-              <div className="traj">
-                {trajectory.history.map((p, i) => (
-                  <div className="traj-point" key={i}>
-                    <span className="traj-dot"><Swatch status={p.status} /></span>
-                    <span className="traj-body">
-                      <span className="sc" style={{ color: "var(--muted)" }}>{fmtDate(p.assessed_at)}</span>
-                      {statusMeta(p.status).label}
-                      {typeof p.confidence === "number" && (
-                        <span title={VERDICT_CONFIDENCE_GLOSS}> · {p.confidence.toFixed(2)}</span>
-                      )}
-                      {p.trigger && <em style={{ color: "var(--faint)" }}> — {p.trigger.replace(/_/g, " ")}</em>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <span style={{ color: "var(--faint)" }}>
-                {trajectory.status_transitions} status change{trajectory.status_transitions === 1 ? "" : "s"} over {trajectory.total_assessments} assessments.
-              </span>
-            </aside>
-          )}
           <h2>Assessment</h2>
           <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".8rem", marginTop: "-.3rem" }}>
             {statusMeta(assessment.status).def}
@@ -179,6 +161,39 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         </section>
       )}
 
+      {/* assessment history (#196) — an appendix, not a companion to the
+          verdict: most readers only want the last-assessed date, which lives
+          in the assessment band up top. The full record (contributions,
+          decisions, arbitration) is one link deeper. */}
+      {assessment && trajectory && trajectory.history.length > 1 && (
+        <section>
+          <h2>Assessment history</h2>
+          <div
+            className="traj"
+            style={{ fontFamily: "var(--sans)", fontSize: ".82rem", lineHeight: 1.45, color: "var(--ink-soft)", maxWidth: "30rem" }}
+          >
+            {trajectory.history.map((p, i) => (
+              <div className="traj-point" key={i}>
+                <span className="traj-dot"><Swatch status={p.status} /></span>
+                <span className="traj-body">
+                  <span className="sc" style={{ color: "var(--muted)" }}>{fmtDate(p.assessed_at)}</span>
+                  {statusMeta(p.status).label}
+                  {typeof p.confidence === "number" && (
+                    <span title={VERDICT_CONFIDENCE_GLOSS}> · {p.confidence.toFixed(2)}</span>
+                  )}
+                  {p.trigger && <em style={{ color: "var(--faint)" }}> — {p.trigger.replace(/_/g, " ")}</em>}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: "var(--sans)", fontSize: ".78rem", color: "var(--faint)" }}>
+            {trajectory.status_transitions} status change{trajectory.status_transitions === 1 ? "" : "s"} over{" "}
+            {trajectory.total_assessments} assessments.{" "}
+            <Link href={`/claims/${claim.id}/history`}>full history →</Link>
+          </p>
+        </section>
+      )}
+
       {/* contribution record (#171) — the public exchanges, rendered as
           history after the claim's own content. Hidden entirely when no
           contribution has been made. */}
@@ -193,10 +208,7 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
       <hr className="thin" />
       <p style={{ fontFamily: "var(--sans)", fontSize: ".74rem", color: "var(--faint)" }}>
         Created by {claim.created_by} · {fmtDate(claim.created_at)}.
-        {/* claim.updated_at moves on any row touch (importance edits, canonical
-            rewording, decomposition bookkeeping); only assessed_at is honestly
-            "last assessed" (#160). */}
-        {assessment && <> Last assessed {fmtDate(assessment.assessed_at)}.</>}
+        {/* the last-assessed date moved into the assessment band (#196) */}
         {" "}Every judgment on this page is accompanied by a reasoning trace.
       </p>
     </article>

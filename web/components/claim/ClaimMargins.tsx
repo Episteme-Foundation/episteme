@@ -5,13 +5,13 @@ import { ClaimView } from "@/components/ClaimView";
 import { DecompositionCompass } from "./DecompositionCompass";
 import { MapCard } from "./MapCard";
 import { DependentsRail } from "./DependentsRail";
-import { HistoryRail } from "./HistoryRail";
 import styles from "./margins.module.css";
 
 // The claim page in its full three-column form (issue #42): the decomposition
-// compass in the left margin, the dependents and assessment history in the
-// right, and ClaimView's reading column in the centre. On narrow screens the
-// rails fold inline above and below the reading column.
+// compass in the left margin, the dependents in the right, and ClaimView's
+// reading column in the centre. On narrow screens the rails fold inline above
+// and below the reading column. Assessment history lives at the bottom of the
+// reading column (#196), not in a rail.
 export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: DataSource }) {
   return (
     <div className={styles.bleed}>
@@ -41,13 +41,9 @@ export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: 
           <ClaimView detail={detail} />
         </div>
 
-        {/* RIGHT — dependents on top, assessment history below; both expand in
-            normal flow so nothing overlaps */}
+        {/* RIGHT — what depends on this claim */}
         <div className={styles.rightRail}>
           <DependentsRail dependents={detail.dependents ?? []} />
-          {detail.trajectory && (
-            <HistoryRail trajectory={detail.trajectory} claimId={detail.claim.id} />
-          )}
         </div>
       </div>
     </div>
