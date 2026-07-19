@@ -3,6 +3,7 @@ import type { ClaimDetail } from "@/lib/types";
 import type { DataSource } from "@/lib/data";
 import { ClaimView } from "@/components/ClaimView";
 import { DecompositionCompass } from "./DecompositionCompass";
+import { MapCard } from "./MapCard";
 import { DependentsRail } from "./DependentsRail";
 import { HistoryRail } from "./HistoryRail";
 import styles from "./margins.module.css";
@@ -19,14 +20,10 @@ export function ClaimMargins({ detail, source }: { detail: ClaimDetail; source: 
             counterpart: the same decomposition seen as a navigable figure */}
         <div className={styles.leftRail}>
           {detail.tree && <DecompositionCompass tree={detail.tree} />}
-          <p style={{ marginTop: "0.6rem" }}>
-            <Link className="sc" href={`/claims/${detail.claim.id}/map`}>
-              ▸ view as map
-            </Link>
-          </p>
-          <p style={{ marginTop: "0.3rem" }}>
-            <Link className="sc" href={`/claims/${detail.claim.id}/history`}>
-              ▸ view history
+          <MapCard claimId={detail.claim.id} tree={detail.tree} />
+          <p style={{ marginTop: "0.55rem" }}>
+            <Link className={styles.railLink} href={`/claims/${detail.claim.id}/history`}>
+              view history →
             </Link>
           </p>
         </div>
