@@ -340,6 +340,35 @@
   display: block;
 }
 .depText:hover { color: var(--link); text-decoration: none; }
+/* per-edge "why" disclosure (#199): the edge's reasoning, folded by default
+   because the rail is narrow and the explanations run to sentences */
+.whyToggle {
+  background: none;
+  border: none;
+  padding: 0.1rem 0;
+  margin: 0 0 0 auto;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.whyToggle:hover { color: var(--link); }
+.depWhy {
+  margin: 0.35rem 0 0;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--rule-soft);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.depWhyRel {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.56rem;
+}
 
 /* ==========================================================================
    Narrow screens — the rails fold inline above & below the reading column,

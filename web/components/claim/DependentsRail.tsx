@@ -27,7 +27,19 @@ function keyMeta(key: string) {
 // edges). Ambient by default — a count and a marker — expanding to the full list.
 export function DependentsRail({ dependents }: { dependents: DependentClaim[] }) {
   const [open, setOpen] = useState(false);
+  // Per-item disclosure of the edge's reasoning: the rail is too narrow to
+  // show every explanation at once (#199).
+  const [whyOpen, setWhyOpen] = useState<Set<string>>(new Set());
   const n = dependents.length;
+
+  function toggleWhy(id: string) {
+    setWhyOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // Nothing builds on this yet — a quiet resting state rather than a blank gap.
   if (n === 0) {
@@ -96,6 +108,7 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
           {dependents.map((d) => {
             const rel = RELATION[d.relation_type];
             const st = nodeStatusMeta(d.assessment_status);
+            const why = whyOpen.has(d.id);
             return (
               <li key={d.id} className={styles.depItem}>
                 <div className={styles.depEdge}>
@@ -104,10 +117,26 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
                   {/* Status label only — the bare verdict-confidence number
                       that used to follow it read as P(claim true) (#160). */}
                   <span className={styles.depConf}>{st.label}</span>
+                  {d.reasoning && (
+                    <button
+                      type="button"
+                      className={styles.whyToggle}
+                      onClick={() => toggleWhy(d.id)}
+                      aria-expanded={why}
+                    >
+                      {why ? "▾ why" : "▸ why"}
+                    </button>
+                  )}
                 </div>
                 <Link href={`/claims/${d.id}`} className={styles.depText}>
                   {d.text}
                 </Link>
+                {why && d.reasoning && (
+                  <p className={styles.depWhy}>
+                    {rel && <span className={`relation ${rel.cls} ${styles.depWhyRel}`}>{rel.label} this claim</span>}
+                    {d.reasoning}
+                  </p>
+                )}
               </li>
             );
           })}

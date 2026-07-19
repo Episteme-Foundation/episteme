@@ -148,6 +148,9 @@ export interface DependentClaim {
   text: string;
   claim_type: ClaimType;
   relation_type: RelationType;
+  // Why the dependent leans on this claim: the edge's reasoning text (#199).
+  // Optional so a frontend deploy ahead of the API degrades to no note.
+  reasoning?: string | null;
   assessment_status: AssessmentStatus | null;
   assessment_confidence: number | null;
 }
