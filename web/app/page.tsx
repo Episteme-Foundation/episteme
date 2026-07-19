@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FLAGSHIP_ID } from "@/lib/fixtures";
+import { apiConfigured } from "@/lib/api";
 import { loadClaim } from "@/lib/data";
 import { SearchInput } from "@/components/home/SearchInput";
 import { Surfaces } from "@/components/home/Surfaces";
@@ -13,8 +14,20 @@ import styles from "@/components/home/home.module.css";
 // too early while the corpus is in flux and there is no stats endpoint to
 // report real figures.
 
+// The claim the homepage map opens on. FLAGSHIP_ID names the fixture claim,
+// which exists only offline: in production the fetch for it 404'd and the page
+// silently fell back to fixture data under a "live" badge. In live mode the
+// map now opens on a real claim: contested, with a stated credence, named
+// arguments, and real structure — the product's differentiator on display.
+// FLAGSHIP_CLAIM_ID repoints it without a code change (if the claim's state
+// degrades, or a better flagship emerges); loadClaim still degrades to the
+// fixture if the live fetch fails.
+const LIVE_FLAGSHIP_ID = "585e0bd0-5830-4104-851e-7d4130a1be05"; // egg consumption → CVD risk
+const FLAGSHIP =
+  process.env.FLAGSHIP_CLAIM_ID ?? (apiConfigured() ? LIVE_FLAGSHIP_ID : FLAGSHIP_ID);
+
 export default async function Home() {
-  const { detail, source } = await loadClaim(FLAGSHIP_ID);
+  const { detail, source } = await loadClaim(FLAGSHIP);
 
   return (
     <div>
