@@ -44,6 +44,14 @@ const MAX_TREE_NODES = 500;
  * Fetch the claim tree by a level-at-a-time walk with a visited set (at most
  * `maxDepth` queries), then assemble the nested tree.
  *
+ * `maxDepth` bounds how many BFS levels (sequential queries) the walk runs; it
+ * is NOT the cost guard. The walk exits the moment a level adds no new nodes,
+ * so a generous cap only costs on trees that are genuinely that deep. What
+ * bounds cost — and answers "a tree of thousands of subclaims isn't worth
+ * computing" — is `maxNodes` (MAX_TREE_NODES): the walk stops fetching once it
+ * has that many distinct claims, flagging the parents whose children it
+ * dropped. Depth and breadth are separate levers; tune them separately.
+ *
  * The graph is a DAG, not a tree: shared subclaims are the point of the
  * design. The previous recursive CTE re-expanded a diamond once per *path*,
  * so a shared node's whole subtree repeated for every route that reached it —
@@ -55,7 +63,7 @@ const MAX_TREE_NODES = 500;
  */
 export async function getClaimTree(
   claimId: string,
-  maxDepth: number = 5,
+  maxDepth: number = 10,
   maxNodes: number = MAX_TREE_NODES
 ): Promise<TreeNode | null> {
   const [root] = await rawQuery<TreeRootRow>(

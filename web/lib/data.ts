@@ -1,6 +1,7 @@
-import { apiConfigured, fetchClaimDetail, fetchClaimEvents, fetchSearch, fetchList } from "./api";
+import { apiConfigured, fetchClaimDetail, fetchClaimEvents, fetchClaimTree, fetchSearch, fetchList } from "./api";
 import { getClaim, getClaimEvents, listClaims } from "./fixtures";
 import type { ClaimDetail, ClaimEventsPage, ClaimFilters, SearchResultItem } from "./types";
+import { TERRITORIES, computeTerritoryStats, type Territory } from "./territories";
 
 // The same filter predicate the API applies, used for the fixture fallback so
 // the controls behave identically offline. "unassessed" keys off a missing
@@ -46,6 +47,28 @@ export async function loadClaimEvents(
     console.error("[episteme] live claim events fetch failed, using fixture:", err);
     return { events: getClaimEvents(id), source: "fixture" };
   }
+}
+
+// The curated territories for the pre-search /claims overview (#206), each with
+// counts and a verdict mix derived from its anchor's subtree. Anchors are fetched
+// in parallel; a failed anchor degrades to a stats-less card (name + question +
+// core claim + map link) rather than dropping the territory or failing the page.
+// Offline (no API) the whole set degrades to curated config.
+export async function loadTerritories(): Promise<Territory[]> {
+  if (!apiConfigured()) {
+    return TERRITORIES.map((t) => ({ ...t, stats: null }));
+  }
+  return Promise.all(
+    TERRITORIES.map(async (t) => {
+      try {
+        const detail = await fetchClaimTree(t.anchorId);
+        return { ...t, stats: computeTerritoryStats(detail) };
+      } catch (err) {
+        console.error(`[episteme] territory "${t.key}" fetch failed:`, err);
+        return { ...t, stats: null };
+      }
+    }),
+  );
 }
 
 export async function loadClaims(
