@@ -141,6 +141,40 @@
   margin: 0.85rem 0 0;
 }
 
+/* ----- left: the map card (#192) ------------------------------------------
+   The invitation into the map view: a small figure sketching this claim's
+   first-level decomposition, statuses and all, instead of a text link. */
+.mapCard {
+  display: block;
+  max-width: 13rem;
+  margin-top: 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper-card);
+  padding: 0.55rem 0.6rem 0.5rem;
+}
+.mapCard:hover { border-color: var(--faint); text-decoration: none; }
+.mapCardFig { display: block; width: 100%; height: auto; }
+.mapCardLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 0.4rem;
+  font-family: var(--sans);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--link);
+}
+.mapCard:hover .mapCardLabel { text-decoration: underline; text-underline-offset: 2px; }
+
+/* quiet companion link under the card (history, and whatever comes next) */
+.railLink {
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.railLink:hover { color: var(--link); }
+
 /* ----- right: ambient dot row -------------------------------------------- */
 .dotRow {
   display: flex;
