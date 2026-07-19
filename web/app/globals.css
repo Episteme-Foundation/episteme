@@ -235,16 +235,18 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   color: var(--faint); white-space: nowrap; cursor: help;
 }
 
-/* ----- instant tooltip (#193) ---------------------------------------------
-   The native title attribute appears after a long, unstylable delay, which
-   buried the confidence definitions. An element with .tip shows its data-tip
-   text immediately on hover or keyboard focus. Not for use inside containers
-   that clip overflow: the tooltip is positioned within them. */
-.tip { position: relative; cursor: help; }
-.tip::after {
-  content: attr(data-tip);
+/* ----- ontology term popover (#198) ---------------------------------------
+   Vocabulary words (statuses, relations, claim types, importance bands) are
+   clickable terms. Hover or focus shows the definition instantly (the instant
+   tooltip of #193, which this supersedes); click pins it; and the popover is
+   a real element carrying a link to the section of the constitution that
+   defines the word. Not for use inside containers that clip overflow: the
+   popover is positioned within them. */
+.term { position: relative; display: inline-flex; }
+.term-label { cursor: help; }
+.term-pop {
   position: absolute;
-  bottom: calc(100% + 0.55rem);
+  bottom: calc(100% + 0.5rem);
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
@@ -260,16 +262,29 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   line-height: 1.45;
   letter-spacing: 0.01em;
   text-transform: none;
+  font-variant: normal;
   white-space: normal;
+  text-align: left;
   padding: 0.45rem 0.65rem;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.1s ease;
-  pointer-events: none;
   z-index: 40;
 }
-.tip:hover::after,
-.tip:focus-visible::after { opacity: 1; visibility: visible; }
+/* bridge the gap under the popover so the pointer can travel into it */
+.term-pop::after {
+  content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 0.6rem;
+}
+.term:hover .term-pop,
+.term:focus-within .term-pop,
+.term.pinned .term-pop { opacity: 1; visibility: visible; }
+/* labels near a viewport edge pin the popover to one side instead */
+.term-pop.pop-start { left: 0; transform: none; }
+.term-pop.pop-end { left: auto; right: 0; transform: none; }
+.term-src {
+  display: block; margin-top: 0.35rem;
+  font-size: 0.68rem; font-variant: small-caps; letter-spacing: 0.03em;
+}
 
 /* ----- type / state tags ----- */
 .tag {
@@ -614,8 +629,16 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2.4rem 0; }
 .card {
   display: block; border: 1px solid var(--rule); border-radius: 4px;
   padding: 0.95rem 1.1rem; background: var(--paper-card); color: inherit;
+  position: relative;
 }
 .card:hover { border-color: var(--faint); text-decoration: none; }
+/* A card with clickable terms in its footer is a div whose primary link is
+   stretched over the whole card (#198); the terms sit above the stretched
+   link so both stay clickable. */
+.card-link { color: inherit; }
+.card-link:hover { text-decoration: none; }
+.card-link::after { content: ""; position: absolute; inset: 0; }
+.card .term { z-index: 1; }
 .card .card-claim { font-size: 1.04rem; line-height: 1.34; margin-bottom: 0.5rem; }
 .card .card-foot { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 

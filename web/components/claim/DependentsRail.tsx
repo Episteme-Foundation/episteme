@@ -3,7 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { DependentClaim } from "@/lib/types";
-import { RELATION, STATUS_ORDER, statusMeta, nodeStatusMeta, UNASSESSED_META } from "@/lib/ontology";
+import {
+  RELATION, STATUS_ORDER, statusMeta, nodeStatusMeta, UNASSESSED_META,
+  DEFINED_IN, STEWARD_SOURCE,
+} from "@/lib/ontology";
+import { Term } from "@/components/Term";
 import styles from "./margins.module.css";
 
 // Above this many dependents, a dot-per-claim row stops being legible, so we
@@ -80,7 +84,14 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
               <li key={s} className={`st-${s}`}>
                 <span className={`swatch st-${s}`} aria-hidden />
                 <span className={styles.legendN}>{counts[s]}</span>
-                <span className={styles.legendLbl}>{keyMeta(s).label}</span>
+                <Term
+                  gloss={keyMeta(s).def}
+                  href={s === "unassessed" ? DEFINED_IN.importance : DEFINED_IN.status}
+                  className={styles.legendLbl}
+                  align="end"
+                >
+                  {keyMeta(s).label}
+                </Term>
               </li>
             ))}
           </ul>
@@ -100,7 +111,17 @@ export function DependentsRail({ dependents }: { dependents: DependentClaim[] })
               <li key={d.id} className={styles.depItem}>
                 <div className={styles.depEdge}>
                   <span className={`swatch ${st.cls}`} title={`${st.label} — ${st.def}`} aria-hidden />
-                  {rel && <span className={`relation ${rel.cls}`} title={rel.gloss}>{rel.label}</span>}
+                  {rel && (
+                    <Term
+                      gloss={rel.gloss}
+                      href={DEFINED_IN.relation}
+                      source={STEWARD_SOURCE}
+                      className={`relation ${rel.cls}`}
+                      align="end"
+                    >
+                      {rel.label}
+                    </Term>
+                  )}
                   {/* Status label only — the bare verdict-confidence number
                       that used to follow it read as P(claim true) (#160). */}
                   <span className={styles.depConf}>{st.label}</span>

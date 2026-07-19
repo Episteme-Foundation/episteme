@@ -1,18 +1,19 @@
 import type { AssessmentStatus } from "@/lib/types";
 import {
-  statusMeta, importanceLevel, IMPORTANCE,
+  statusMeta, importanceLevel, IMPORTANCE, UNASSESSED_META, DEFINED_IN,
   CREDENCE_GLOSS, VERDICT_CONFIDENCE_GLOSS,
 } from "@/lib/ontology";
+import { Term } from "./Term";
 
 export function StatusBadge({
   status, size = "sm",
 }: { status: AssessmentStatus | string | null; size?: "sm" | "lg" }) {
   const s = statusMeta(status);
   return (
-    <span className={`badge ${s.cls}${size === "lg" ? " lg" : ""}`} title={s.def}>
+    <Term gloss={s.def} href={DEFINED_IN.status} className={`badge ${s.cls}${size === "lg" ? " lg" : ""}`}>
       <span className="badge-glyph" aria-hidden>{s.glyph}</span>
       {s.label}
-    </span>
+    </Term>
   );
 }
 
@@ -26,34 +27,31 @@ export function Swatch({ status }: { status: AssessmentStatus | string | null })
 // low-importance claims sit unassessed under the Steward's budget by design.
 export function Unassessed() {
   return (
-    <span
-      className="badge unassessed"
-      title="No current assessment — the Steward prioritises higher-importance claims, so this one is likely still queued."
-    >
+    <Term gloss={UNASSESSED_META.def} href={DEFINED_IN.importance} className="badge unassessed">
       Unassessed
-    </span>
+    </Term>
   );
 }
 
 // Importance is rendered as a neutral five-pip meter, deliberately NOT coloured
 // by assessment status so it never competes with the verdict. The numeric value
-// and band live in the tooltip; `showLabel` adds the band name inline.
+// and band live in the popover; `showLabel` adds the band name inline.
 export function Importance({
   value, showLabel = false,
 }: { value: number | null | undefined; showLabel?: boolean }) {
   if (typeof value !== "number") return null;
   const level = importanceLevel(value);
   const meta = IMPORTANCE[level];
-  const tip = `Importance ${value.toFixed(2)}, from 0 to 1 · ${meta.label}: ${meta.gloss}. The Steward assesses and decomposes higher-importance claims first.`;
+  const gloss = `Importance ${value.toFixed(2)}, from 0 to 1 · ${meta.label}: ${meta.gloss}. The Steward assesses and decomposes higher-importance claims first.`;
   return (
-    <span className="imp tip" data-tip={tip} tabIndex={0} aria-label={`importance: ${meta.label}`}>
+    <Term gloss={gloss} href={DEFINED_IN.importance} className="imp" ariaLabel={`importance: ${meta.label}`}>
       <span className="imp-pips" aria-hidden>
         {[1, 2, 3, 4, 5].map((i) => (
           <span key={i} className={`imp-pip${i <= meta.pips ? " on" : ""}`} />
         ))}
       </span>
       {showLabel && <span className="imp-label">{meta.label}</span>}
-    </span>
+    </Term>
   );
 }
 
@@ -64,23 +62,23 @@ export function Importance({
 export function Credence({ value }: { value: number | null | undefined }) {
   if (typeof value !== "number") return null;
   return (
-    <span className="conf credence tip" data-tip={CREDENCE_GLOSS} tabIndex={0}>
+    <Term gloss={CREDENCE_GLOSS} href={DEFINED_IN.confidence} className="conf credence">
       <span className="sc" style={{ marginRight: ".1rem" }}>credence</span>
       <span className="conf-track">
         <span className="conf-fill" style={{ width: `${Math.round(value * 100)}%` }} />
       </span>
       <span className="conf-num">{value.toFixed(2)}</span>
-    </span>
+    </Term>
   );
 }
 
 // Verdict confidence — how sure the Steward is of the status itself. Meta, so
-// it stays quiet: a small labelled figure, no meter, defined on hover.
+// it stays quiet: a small labelled figure, no meter, defined on hover/click.
 export function VerdictConfidence({ value }: { value: number | null | undefined }) {
   if (typeof value !== "number") return null;
   return (
-    <span className="conf-quiet tip" data-tip={VERDICT_CONFIDENCE_GLOSS} tabIndex={0}>
+    <Term gloss={VERDICT_CONFIDENCE_GLOSS} href={DEFINED_IN.confidence} className="conf-quiet">
       verdict confidence {value.toFixed(2)}
-    </span>
+    </Term>
   );
 }

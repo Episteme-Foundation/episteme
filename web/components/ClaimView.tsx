@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { ClaimDetail } from "@/lib/types";
 import {
-  statusMeta, isStatus, CLAIM_TYPE_LABEL, decompositionNote,
-  VERDICT_CONFIDENCE_GLOSS,
+  statusMeta, isStatus, claimTypeMeta, decompositionNote,
+  DEFINED_IN, VERDICT_CONFIDENCE_GLOSS,
 } from "@/lib/ontology";
 import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
+import { Term } from "./Term";
 import { DecompositionTree } from "./DecompositionTree";
 import { ContributionRecord } from "./claim/ContributionRecord";
 import { Contribute } from "./claim/Contribute";
@@ -22,7 +23,7 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
   // status. Only treat it as a real assessment when the status is on-enum.
   const assessment =
     detail.assessment && isStatus(detail.assessment.status) ? detail.assessment : null;
-  const claimTypeLabel = CLAIM_TYPE_LABEL[claim.claim_type] ?? claim.claim_type?.replace(/_/g, " ");
+  const claimType = claimTypeMeta(claim.claim_type);
   const hasTree = !!(tree && tree.children && tree.children.length > 0);
 
   return (
@@ -30,7 +31,13 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
       {/* eyebrow: type + state */}
       <div className="claim-eyebrow">
         <span className="sc">Claim</span>
-        <span className="tag kind">{claimTypeLabel}</span>
+        {claimType ? (
+          <Term gloss={claimType.gloss} href={DEFINED_IN.claimType} className="tag kind">
+            {claimType.label}
+          </Term>
+        ) : (
+          <span className="tag kind">{claim.claim_type?.replace(/_/g, " ")}</span>
+        )}
         {claim.state !== "active" && <span className="tag">{claim.state.replace(/_/g, " ")}</span>}
         {typeof claim.importance === "number" && (
           <span style={{ marginLeft: "auto" }}>

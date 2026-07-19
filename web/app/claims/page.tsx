@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { loadClaims } from "@/lib/data";
-import { CLAIM_TYPE_LABEL, IMPORTANCE_FLOORS, importanceFloorMin } from "@/lib/ontology";
+import { claimTypeMeta, DEFINED_IN, IMPORTANCE_FLOORS, importanceFloorMin } from "@/lib/ontology";
 import type { ImportanceFloor } from "@/lib/ontology";
 import { StatusBadge, Unassessed, Importance } from "@/components/Assessment";
+import { Term } from "@/components/Term";
 import { ClaimsControls } from "@/components/ClaimsControls";
 import { ProposeClaim } from "@/components/ProposeClaim";
 import type { AssessedFilter } from "@/lib/types";
@@ -54,28 +55,42 @@ export default async function ClaimsIndex({
         </p>
       ) : (
         <div className="cards">
-          {claims.map((c) => (
-            <Link href={`/claims/${c.id}`} className="card" key={c.id}>
-              <div className="card-claim">{c.text}</div>
-              <div className="card-foot">
-                {c.assessment_status ? <StatusBadge status={c.assessment_status} /> : <Unassessed />}
-                <span className="tag kind">{CLAIM_TYPE_LABEL[c.claim_type] ?? c.claim_type?.replace(/_/g, " ")}</span>
-                {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
-                <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>
-                  <Importance value={c.importance} />
-                  {/* Verdict confidence used to sit here as a bare number and
-                      read as P(claim true); it now lives on the claim page,
-                      quietly labelled (#160). Search relevance stays: it is
-                      about the match, not the claim. */}
-                  {typeof c.similarity_score === "number" && (
-                    <span className="conf-num" title="search relevance">
-                      {c.similarity_score.toFixed(2)}
-                    </span>
+          {claims.map((c) => {
+            const kind = claimTypeMeta(c.claim_type);
+            return (
+              // A div with a stretched link, not a Link: the footer's ontology
+              // terms are themselves clickable (#198), and interactive elements
+              // may not nest inside an anchor.
+              <div className="card" key={c.id}>
+                <Link href={`/claims/${c.id}`} className="card-link">
+                  <div className="card-claim">{c.text}</div>
+                </Link>
+                <div className="card-foot">
+                  {c.assessment_status ? <StatusBadge status={c.assessment_status} /> : <Unassessed />}
+                  {kind ? (
+                    <Term gloss={kind.gloss} href={DEFINED_IN.claimType} className="tag kind">
+                      {kind.label}
+                    </Term>
+                  ) : (
+                    <span className="tag kind">{c.claim_type?.replace(/_/g, " ")}</span>
                   )}
-                </span>
+                  {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
+                  <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>
+                    <Importance value={c.importance} />
+                    {/* Verdict confidence used to sit here as a bare number and
+                        read as P(claim true); it now lives on the claim page,
+                        quietly labelled (#160). Search relevance stays: it is
+                        about the match, not the claim. */}
+                    {typeof c.similarity_score === "number" && (
+                      <span className="conf-num" title="search relevance">
+                        {c.similarity_score.toFixed(2)}
+                      </span>
+                    )}
+                  </span>
+                </div>
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 
