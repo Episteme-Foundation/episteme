@@ -299,6 +299,14 @@
   display: block;
 }
 .outlineText:hover { color: var(--link); text-decoration: none; }
+
+/* scrollspy (issue #202): the entry the reader is currently on in the centre
+   column — quiet ink-lift plus a sunk ground, no new colour */
+.outlineItemActive,
+.argHeadActive {
+  background: var(--paper-sunk);
+}
+.outlineItemActive .outlineText { color: var(--ink); }
 .outlineRel {
   margin-right: 0.4rem;
   font-size: 0.56rem;

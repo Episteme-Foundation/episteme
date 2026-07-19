@@ -87,7 +87,9 @@ function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
   const rel = node.relation_type ? RELATION[node.relation_type] : null;
 
   return (
-    <div className="node">
+    // data-claim-node: hook for the left rail's scrollspy (issue #202) — the
+    // DecompositionCompass watches these to follow the reading position.
+    <div className="node" data-claim-node={node.id}>
       <div className="node-row">
         <button
           className={`node-toggle${hasChildren ? "" : " leaf"}`}
