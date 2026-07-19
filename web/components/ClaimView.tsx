@@ -20,7 +20,7 @@ function fmtDate(iso: string) {
 }
 
 export function ClaimView({ detail }: { detail: ClaimDetail }) {
-  const { claim, tree, instances, trajectory, subclaim_count, record } = detail;
+  const { claim, tree, instances, trajectory, record } = detail;
   // Live data can be mid-pipeline: an assessment row may exist with a null
   // status. Only treat it as a real assessment when the status is on-enum.
   const assessment =
@@ -116,8 +116,9 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         {hasTree ? (
           <>
             <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".8rem", marginTop: "-.3rem" }}>
-              {subclaim_count} subclaim{subclaim_count === 1 ? "" : "s"}, grouped by argument.
-              Click a subclaim to see why the edge holds; ▸ expands; ↗ opens the subclaim.
+              {tree!.children.some((c) => c.argument_name)
+                ? "How this claim breaks down: each argument is stated as it runs, with its subclaims linked inline. ↗ opens a subclaim; the map shows how they fit together."
+                : "The claims this one rests on directly. ↗ opens a subclaim; the map shows how they fit together."}
             </p>
             <DecompositionTree tree={tree!} />
           </>

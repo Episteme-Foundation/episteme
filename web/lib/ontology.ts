@@ -144,6 +144,16 @@ export function claimTypeMeta(t: unknown): { label: string; gloss: string } | nu
   return typeof t === "string" && t in CLAIM_TYPE ? CLAIM_TYPE[t as ClaimType] : null;
 }
 
+// The default decomposition (#204): the subclaims a claim rests on directly that
+// are not (yet) gathered into a named line of reasoning (constitution §7, "a
+// simple claim with one natural line of support ... no explicit grouping is
+// needed"). Naming it stops the argument-less skeleton from reading as a
+// mysterious unnamed argument, in both the centre tree and the left compass.
+export const BASIS = {
+  label: "Basis",
+  gloss: "The claims this one rests on directly, not gathered into a named line of reasoning.",
+} as const;
+
 export const STANCE_LABEL: Record<Stance, string> = {
   for: "for", against: "against", neutral: "neutral",
 };
@@ -370,6 +380,16 @@ export function decompositionEffects(root: TreeNode): ScoredNode[] {
   };
   walk(root, 1);
   return out;
+}
+
+// The direct children only, each tagged with its effect on this claim. Surfaces
+// that summarise a claim by its own top-level lines of reasoning (the compass
+// jump-list, #204) group these, rather than the whole recursive subtree.
+export function topLevelEffects(root: TreeNode): ScoredNode[] {
+  return root.children.map((child) => ({
+    node: child,
+    effect: nodeEffect(child.assessment_status, flipsPolarity(child.relation_type) ? -1 : 1),
+  }));
 }
 
 export function effectCounts(scored: ScoredNode[]): Record<Effect, number> {

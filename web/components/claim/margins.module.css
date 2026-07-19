@@ -187,129 +187,50 @@
   border: 1px dashed var(--st-unassessed);
 }
 
-/* ----- the "expand on demand" toggle ------------------------------------- */
-.railToggle {
-  background: none;
-  border: none;
-  padding: 0.1rem 0;
-  margin: 0;
-  cursor: pointer;
+/* ----- left: the argument jump-list (#204) -------------------------------
+   The top-level lines of reasoning as a prose-free navigation list: clicking an
+   entry scrolls the reading column to that argument, and the entry the reader is
+   currently on is marked (scrollspy, #202). Reading a written form in a narrow
+   margin is unkind, so the prose stays in the centre; the rail only summarises
+   and jumps. */
+.jumpLabel {
   font-family: var(--sans);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 1.1rem 0 0.35rem;
 }
-.railToggle:hover { color: var(--link); }
-
-/* ----- left: revealed mini-outline --------------------------------------- */
-.outline {
-  list-style: none;
-  margin: 0.7rem 0 0;
-  padding: 0;
-  border-left: 1px solid var(--rule-soft);
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-/* ----- left: argument groups (optional primitive) ------------------------ */
-.argList {
-  list-style: none;
-  margin: 0.7rem 0 0;
-  padding: 0;
-  max-height: 64vh;
-  overflow-y: auto;
-}
-.argGroup { margin-bottom: 0.5rem; }
-.argHead {
+.jumpList { list-style: none; margin: 0; padding: 0; }
+.jumpItem {
   display: flex;
   align-items: baseline;
-  gap: 0.4rem;
+  gap: 0.45rem;
   width: 100%;
   background: none;
   border: none;
-  padding: 0.3rem 0;
+  padding: 0.34rem 0.4rem;
   margin: 0;
   text-align: left;
   cursor: pointer;
-  border-bottom: 1px dotted var(--rule);
-}
-.argCaret { color: var(--faint); font-size: 0.62rem; flex: none; width: 0.7rem; }
-.argName {
+  border-radius: 3px;
   font-family: var(--sans);
-  font-weight: 600;
-  font-size: 0.78rem;
-  color: var(--ink);
-  line-height: 1.25;
-  flex: 1 1 auto;
-  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--ink-soft);
 }
-.argHead:hover .argName { color: var(--link); }
-.argCount {
+.jumpItem:hover { color: var(--link); background: var(--paper-sunk); }
+/* scrollspy (issue #202): the argument the reader is currently on — quiet
+   ink-lift plus a sunk ground, no new colour */
+.jumpItemActive { background: var(--paper-sunk); }
+.jumpItemActive .jumpName { color: var(--ink); font-weight: 600; }
+.jumpName { flex: 1 1 auto; min-width: 0; }
+.jumpCount {
   font-family: var(--mono);
   font-size: 0.68rem;
   color: var(--faint);
   flex: none;
-}
-/* The argument's written form, revealed with the group: how these subclaims
-   combine to bear on the claim, subclaims linked inline (issue #129). */
-.argProse {
-  margin: 0.3rem 0 0 0.7rem;
-  font-size: 0.74rem;
-  line-height: 1.5;
-  color: var(--muted);
-}
-/* The steward's evaluation of the argument (issue #173): whether the
-   inference goes through and which premises bear the weight. Set off from the
-   written form with a quiet left rule. */
-.argEval {
-  margin: 0.35rem 0 0 0.7rem;
-  padding-left: 0.5rem;
-  border-left: 2px solid var(--rule);
-  font-size: 0.74rem;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.argBar {
-  display: flex;
-  height: 0.28rem;
-  border-radius: 2px;
-  overflow: hidden;
-  margin: 0.4rem 0 0.1rem 0.7rem;
-  background: var(--paper-sunk);
-}
-.argBar > span { background: currentColor; display: block; height: 100%; }
-.argNodes {
-  list-style: none;
-  margin: 0.1rem 0 0;
-  padding: 0;
-  border-left: 1px solid var(--rule-soft);
-  margin-left: 0.7rem;
-}
-.outlineItem {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.3rem 0 0.3rem 0.6rem;
-  font-size: 0.74rem;
-  line-height: 1.34;
-}
-.outlineText {
-  color: var(--ink-soft);
-  display: block;
-}
-.outlineText:hover { color: var(--link); text-decoration: none; }
-
-/* scrollspy (issue #202): the entry the reader is currently on in the centre
-   column — quiet ink-lift plus a sunk ground, no new colour */
-.outlineItemActive,
-.argHeadActive {
-  background: var(--paper-sunk);
-}
-.outlineItemActive .outlineText { color: var(--ink); }
-.outlineRel {
-  margin-right: 0.4rem;
-  font-size: 0.56rem;
 }
 
 /* ----- right: revealed dependents list ----------------------------------- */

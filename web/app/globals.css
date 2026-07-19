@@ -455,6 +455,43 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   letter-spacing: 0.08em; text-transform: uppercase;
 }
 
+/* The basis (#204): the default decomposition — a claim's direct subclaims that
+   are not gathered under a named argument. A labeled section of its own, with a
+   one-line gloss, so it no longer reads as a mysterious nameless argument. Its
+   subclaims render as a quiet list (no relation-and-type chip pile-up), since a
+   basis has no written form to carry them inline. */
+.basis-head .argname { font-weight: 600; font-size: 1.04rem; }
+.basis-note {
+  margin: -0.15rem 0 0.7rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.basis-list { list-style: none; margin: 0; padding: 0; }
+.basis-item { padding: 0.3rem 0; }
+.basis-row { line-height: 1.55; }
+.basis-text.clickable { cursor: pointer; }
+.basis-text.clickable:hover { color: var(--link); }
+.basis-flag { color: var(--faint); font-size: 0.85em; font-style: italic; }
+
+/* End-of-section invitation into the map (#204, #192): a bordered, genuinely
+   clickable affordance rather than the easy-to-miss small text beside it. */
+.decomp-maplink {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  margin-top: 1.7rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+  color: var(--link);
+}
+.decomp-maplink:hover {
+  border-color: var(--faint);
+  background: var(--paper-sunk);
+  text-decoration: none;
+}
+
 .node { position: relative; }
 .node-children {
   margin-left: 0.7rem; padding-left: 1.0rem;
