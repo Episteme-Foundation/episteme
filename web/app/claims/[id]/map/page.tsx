@@ -30,14 +30,27 @@ export default async function ClaimMapPage({
   const { id } = await params;
   const { detail, source } = await loadClaim(id);
   if (!detail) {
+    // Same plain-language treatment as the claim page's not-found state (#195).
     return (
       <div className="col">
         <p className="sc"><Link href="/claims">← claims</Link></p>
-        <h1 className="claim-hero">Claim not in the local fixture set.</h1>
-        <p style={{ color: "var(--muted)" }}>
-          The map opens on any claim once the API is connected.
-        </p>
-        <p><Link href="/claims/inflation-2022/map">→ open the worked example as a map</Link></p>
+        <h1 className="claim-hero">Claim not found.</h1>
+        {source === "fixture" ? (
+          <>
+            <p style={{ color: "var(--muted)" }}>
+              This preview is not connected to the live graph, so only a sample claim is
+              available.
+            </p>
+            <p><Link href="/claims/inflation-2022/map">→ open the sample claim as a map</Link></p>
+          </>
+        ) : (
+          <>
+            <p style={{ color: "var(--muted)" }}>
+              There is no claim at this address. The link may be mistyped or out of date.
+            </p>
+            <p><Link href="/claims">→ browse and search all claims</Link></p>
+          </>
+        )}
       </div>
     );
   }
