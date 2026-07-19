@@ -235,6 +235,42 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   color: var(--faint); white-space: nowrap; cursor: help;
 }
 
+/* ----- instant tooltip (#193) ---------------------------------------------
+   The native title attribute appears after a long, unstylable delay, which
+   buried the confidence definitions. An element with .tip shows its data-tip
+   text immediately on hover or keyboard focus. Not for use inside containers
+   that clip overflow: the tooltip is positioned within them. */
+.tip { position: relative; cursor: help; }
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.55rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 17rem;
+  background: var(--paper-card);
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow: 0 2px 10px rgba(26, 24, 19, 0.08);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: normal;
+  padding: 0.45rem 0.65rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.1s ease;
+  pointer-events: none;
+  z-index: 40;
+}
+.tip:hover::after,
+.tip:focus-visible::after { opacity: 1; visibility: visible; }
+
 /* ----- type / state tags ----- */
 .tag {
   font-family: var(--sans); font-size: 0.66rem; font-weight: 500;
