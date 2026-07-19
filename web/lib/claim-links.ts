@@ -11,6 +11,8 @@ export type WrittenFormSegment =
   | { kind: "text"; text: string }
   | { kind: "link"; claimId: string; display: string | null };
 
+export type ProseSegment = WrittenFormSegment | { kind: "url"; href: string };
+
 /** Split a written form into plain-text and claim-link segments, in order. */
 export function parseWrittenForm(content: string): WrittenFormSegment[] {
   const segments: WrittenFormSegment[] = [];
@@ -21,6 +23,41 @@ export function parseWrittenForm(content: string): WrittenFormSegment[] {
     last = m.index! + m[0].length;
   }
   if (last < content.length) segments.push({ kind: "text", text: content.slice(last) });
+  return segments;
+}
+
+// A bare source URL cited in prose (issue #203). Deliberately simple: a run
+// of non-whitespace after the scheme; sentence punctuation is trimmed off the
+// end afterwards, since a URL usually sits mid-sentence or inside parens.
+const BARE_URL = /https?:\/\/[^\s<>"“”]+/g;
+
+/**
+ * parseWrittenForm plus bare-URL detection: assessment prose carries the same
+ * [[claim:<id>]] references as argument written forms, and may also cite its
+ * sources by URL. Plain prose passes through as a single text segment.
+ */
+export function parseProse(content: string): ProseSegment[] {
+  const segments: ProseSegment[] = [];
+  for (const seg of parseWrittenForm(content)) {
+    if (seg.kind !== "text") {
+      segments.push(seg);
+      continue;
+    }
+    let last = 0;
+    for (const m of seg.text.matchAll(BARE_URL)) {
+      let url = m[0];
+      // Trailing sentence punctuation belongs to the prose, not the URL; a
+      // trailing ")" comes off only when the URL itself opened no paren.
+      while (/[.,;:!?'"’]$/.test(url) || (url.endsWith(")") && !url.includes("("))) {
+        url = url.slice(0, -1);
+      }
+      if (url === "https://" || url === "http://") continue;
+      if (m.index! > last) segments.push({ kind: "text", text: seg.text.slice(last, m.index) });
+      segments.push({ kind: "url", href: url });
+      last = m.index! + url.length;
+    }
+    if (last < seg.text.length) segments.push({ kind: "text", text: seg.text.slice(last) });
+  }
   return segments;
 }
 
