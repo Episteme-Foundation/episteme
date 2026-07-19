@@ -505,14 +505,14 @@ export function GraphView({
               ) : c.collapsed ? (
                 <span
                   className={styles.atomicTag}
-                  title="A shared subclaim — its decomposition is drawn at its other occurrence on this map. Click to recentre and see it in full."
+                  title="A shared subclaim: its decomposition is drawn at its other occurrence on this map. Click to bring it into focus and see it in full."
                 >
                   shared · shown elsewhere
                 </span>
               ) : c.truncated ? (
                 <span
                   className={styles.atomicTag}
-                  title="This view is size-capped and this claim's subclaims were not loaded. Click to recentre and see them."
+                  title="This view is size-capped and this claim's subclaims were not loaded. Click to bring it into focus and see them."
                 >
                   more on its map
                 </span>
@@ -594,7 +594,7 @@ export function GraphView({
             <span className="tag" title="The API is not connected; showing a design fixture.">fixture data</span>
           )}
           <span className={`sc ${styles.hint}`} style={{ color: "var(--faint)" }}>
-            click a claim to recentre · hover to preview · ⌫ back
+            click a claim to focus on it · hover to preview · ⌫ back
           </span>
         </div>
       )}
@@ -628,7 +628,7 @@ export function GraphView({
         ref={stageRef}
         className={`${styles.stage}${embed ? ` ${styles.embedStage}` : ""}${scrollable ? ` ${styles.scrollable}` : ""}`}
         role="figure"
-        aria-label={`Claim map centred on: ${d.claim.text}`}
+        aria-label={`Claim map focused on: ${d.claim.text}`}
       >
         <div style={{ width: spacerW, height: spacerH, position: "relative" }}>
           <div
@@ -841,7 +841,7 @@ export function GraphView({
                       </div>
                     )}
                     <div className={styles.previewFoot}>
-                      <span>{preview.isFocus ? "the centred claim" : "click to recentre the map"}</span>
+                      <span>{preview.isFocus ? "the claim in focus" : "click to focus the map on this claim"}</span>
                       <Link href={`/claims/${c.id}`}>open claim page ↗</Link>
                     </div>
                   </>
