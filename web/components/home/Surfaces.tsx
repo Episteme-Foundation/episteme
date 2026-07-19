@@ -127,9 +127,15 @@ export function Surfaces({
         <div className={styles.mapbox}>
           <div className={styles.mapbar}>
             <span className="sc">Claim map · focus + context</span>
-            <span className={styles.live}>
-              <span className={styles.pulse} aria-hidden />live · interactive
-            </span>
+            {/* only claim "live" when the data actually is; the fixture
+                fallback owns up to being a sample */}
+            {source === "live" ? (
+              <span className={styles.live}>
+                <span className={styles.pulse} aria-hidden />live · interactive
+              </span>
+            ) : (
+              <span className={styles.live}>sample · interactive</span>
+            )}
           </div>
           {detail ? (
             <GraphView initialDetail={detail} source={source} embed />
