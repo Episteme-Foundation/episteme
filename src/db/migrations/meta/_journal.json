@@ -113,6 +113,13 @@
       "when": 1784248742039,
       "tag": "0015_square_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784430865615,
+      "tag": "0016_flaky_magus",
+      "breakpoints": true
     }
   ]
 }

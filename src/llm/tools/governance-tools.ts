@@ -245,11 +245,31 @@ async function getClaimWithContext(claimId: string) {
     .innerJoin(sources, eq(sources.id, claimInstances.sourceId))
     .where(eq(claimInstances.claimId, claimId));
 
-  // Arguments
+  // Arguments, each with its current evaluation (issue #173) so a re-running
+  // steward sees its prior judgment of the inference and can revise or confirm.
   const args = await db
     .select()
     .from(arguments_)
     .where(eq(arguments_.claimId, claimId));
+
+  const evaluations = await rawQuery<{
+    argument_id: string;
+    verdict: string;
+    content: string;
+    stale: boolean;
+  }>(
+    `SELECT ae.argument_id, ae.verdict, ae.content,
+            (ca.id IS NULL OR ae.assessment_id IS DISTINCT FROM ca.id) AS stale
+       FROM argument_evaluations ae
+       JOIN arguments a ON a.id = ae.argument_id
+       LEFT JOIN assessments ca ON ca.claim_id = a.claim_id AND ca.is_current = true
+      WHERE a.claim_id = $1
+        AND ae.is_current = true`,
+    [claimId]
+  );
+  const evaluationByArgument = new Map(
+    evaluations.map((e) => [e.argument_id, e])
+  );
 
   return {
     claim: {
@@ -292,15 +312,28 @@ async function getClaimWithContext(claimId: string) {
       source_type: inst.sourceType,
       source_url: inst.sourceUrl,
     })),
-    arguments: args.map((a) => ({
-      id: a.id,
-      name: a.name,
-      stance: a.stance,
-      content: a.content,
-      // False when content is still just the creation-time label — the steward
-      // owes this argument a write_argument call (issue #129).
-      has_written_form: hasWrittenForm(a.content),
-    })),
+    arguments: args.map((a) => {
+      const evaluation = evaluationByArgument.get(a.id) ?? null;
+      return {
+        id: a.id,
+        name: a.name,
+        stance: a.stance,
+        content: a.content,
+        // False when content is still just the creation-time label — the steward
+        // owes this argument a write_argument call (issue #129).
+        has_written_form: hasWrittenForm(a.content),
+        // The steward's current judgment of the inference (issue #173); null
+        // when the argument has never been evaluated. `stale` means it was
+        // derived under an assessment that is no longer current.
+        evaluation: evaluation
+          ? {
+              verdict: evaluation.verdict,
+              content: evaluation.content,
+              stale: evaluation.stale,
+            }
+          : null,
+      };
+    }),
   };
 }
 

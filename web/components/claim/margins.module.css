@@ -249,6 +249,17 @@
   line-height: 1.5;
   color: var(--muted);
 }
+/* The steward's evaluation of the argument (issue #173): whether the
+   inference goes through and which premises bear the weight. Set off from the
+   written form with a quiet left rule. */
+.argEval {
+  margin: 0.35rem 0 0 0.7rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--rule);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
 .argBar {
   display: flex;
   height: 0.28rem;

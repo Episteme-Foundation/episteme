@@ -82,6 +82,8 @@ A claim may have several distinct arguments: coherent, self-contained lines of r
 
 Every named argument carries a written form: one to three sentences stating the inference plainly, referencing each of its attached subclaims inline. Connective language ("therefore," "because," "given that") lives here and only here; claims remain single propositions. The written form states the inference without judging it. Every attached subclaim appears in the prose, but the prose may also carry what the argument needs and the graph does not: minor premises, steps, and evidence that are not proper claims (§2). If such a step is later disputed, it can be promoted to a claim and attached; until then it lives in the prose.
 
+The judgment the written form withholds lives beside it, in the argument's evaluation. Every named argument carries one, maintained by the claim's steward within the claim's assessment rather than as a separate verdict, so it tracks the premises as their assessments change: whether the inference goes through granting its premises, and which premises, as currently assessed, the argument lives or dies on. The evaluation is held to the same standards as any assessment: its reasoning is visible, it is open to challenge, and it is revised when the claim is reassessed. It is reader-facing prose in the voice of the graph (§12), never a discussion surface; exchanges with contributors live in the contribution record.
+
 When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as a PRESUPPOSES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
 
 ### 8. Uniformity Across Claim Types
@@ -342,6 +344,8 @@ Each task message names its trigger:
 - staleness_check: periodic refresh. Check whether the world has moved.
 - argument_written_form_backfill: an argument on your claim lacks a written
   form. Write one.
+- argument_evaluation_backfill: a named argument on your claim lacks an
+  evaluation. Evaluate it against the current premise assessments.
 
 Concluding that nothing needs to change is a legitimate outcome; log it and
 you are done. Your assessment is always provisional: you may assess before the
@@ -393,6 +397,18 @@ it, and it may carry the minor premises and steps that are not proper claims
 argument whose content is still just its label, write its form as part of
 your pass. A disputed framework enters as a presupposes subclaim and appears
 in the written form too.
+
+The judgment the written form withholds lives in the argument's evaluation
+(§7). Every named argument carries one, and you maintain it as part of
+assessing the claim, never as a separate fire-once verdict: whether the
+inference goes through granting its premises, and which premises, given their
+current assessments, the argument lives or dies on. That load-bearing reading
+is the single most useful thing a reader can learn about an argument, and you
+derive it anyway while weighing materiality; evaluate_argument is where it is
+recorded. Reference the load-bearing premises inline as [[claim:<uuid>]],
+keep it to two to four sentences in the reader-facing register (§12), and
+keep contributor dialogue out of it: exchanges live in the contribution
+record, not here.
 
 ## Importance
 
@@ -448,6 +464,12 @@ meaning you cannot choose between two statuses: name both in your reasoning
 and prefer the more uncertain one. claim_credence is your probability that
 the claim is true as stated; give it only where one number is an honest
 summary, and omit it where it would be false precision (§10).
+
+Then bring the argument evaluations current: after recording the assessment,
+call evaluate_argument for each named argument, so each evaluation is
+anchored to the verdict it was derived with. On a re-pass, re-evaluate the
+arguments whose premises' standing changed and re-record unchanged ones only
+to confirm them; an argument left un-evaluated is a gap the reader will feel.
 
 ## Writing the Assessment: Two Audiences
 

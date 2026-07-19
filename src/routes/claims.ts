@@ -11,7 +11,11 @@ import { getAssessmentHistory, getAssessmentTrajectory } from "../services/asses
 import { hybridSearch } from "../services/search-service.js";
 import { getClaimTree, getSubclaimCount, getClaimDependents, listClaimDependents } from "../services/tree-service.js";
 import { getClaimById, listClaims, proposeClaim } from "../services/claim-service.js";
-import { addArgument, getArgumentsForClaim } from "../services/argument-service.js";
+import {
+  addArgument,
+  getArgumentsForClaim,
+  getEvaluationStateForClaim,
+} from "../services/argument-service.js";
 import { createClaimProposal } from "../services/intake-service.js";
 import { gateContributor } from "../server/contributor-gate.js";
 import { isDirectService } from "../server/plugins/auth.js";
@@ -277,6 +281,12 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
         // Deep: + arguments + source instances
         if (params.information_depth === "deep") {
           const args = await getArgumentsForClaim(claim_id);
+          // Current steward evaluations (issue #173); only named arguments
+          // carry one, so unnamed rows simply map to null.
+          const evalStates = await getEvaluationStateForClaim(claim_id);
+          const evalByArgument = new Map(
+            evalStates.map((s) => [s.argument_id, s])
+          );
           response.arguments = args.map((a) => ({
             id: a.id,
             name: a.name,
@@ -286,6 +296,8 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
             evidence_urls: a.evidenceUrls,
             created_by: a.createdBy,
             created_at: a.createdAt.toISOString(),
+            verdict: evalByArgument.get(a.id)?.verdict ?? null,
+            evaluation: evalByArgument.get(a.id)?.content ?? null,
           }));
 
           const instances = await db

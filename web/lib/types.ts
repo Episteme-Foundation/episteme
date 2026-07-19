@@ -18,6 +18,12 @@ export type RelationType =
   | "requires" | "supports" | "contradicts"
   | "specifies" | "defines" | "presupposes";
 
+// Steward verdict on a named argument's inference (issue #173): does it go
+// through granting its premises? "contested" means the framework's validity
+// is itself live-disputed.
+export type ArgumentVerdict =
+  | "holds" | "holds_with_caveats" | "fails" | "contested";
+
 // Mirrors the backend sourceTypeEnum (src/schemas/common.ts).
 export type SourceType =
   | "primary_data" | "peer_reviewed" | "government" | "news_original"
@@ -41,6 +47,13 @@ export interface TreeNode {
   // [[claim:<uuid>]] references stating how the grouped subclaims combine to
   // bear on the claim. Optional while API deploys race the frontend.
   argument_content?: string | null;
+  // The steward's evaluation of the argument (issue #173): whether the
+  // inference goes through granting its premises, and (in the prose) which
+  // premises bear the weight, with the same inline [[claim:<uuid>]] links as
+  // the written form. Null until the steward has evaluated the argument;
+  // optional while API deploys race the frontend.
+  argument_verdict?: ArgumentVerdict | string | null;
+  argument_evaluation?: string | null;
   children: TreeNode[];
   // A repeated occurrence of a shared subclaim: its children are rendered at
   // the node's first occurrence in the response, not duplicated here.
@@ -100,6 +113,9 @@ export interface ArgumentItem {
   evidence_urls: string[];
   created_by: string;
   created_at: string;
+  // Steward evaluation of the inference (issue #173); null until judged.
+  verdict?: ArgumentVerdict | string | null;
+  evaluation?: string | null;
 }
 
 export interface Instance {
