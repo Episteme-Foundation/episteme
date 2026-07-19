@@ -71,6 +71,15 @@ export const claims = pgTable(
     // important claims are processed first under a run budget (§"Claim Importance
     // and Proportional Effort"). 0.5 = default/medium until judged.
     importance: real("importance").notNull().default(0.5),
+    // How live the dispute around the claim is (0..1), recorded separately from
+    // importance (#172 phase 1). Today importance fuses consequence-if-wrong
+    // with contestability; splitting the contestability half out is the first
+    // step toward scheduling on stakes × expected-yield instead of one fused
+    // score. Recorded by the Extractor (prior) and the Steward (authoritative)
+    // but NOT yet read by the queue, the deferral brake, or effort selection —
+    // phase 2/3 of #172. NULL = not yet judged, deliberately distinct from 0
+    // ("judged settled").
+    contestation: real("contestation"),
     // --- Steward work-queue state: the claim row IS the queue ---
     // A claim with steward_state='pending' is awaiting (re)processing by its
     // Steward; the drain always picks the highest-`importance` pending claim, so
@@ -191,6 +200,15 @@ export const assessments = pgTable(
     // written before this split fall back to reasoningTrace in the UI.
     summary: text("summary"),
     reasoningTrace: text("reasoning_trace").notNull(),
+    // Marginal yield (0..1): the Steward's exit judgment of how much another,
+    // stronger pass would improve this assessment (#172 phase 1). Near zero
+    // once an uncontested fact is assessed or a values dispute is mapped to
+    // its terminal disagreement; high when the pass hit evidence it could not
+    // fully digest. Recorded but not yet read by scheduling — phase 3 of #172
+    // will derive re-assessment priority from it. NULL = not stated (legacy
+    // assessments predate the field); an unassessed claim's yield is treated
+    // as maximal by convention.
+    marginalYield: real("marginal_yield"),
     isCurrent: boolean("is_current").notNull().default(true),
     subclaimSummary: jsonb("subclaim_summary").notNull().default({}),
     trigger: text("trigger"),
@@ -567,6 +585,10 @@ export const contributions = pgTable(
       .notNull()
       .defaultNow(),
     reviewStatus: text("review_status").notNull().default("pending"),
+    // Why the reviewer escalated (#178). Written by escalate_to_arbitrator so
+    // the reason reaches the Arbitrator even when no review row was recorded;
+    // the review record, when present, carries the fuller reasoning.
+    escalationReason: text("escalation_reason"),
     mergeTargetClaimId: uuid("merge_target_claim_id").references(
       () => claims.id
     ),

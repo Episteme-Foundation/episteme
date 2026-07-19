@@ -133,8 +133,6 @@ export interface ChatTurn {
 
 export interface ExtensionChatResult {
   reply: string;
-  /** Claim ids the agent consulted via its graph tools during this turn. */
-  consultedClaimIds: string[];
 }
 
 // Tag every LLM call in this agent for the per-token meter (#70).
@@ -173,8 +171,6 @@ async function extensionChatImpl(input: {
       i === first ? `${contextBlock}\n\n---\n\n${m.content}` : m.content,
   }));
 
-  const consulted = new Set<string>();
-
   const result = await toolUseLoop({
     initialMessages,
     tools: getGraphToolDefinitions(),
@@ -182,28 +178,8 @@ async function extensionChatImpl(input: {
     maxTokens: 4096,
     maxIterations: 8,
     model: input.model,
-    executeTool: async (name, toolInput) => {
-      const output = await executeGraphTool(name, toolInput);
-      if (typeof toolInput.claim_id === "string") {
-        consulted.add(toolInput.claim_id);
-      }
-      // Track ids surfaced by similarity search so citations can be verified
-      // against what the agent actually saw.
-      if (name === "search_similar_claims") {
-        try {
-          const parsed = JSON.parse(output) as {
-            results?: Array<{ id?: string }>;
-          };
-          for (const r of parsed.results ?? []) {
-            if (r.id) consulted.add(r.id);
-          }
-        } catch {
-          // non-JSON tool errors carry no ids
-        }
-      }
-      return output;
-    },
+    executeTool: (name, toolInput) => executeGraphTool(name, toolInput),
   });
 
-  return { reply: result.content, consultedClaimIds: [...consulted] };
+  return { reply: result.content };
 }

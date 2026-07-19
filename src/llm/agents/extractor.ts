@@ -13,6 +13,8 @@ export interface ExtractedClaim {
   confidence: number;
   /** Provisional importance prior (0-1); the Steward later overrides it. */
   importance: number;
+  /** Provisional contestation prior (0-1); the Steward later overrides it (#172). */
+  contestation: number;
   source_location: string | null;
 }
 
@@ -25,9 +27,10 @@ const EXTRACTED_CLAIM_SCHEMA = {
     claim_type: { type: "string", description: "One of: empirical_verifiable, empirical_derived, definitional, evaluative, causal, normative" },
     confidence: { type: "number", description: "Confidence this is a valid claim (0.0-1.0)" },
     importance: { type: "number", description: "Provisional importance (0.0-1.0): how much it is worth getting this claim right (roughly consequence-if-wrong × contestability), from document salience, contestedness, and discourse reach. Settled/uncontested facts score LOW even if load-bearing. A prior the Steward will revise; distinct from confidence." },
+    contestation: { type: "number", description: "Provisional contestation (0.0-1.0): how live the dispute around this proposition is in the discourse, on its own — ~0 for a settled fact stated in passing, ~1 for an actively argued crux with credible parties on both sides. The contestability half of the importance formula recorded separately; a prior the Steward will revise." },
     source_location: { type: ["string", "null"], description: "Where in the document this was found" },
   },
-  required: ["original_text", "proposed_canonical_form", "claim_type", "confidence", "importance"],
+  required: ["original_text", "proposed_canonical_form", "claim_type", "confidence", "importance", "contestation"],
 };
 
 // Tag every LLM call in this agent for the per-token meter (#70); the

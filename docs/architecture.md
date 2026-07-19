@@ -101,6 +101,15 @@ a prior at ingestion; the claim's Steward sets the authoritative value once it
 has decomposed the claim and seen its neighborhood. Importance decides both how
 soon a claim is stewarded and how much effort its Steward spends.
 
+Two further signals are recorded but not yet acted on (issue #172, phase 1 of
+splitting stakes from expected yield): `contestation` on the claim, how live
+the dispute is stated unfused from the consequence half, and `marginal_yield`
+on each assessment, the Steward's exit judgment of how much another, stronger
+pass would improve it. Queue order, the decomposition brake, and effort
+selection still read only the fused importance score; the follow-up phases in
+#172 will move scheduling to a function of both dimensions once these fields
+have accrued data.
+
 ### Arguments
 
 An **argument** groups decomposition edges into a coherent, named line of
@@ -554,6 +563,6 @@ the graph, not by how they read.
 ---
 
 The operational policies that follow turn the constitution's principles into
-concrete, per-agent rules: the acceptance criteria the Contribution Reviewer
-applies, the assessment guidance the Claim Steward follows, and the
-reasoning-trace format every agent emits.
+concrete, per-agent rules: the shared policy vocabulary every governance
+decision cites, the acceptance criteria the Contribution Reviewer applies, and
+the reasoning obligations every agent carries.

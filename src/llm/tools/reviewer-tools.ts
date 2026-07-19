@@ -73,7 +73,8 @@ export function getReviewerToolDefinitions(): Tool[] {
               "deliberate misinformation), NOT for sincere contributions " +
               "rejected on the merits. This flag has real consequences " +
               "(reputation penalty, pay-to-contribute standing) and is " +
-              "appealable; when uncertain, reject without the flag or escalate.",
+              "appealable; when uncertain, reject without the flag or " +
+              "escalate. Setting it requires bad_faith_category.",
           },
           bad_faith_category: {
             type: "string",
@@ -96,9 +97,11 @@ export function getReviewerToolDefinitions(): Tool[] {
       description:
         "Place a contribution in the dispute arbitrator's queue. Use when " +
         "uncertain, when stakes are high, or when the situation requires " +
-        "deeper adjudication. This call is what enqueues arbitration; also " +
-        "record the review itself with record_review_decision (decision " +
-        "'escalate'), whose reasoning is what the arbitrator reads.",
+        "deeper adjudication. This call is what enqueues arbitration, and " +
+        "the reason given here is persisted on the contribution for the " +
+        "arbitrator to read; also record the review itself with " +
+        "record_review_decision (decision 'escalate'), which carries your " +
+        "fuller reasoning of record.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -161,8 +164,26 @@ export async function executeReviewerTool(
         // accident (#71: sincere contributions must never pay).
         const suspectedBadFaith =
           input.suspected_bad_faith === true && decision === "reject";
+        // Which kind of abuse is the reviewer's judgment; code must not
+        // fabricate one by default (#179). Refuse the call before any write
+        // so the reviewer can restate the decision with the category.
+        if (
+          suspectedBadFaith &&
+          !BAD_FAITH_CATEGORIES.includes(
+            input.bad_faith_category as (typeof BAD_FAITH_CATEGORIES)[number]
+          )
+        ) {
+          return JSON.stringify({
+            success: false,
+            error:
+              "suspected_bad_faith requires bad_faith_category (one of: " +
+              BAD_FAITH_CATEGORIES.join(", ") +
+              "). Nothing was recorded. Repeat the call naming the kind of " +
+              "abuse you found, or drop the flag if none applies.",
+          });
+        }
         const badFaithCategory = suspectedBadFaith
-          ? ((input.bad_faith_category as string) ?? "spam")
+          ? (input.bad_faith_category as string)
           : null;
 
         const db = getDb();
@@ -248,11 +269,13 @@ export async function executeReviewerTool(
           trigger: "escalated_review",
         });
 
-        // Update contribution status
+        // Update contribution status and persist the escalation reason (#178)
+        // so the Arbitrator sees why the case was escalated even when no
+        // review row was recorded.
         const db = getDb();
         await db
           .update(contributions)
-          .set({ reviewStatus: "escalated" })
+          .set({ reviewStatus: "escalated", escalationReason: reason })
           .where(eq(contributions.id, contributionId));
 
         return JSON.stringify({

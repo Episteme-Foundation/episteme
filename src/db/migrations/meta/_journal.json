@@ -113,6 +113,20 @@
       "when": 1784248742039,
       "tag": "0015_square_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784409414551,
+      "tag": "0016_powerful_snowbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784431697178,
+      "tag": "0017_effort_signals",
+      "breakpoints": true
     }
   ]
 }

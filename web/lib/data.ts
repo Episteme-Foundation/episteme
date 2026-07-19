@@ -1,6 +1,6 @@
-import { apiConfigured, fetchClaimDetail, fetchSearch, fetchList } from "./api";
-import { getClaim, listClaims } from "./fixtures";
-import type { ClaimDetail, ClaimFilters, SearchResultItem } from "./types";
+import { apiConfigured, fetchClaimDetail, fetchClaimEvents, fetchSearch, fetchList } from "./api";
+import { getClaim, getClaimEvents, listClaims } from "./fixtures";
+import type { ClaimDetail, ClaimEventsPage, ClaimFilters, SearchResultItem } from "./types";
 
 // The same filter predicate the API applies, used for the fixture fallback so
 // the controls behave identically offline. "unassessed" keys off a missing
@@ -30,6 +30,21 @@ export async function loadClaim(
   } catch (err) {
     console.error("[episteme] live claim fetch failed, using fixture:", err);
     return { detail: getClaim(id), source: "fixture" };
+  }
+}
+
+// The unified per-claim history (#175). A null result with a non-null claim
+// means the record could not be loaded, not that nothing ever happened — the
+// history page renders the two cases differently.
+export async function loadClaimEvents(
+  id: string,
+): Promise<{ events: ClaimEventsPage | null; source: DataSource }> {
+  if (!apiConfigured()) return { events: getClaimEvents(id), source: "fixture" };
+  try {
+    return { events: await fetchClaimEvents(id), source: "live" };
+  } catch (err) {
+    console.error("[episteme] live claim events fetch failed, using fixture:", err);
+    return { events: getClaimEvents(id), source: "fixture" };
   }
 }
 

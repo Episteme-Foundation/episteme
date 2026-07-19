@@ -255,12 +255,12 @@ export async function chatAboutPage(input: {
     model: config.extensionModel,
   });
 
-  // Hydrate only citations the agent actually consulted via its tools this
-  // turn — an id it produced from thin air gets dropped rather than linked.
-  const consulted = new Set(result.consultedClaimIds);
-  const citedIds = extractCitedClaimIds(result.reply).filter((id) =>
-    consulted.has(id)
-  );
+  // Hydrate every cited id that resolves in the graph. An id fabricated from
+  // thin air virtually never resolves, so it is still dropped; an id the
+  // agent legitimately saw anywhere (search results, other tool outputs, the
+  // page context, an earlier turn) links correctly instead of being silently
+  // deleted from the rendered reply (#181).
+  const citedIds = extractCitedClaimIds(result.reply);
 
   const citations: ChatCitation[] = [];
   for (const id of citedIds.slice(0, 20)) {

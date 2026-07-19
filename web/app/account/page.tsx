@@ -14,6 +14,8 @@ import {
 } from "../../lib/account-api";
 import { KeyCreator } from "./KeyCreator";
 import { revokeKeyAction, signOutAction } from "./actions";
+import { fetchContributorProfile } from "../../lib/api";
+import type { ContributorProfile } from "../../lib/types";
 
 export const metadata: Metadata = { title: "Account — Episteme" };
 export const dynamic = "force-dynamic";
@@ -77,6 +79,12 @@ export default async function AccountPage() {
       </div>
     );
   }
+
+  // The user's own contribution history, from the same public profile data
+  // anyone can see; absence (no contributions yet) just hides the table.
+  const profile: ContributorProfile | null = await fetchContributorProfile(
+    user.id
+  );
 
   const activeKeys = keys.filter((k) => !k.revoked_at);
   const revokedKeys = keys.filter((k) => k.revoked_at);
@@ -291,6 +299,37 @@ export default async function AccountPage() {
           and earn kudos in proportion to the importance of the claim they
           improve.
         </p>
+        {profile && profile.recent_contributions.length > 0 && (
+          <>
+            <h3>Recent contributions</h3>
+            <p>
+              Each decision is recorded with its reasoning on the
+              contribution&rsquo;s public record.
+            </p>
+            <table className="account-table">
+              <thead>
+                <tr>
+                  <th>type</th>
+                  <th>status</th>
+                  <th>submitted</th>
+                  <th aria-label="record" />
+                </tr>
+              </thead>
+              <tbody>
+                {profile.recent_contributions.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.contribution_type.replace(/_/g, " ")}</td>
+                    <td>{r.review_status.replace(/_/g, " ")}</td>
+                    <td>{dateish(r.submitted_at)}</td>
+                    <td>
+                      <a href={`/contributions/${r.id}`}>view record</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
         {user.contribution_standing === "must_pay" && (
           <p>
             <strong>Contribution paused:</strong> a contribution from this
