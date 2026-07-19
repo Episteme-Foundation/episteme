@@ -14,7 +14,10 @@ import {
   appeals,
 } from "../../db/schema.js";
 import { enqueueSteward } from "../../services/queue-service.js";
-import { reverseReviewOutcome } from "../../services/reputation-service.js";
+import {
+  applyArbitrationOutcome,
+  reverseReviewOutcome,
+} from "../../services/reputation-service.js";
 import {
   isIntakeContributionType,
   materializeAcceptedIntake,
@@ -28,11 +31,13 @@ export function getArbitratorToolDefinitions(): Tool[] {
       name: "record_arbitration_decision",
       description:
         "Record your arbitration decision. This writes the outcome, updates " +
-        "the contribution and appeal status, and on an overturn applies the " +
-        "consequences mechanically: the contributor is restored (reputation, " +
-        "standing, any reputation-imposed suspension) and an intake " +
-        "contribution is materialized through the Matcher, with the results " +
-        "reported in the tool result.",
+        "the contribution and appeal status, and applies the consequences " +
+        "mechanically: on an overturn the contributor is restored " +
+        "(reputation, standing, any reputation-imposed suspension) and an " +
+        "intake contribution is materialized through the Matcher; when the " +
+        "case arrived by escalation and no outcome was ever applied, the " +
+        "final accept or reject consequences (reputation, kudos) are applied " +
+        "directly. Results are reported in the tool result.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -201,9 +206,28 @@ export async function executeArbitratorTool(
         // must-pay standing are cleared, an auto-suspension lifts, and the
         // now-accepted contribution earns kudos (with a survived-scrutiny
         // bonus). False-positive flags must not leave lasting damage.
+        //
+        // An escalated case has no penalties to reverse — an 'escalate'
+        // review applies nothing — so when there is nothing to restore the
+        // final decision is applied directly (#179): acceptance credit and
+        // kudos on an overturn, the ordinary rejection outcome on an uphold.
+        // Both service calls are idempotent no-ops when the outcome was
+        // already applied at review time or by a prior arbitration.
         let restoration = null;
+        let resolution = null;
         if (outcome === "overturn") {
           restoration = await reverseReviewOutcome({ contributionId });
+          if (!restoration) {
+            resolution = await applyArbitrationOutcome({
+              contributionId,
+              finalDecision: "accept",
+            });
+          }
+        } else if (outcome === "uphold_original") {
+          resolution = await applyArbitrationOutcome({
+            contributionId,
+            finalDecision: "reject",
+          });
         }
 
         return JSON.stringify({
@@ -217,6 +241,16 @@ export async function executeArbitratorTool(
                   standing_restored: restoration.standingRestored,
                   unsuspended: restoration.unsuspended,
                   kudos_awarded: restoration.kudosAwarded,
+                },
+              }
+            : {}),
+          ...(resolution
+            ? {
+                contributor_outcome_applied: {
+                  reputation: resolution.newScore,
+                  standing: resolution.standing,
+                  suspended: resolution.suspended,
+                  kudos_awarded: resolution.kudosAwarded,
                 },
               }
             : {}),
