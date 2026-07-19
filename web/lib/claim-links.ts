@@ -32,6 +32,31 @@ export function hasClaimLinks(content: string): boolean {
 }
 
 /**
+ * Order an argument's subclaims the way its written form introduces them
+ * (#201): the prose is the reading order, the edge list is not. Items the
+ * prose never mentions keep their original relative order, after the
+ * mentioned ones. Content with no links (legacy label-only arguments)
+ * leaves the order untouched.
+ */
+export function orderByMention<T>(
+  items: T[],
+  idOf: (item: T) => string,
+  content: string | null | undefined,
+): T[] {
+  if (!content || items.length < 2) return items;
+  const at = new Map<string, number>();
+  let i = 0;
+  for (const m of content.matchAll(CLAIM_LINK)) {
+    if (!at.has(m[1]!)) at.set(m[1]!, i++);
+  }
+  if (at.size === 0) return items;
+  return items
+    .map((item, idx) => ({ item, idx, pos: at.get(idOf(item)) ?? Infinity }))
+    .sort((a, b) => a.pos - b.pos || a.idx - b.idx)
+    .map((e) => e.item);
+}
+
+/**
  * id → canonical text for every claim in a decomposition tree, so bare
  * [[claim:<id>]] references resolve to current claim text at render time
  * without another fetch — a written form's links are subclaims of the same

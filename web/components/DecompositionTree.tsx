@@ -7,7 +7,7 @@ import {
   RELATION, STANCE_LABEL, STANCE_GLOSS, argumentVerdictMeta, claimTypeMeta,
   DEFINED_IN, STEWARD_SOURCE,
 } from "@/lib/ontology";
-import { buildClaimTextMap, hasClaimLinks } from "@/lib/claim-links";
+import { buildClaimTextMap, hasClaimLinks, orderByMention } from "@/lib/claim-links";
 import { ArgumentText } from "./ArgumentText";
 import { Swatch } from "./Assessment";
 import { Term } from "./Term";
@@ -32,6 +32,8 @@ function groupByArgument(children: TreeNode[]) {
       nodes: [c],
     });
   }
+  // Within an argument, the written form's reading order wins (#201).
+  for (const g of groups) g.nodes = orderByMention(g.nodes, (n) => n.id, g.content);
   return groups;
 }
 

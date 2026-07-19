@@ -2,6 +2,7 @@ import type {
   AssessmentStatus, ClaimDetail, ClaimType, DependentClaim, RelationType,
   Stance, TreeNode,
 } from "@/lib/types";
+import { orderByMention } from "@/lib/claim-links";
 
 // ---------------------------------------------------------------------------
 // The map view's layout engine (issue #79, "The View from a Claim").
@@ -316,7 +317,13 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
   };
 
   const groups = order.map((key) => {
-    const members = byGroup.get(key)!;
+    // Within an argument, the written form's reading order wins (#201) — and
+    // it decides which members survive the t1 cap when the group is closed.
+    const members = orderByMention(
+      byGroup.get(key)!,
+      (m) => m.node.id,
+      byGroup.get(key)![0]?.node.argument_content,
+    );
     const open = opts.moreOpen.has(key);
     const vis = open ? members : members.slice(0, caps.t1);
     const extra = members.length - vis.length;
