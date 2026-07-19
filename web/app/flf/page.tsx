@@ -15,11 +15,15 @@ export const metadata = {
 };
 
 const GH = "https://github.com/Episteme-Foundation/episteme";
-// Real, live claims chosen as worked examples. All three are contested cruxes in
-// the SARS-CoV-2 origins cluster, the one FLF case study currently in the graph.
+// Real, live claims chosen as worked examples, drawn from all three FLF case
+// studies now in the graph: SARS-CoV-2 origins, LHC micro black holes, egg health.
 const LAB_ORIGIN = "ec268800-7ee7-42de-a29d-395c50e83148"; // "SARS-CoV-2 has a laboratory origin"
-const ZOONOSIS = "3795e3d8-6487-40e2-9930-00b55a0a0a74"; // Huanan-market spillover, 3 sourced instances
+const ZOONOSIS = "3795e3d8-6487-40e2-9930-00b55a0a0a74"; // Huanan-market spillover, sourced instances
 const FURIN = "ae9615d8-3701-4a41-8206-cd92e416ced8"; // furin cleavage site, 2 named arguments
+const BLACK_HOLE = "6aaac204-dc5b-441b-bf9c-979df4883c26"; // "TeV-scale black holes produced at the LHC pose no significant risk": supported over a live methodological critique
+const BH_METHOD = "a96f71a7-1372-44ca-add3-337cdb4f7334"; // "Published LHC black hole risk analyses do not establish that catastrophic risk is negligible": contested
+const EGGS = "585e0bd0-5830-4104-851e-7d4130a1be05"; // "Regular egg consumption increases cardiovascular disease risk in healthy people": contested, credence 0.33
+const EGGS_DOSE = "4408df03-8146-491d-a544-4be788849dea"; // CVD associations at high but not moderate intake: a caveat kept as its own node
 
 function Quote({ children, cite }: { children: React.ReactNode; cite: string }) {
   return (
@@ -70,6 +74,14 @@ export default function FlfPage() {
             </span>
           </div>
           <div className={s.linkRow}>
+            <span className={s.what}>The other two case studies in the graph</span>
+            <span className={s.where}>
+              <Link href={`/claims/${BLACK_HOLE}`}>LHC micro black holes</Link>
+              {" · "}
+              <Link href={`/claims/${EGGS}`}>the health effects of eggs</Link>
+            </span>
+          </div>
+          <div className={s.linkRow}>
             <span className={s.what}>The architecture, the constitution, the seven agents</span>
             <span className={s.where}>
               <Link href="/docs/architecture">architecture</Link>
@@ -87,9 +99,8 @@ export default function FlfPage() {
 
         <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".82rem" }}>
           The three FLF case studies are the origin of SARS-CoV-2, the safety of micro black holes
-          at the LHC, and the health effects of eggs. The SARS-CoV-2 cluster is live in the graph
-          now and every linked claim below is from it. Black holes and eggs are being ingested;
-          their claim links will be added here once they land.
+          at the LHC, and the health effects of eggs. All three are now live in the graph, and the
+          linked claims below are drawn from each.
         </p>
       </header>
 
@@ -113,11 +124,10 @@ export default function FlfPage() {
             sit together on the claim page, so a reader sees every source that has spoken to the same
             proposition, in that source&rsquo;s own words, in one place.
           </p>
-          <Quote cite="§17">
-            When a statement in a source text is matched to a canonical claim, the admin creates an
-            instance linking the specific utterance, with its original text and context, to the
-            canonical claim. This preserves the ability to see exactly what was said while enabling
-            aggregation across instances.
+          <Quote cite="§4">
+            When a statement in a source is matched to a canonical claim, the admin creates an
+            instance linking the utterance, with its original text and context, to the canonical
+            claim. This preserves exactly what was said while enabling aggregation across sources.
           </Quote>
           <p className={s.see}>
             See it: the zoonosis-origin claim carries several sourced instances on{" "}
@@ -142,9 +152,9 @@ export default function FlfPage() {
             The canonical form is kept short and frame-independent so that two authors arguing
             opposite sides of a question land on the same node.
           </p>
-          <Quote cite="§4">
-            A claim and its denial, however, are not two claims but one. They pose the same question
-            and turn on the same considerations, differing only in which answer a source endorses.
+          <Quote cite="§2">
+            A claim and its denial are not two claims but one. They pose the same question and turn
+            on the same considerations, differing only in which answer a source endorses.
           </Quote>
           <p className={s.see}>
             See it: &ldquo;SARS-CoV-2 has a laboratory origin&rdquo; and the Huanan-market spillover
@@ -175,9 +185,9 @@ export default function FlfPage() {
             it. An assumption, for instance, is not a tag but a subclaim on a{" "}
             <em>presupposes</em> edge, which means it can itself be examined and assessed.
           </p>
-          <Quote cite="§2">
-            Claims decompose into subclaims. The admin&rsquo;s most important function is to identify
-            and articulate these decomposition relationships faithfully.
+          <Quote cite="§6">
+            Claims decompose into other claims. The admin&rsquo;s central structural function is to
+            identify and articulate these relationships faithfully.
           </Quote>
         </div>
       </section>
@@ -197,15 +207,30 @@ export default function FlfPage() {
             contestedness, not at logical bedrock, so a claim no informed person disputes is left a
             leaf even when much depends on it.
           </p>
-          <Quote cite="§2">
-            The stopping condition is contestedness, not logical primitiveness. A claim reaches
-            bedrock when no informed person in the live discourse would actually dispute it, not when
-            it has been reduced to something logically primitive.
+          <Quote cite="§6">
+            Decomposition ends where the discourse ends, not where logic bottoms out.
           </Quote>
           <p className={s.see}>
             See it: the furin-cleavage-site claim decomposes into two named arguments over six
             subclaims on <Link href={`/claims/${FURIN}`}>its page</Link> and{" "}
             <Link href={`/claims/${FURIN}/map`}>its map</Link>.
+          </p>
+          <p>
+            The written form states an inference without judging it. The judgment lives beside it, in
+            the argument&rsquo;s <em>evaluation</em>: the steward&rsquo;s standing verdict on whether
+            the inference goes through and which premises it lives or dies on. Because the evaluation
+            tracks those premises as their own assessments change, a reader sees not just how an
+            argument is arranged but how well it currently holds.
+          </p>
+          <Quote cite="§7">
+            The judgment the written form withholds lives beside it, in the argument&rsquo;s
+            evaluation.
+          </Quote>
+          <p className={s.see}>
+            See it: the LHC black-hole safety claim carries five named arguments, four for and one
+            against, each separately evaluated, on{" "}
+            <Link href={`/claims/${BLACK_HOLE}`}>its page</Link> and{" "}
+            <Link href={`/claims/${BLACK_HOLE}/map`}>its map</Link>.
           </p>
         </div>
 
@@ -219,28 +244,35 @@ export default function FlfPage() {
             side. Different sources emphasize different arguments, and because each source&rsquo;s
             instances record which claims it engaged and on which side, the emphasis is recoverable.
           </p>
-          <Quote cite="§2">
-            A claim may have multiple distinct arguments, coherent, self-contained lines of reasoning
-            that bear on its truth or falsity. They are not competing decompositions of the same
-            claim; they are independent lines of reasoning.
+          <Quote cite="§7">
+            A claim may have several distinct arguments: coherent, self-contained lines of reasoning
+            that bear on its truth. Each argument groups its own subclaims; different arguments may
+            share subclaims while arranging them differently, or rest on different premises entirely.
           </Quote>
         </div>
 
         <div className={s.qa}>
           <Q>Capture relationships regarding similar but not identical claims: different framings, conditions, caveats, or estimates of uncertainty.</Q>
           <p>
-            Canonical forms surface the parameters that actually change a claim&rsquo;s truth
-            conditions, using a placeholder when a load-bearing parameter is left unspecified. So
-            &ldquo;inflation was high&rdquo; meaning &ldquo;above two percent&rdquo; is a different
-            claim from the same words meaning &ldquo;above wage growth,&rdquo; and the two are held
-            apart and related rather than merged. Claims that differ only by a condition or a caveat
-            are linked, often by a <em>specifies</em> edge, so the qualification is visible as
-            structure.
+            Two statements are the same claim only when they turn on the same considerations, so a
+            canonical form is pinned to what is actually in dispute. &ldquo;Inflation was high&rdquo;
+            meaning &ldquo;above two percent&rdquo; is a different claim from the same words meaning
+            &ldquo;above wage growth,&rdquo; and the two are held apart and related rather than
+            merged. Claims that differ only by a condition or a caveat are linked, often by a{" "}
+            <em>specifies</em> edge, so the qualification is visible as structure.
           </p>
-          <Quote cite="§16">
-            Two superficially identical claims may be different if their load-bearing parameters
-            differ. Two differently phrased claims may be the same if they differ only in wording.
+          <Quote cite="§3">
+            Two superficially identical statements may be different claims if they turn on different
+            considerations; two differently phrased statements may be the same claim if they differ
+            only in wording.
           </Quote>
+          <p className={s.see}>
+            See it: the egg cluster keeps the general claim that{" "}
+            <Link href={`/claims/${EGGS}`}>regular egg consumption raises cardiovascular risk</Link>{" "}
+            apart from the narrower finding that the{" "}
+            <Link href={`/claims/${EGGS_DOSE}`}>association appears at high but not moderate
+            intake</Link>, the caveat held as its own node rather than folded in.
+          </p>
         </div>
 
         <div className={s.qa}>
@@ -253,8 +285,8 @@ export default function FlfPage() {
             retired and re-derived rather than silently carried forward.
           </p>
           <Quote cite="§22">
-            The world changes. New evidence emerges, studies are retracted, predictions are borne out
-            or refuted. The admin updates assessments when the underlying situation changes.
+            The world changes: new evidence emerges, studies are retracted, predictions come due. The
+            admin updates assessments when the underlying situation changes.
           </Quote>
           <p className={s.gap}>
             <b>What we do not do yet.</b> The history we keep is mainly at the assessment level. We do
@@ -281,9 +313,10 @@ export default function FlfPage() {
             source&rsquo;s framing, under a constitution that binds it to weigh evidence rather than
             authority or presentation.
           </p>
-          <Quote cite="§5">
-            When assessing a claim, the admin examines the evidence and reasoning directly, not
-            merely the reputation of who made the claim.
+          <Quote cite="§9">
+            The admin assesses claims on the merits. Where a source is relevant, the admin opens it
+            and reads it whole: the methods, the data, the reasoning, not the abstract and the
+            headline.
           </Quote>
         </div>
 
@@ -311,7 +344,7 @@ export default function FlfPage() {
           </p>
           <Quote cite="§19">
             What earns high importance is that getting the claim wrong would be consequential and the
-            claim is genuinely contested or heavily consulted, a live crux, not settled scaffolding.
+            claim is contested or heavily consulted: a live crux, not settled scaffolding.
           </Quote>
           <p className={s.see}>
             See it: &ldquo;SARS-CoV-2 has a laboratory origin&rdquo; is scored as a central,
@@ -341,9 +374,10 @@ export default function FlfPage() {
             standard as everything else.
           </p>
           <Quote cite="§1">
-            The system succeeds when users can see where consensus exists and where it does not, and
-            where disagreement is empirical, and thus potentially resolvable with evidence, versus
-            where it is fundamental.
+            The admin makes the structure of the disagreement visible, so that users can see what a
+            claim rests on, where consensus exists and where it does not, and whether each point of
+            disagreement is empirical, and so potentially resolvable with evidence, or reflects
+            differences of values or definitions.
           </Quote>
         </div>
 
@@ -352,17 +386,28 @@ export default function FlfPage() {
           <p>
             The status vocabulary is about the state of the evidence rather than a bare probability.
             A claim is verified, supported, contested, unsupported, contradicted, or unknown, each
-            defined by how the evidence stands, and the confidence attached to an assessment is the
-            steward&rsquo;s confidence in that reading. Effort scales with importance, and before it
-            records a verdict the steward runs a second pass that tries to refute its own conclusion.
-            On the limits of any single analyst, our answer is the organization itself: separate
-            agents with separate duties, a curator checking for consistency across claims, and
-            heavier scrutiny reserved for the most important contested claims.
+            defined by how the evidence stands. Two numbers may sit beside a status, answering
+            different questions: a verdict confidence, always recorded, is how sure the steward is
+            that the status is the right reading of the evidence; a credence, recorded only where a
+            single number is an honest summary, is the probability that the claim itself is true. A
+            claim can be confidently contested, the disagreement near-certainly real while nobody
+            knows the answer, and where one number would be false precision the credence is omitted,
+            which is itself information. Effort scales with importance, and before it records a
+            verdict the steward runs a second pass that tries to refute its own conclusion. On the
+            limits of any single analyst, our answer is the organization itself: separate agents with
+            separate duties, coherence sweeps that check assessments against each other across the
+            graph, and heavier scrutiny reserved for the most important contested claims.
           </p>
-          <Quote cite="§7">
-            The admin does not round uncertain claims up to verified or down to false. The
-            graph&rsquo;s value comes from honest representation of the state of knowledge.
+          <Quote cite="§10">
+            The admin does not round uncertain claims up to &ldquo;verified&rdquo; or down to
+            &ldquo;false.&rdquo; The graph&rsquo;s value comes from honest representation of the state
+            of knowledge.
           </Quote>
+          <p className={s.see}>
+            See it: the egg-consumption claim is held confidently contested, with a verdict
+            confidence of 0.85 while its credence sits at 0.33, on{" "}
+            <Link href={`/claims/${EGGS}`}>its page</Link>.
+          </p>
           <p className={s.gap}>
             <b>What we do not claim.</b> We have not built explicit modeling of out-of-model error,
             and we would not claim to have solved calibration. The multi-agent design is our current
@@ -384,8 +429,16 @@ export default function FlfPage() {
           </p>
           <Quote cite="§1">
             An admin who clearly maps an unresolvable disagreement has done their job well. An admin
-            who imposes false resolution has failed.
+            who imposes false resolution has failed, and so has an admin who withholds a
+            well-supported verdict out of misplaced even-handedness.
           </Quote>
+          <p className={s.see}>
+            See it: the LHC black-hole safety claim is assessed{" "}
+            <Link href={`/claims/${BLACK_HOLE}`}>supported</Link>, while the objection that survives
+            scrutiny is recorded as a{" "}
+            <Link href={`/claims/${BH_METHOD}`}>methodological dispute about proof under small
+            probabilities of catastrophe</Link>, not as evidence of danger.
+          </p>
         </div>
       </section>
 
@@ -395,12 +448,14 @@ export default function FlfPage() {
         <h2>The honest boundary</h2>
         <p>
           Some of the machinery the brief asks about is deployed but not yet proven. Contributions,
-          conflict review, escalation, and arbitration are built and running, but we have not tested
-          them against real bad-faith contributions at scale. We describe that layer as something we
-          expect to work and are still hardening, not something we have demonstrated. We have not yet
-          added adversarial agents, and we think we will need them to handle bad-faith public
-          contributions robustly. On this subproblem we do not claim to be ahead of people who have
-          worked on it more directly, and we are looking to learn from them.
+          conflict review, escalation, arbitration, and an audit function that samples decisions and
+          watches for coordinated manipulation are all built and running, but we have not tested them
+          against real bad-faith contributions at scale. We describe that layer as something we expect
+          to work and are still hardening, not something we have demonstrated. The graph does not yet
+          field dedicated adversarial agents that probe public contributions for manipulation, and we
+          think it will need them to be robust; the steward&rsquo;s self-refuting second pass and the
+          audit role are a start, not a finish. On this subproblem we do not claim to be ahead of
+          people who have worked on it more directly, and we are looking to learn from them.
         </p>
         <p>
           One design choice is worth stating, because it is deliberate rather than unfinished. We did
