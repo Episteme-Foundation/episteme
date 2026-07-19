@@ -27,15 +27,6 @@
   min-width: 0;
 }
 
-/* ClaimView's "assessment history" is a Tufte sidenote that floats out into the
-   right margin (margin-right: -17rem) — which is exactly where our rails live.
-   The centre should be about the assessment itself, so we hide ClaimView's own
-   copy and re-home the history as a HistoryRail in the right column, below the
-   dependents, where it expands in normal flow without colliding. */
-.center :global(.sidenote) {
-  display: none;
-}
-
 /* the rails stick alongside the reading flow */
 .leftRail,
 .rightRail {
@@ -160,21 +151,6 @@
 .dot:global(.st-unassessed) {
   background: transparent;
   border: 1px dashed var(--st-unassessed);
-}
-
-/* ----- right: assessment-history rail (below dependents) -----------------
-   Reproduces the original Tufte sidenote voice (globals.css .sidenote): quiet
-   sans at sidenote scale, small-caps header on its own line. It just no longer
-   floats — it sits in the rail flow so it drops below the dependents. */
-.histNote {
-  font-family: var(--sans);
-  font-size: 0.76rem;
-  line-height: 1.45;
-  color: var(--ink-soft);
-}
-.histNote :global(.sc) {
-  display: block;
-  margin-bottom: 0.25rem;
 }
 
 /* ----- the "expand on demand" toggle ------------------------------------- */
