@@ -1,6 +1,6 @@
 {
-  "id": "061ed647-7972-49a8-abbd-f929f61fa65a",
-  "prevId": "08d250ab-c154-4cb8-8bbf-f6740045b36f",
+  "id": "84fd13ab-fa62-4a77-bcbd-fff5392fc5c7",
+  "prevId": "061ed647-7972-49a8-abbd-f929f61fa65a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -342,6 +342,130 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.argument_evaluations": {
+      "name": "argument_evaluations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "argument_id": {
+          "name": "argument_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assessment_id": {
+          "name": "assessment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_current": {
+          "name": "is_current",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'claim_steward'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_argument_evaluations_argument": {
+          "name": "idx_argument_evaluations_argument",
+          "columns": [
+            {
+              "expression": "argument_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_argument_evaluations_current": {
+          "name": "idx_argument_evaluations_current",
+          "columns": [
+            {
+              "expression": "argument_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"argument_evaluations\".\"is_current\" = true",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "argument_evaluations_argument_id_arguments_id_fk": {
+          "name": "argument_evaluations_argument_id_arguments_id_fk",
+          "tableFrom": "argument_evaluations",
+          "tableTo": "arguments",
+          "columnsFrom": [
+            "argument_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "argument_evaluations_assessment_id_assessments_id_fk": {
+          "name": "argument_evaluations_assessment_id_assessments_id_fk",
+          "tableFrom": "argument_evaluations",
+          "tableTo": "assessments",
+          "columnsFrom": [
+            "assessment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

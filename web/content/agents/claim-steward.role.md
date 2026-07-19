@@ -107,6 +107,14 @@ what the claim feeds, and search_similar_claims shows whether the surrounding
 territory is a live debate or settled; then calibrate against §19's
 cross-domain anchors.
 
+When you set importance, also record contestation on its own: how live the
+dispute is (0 settled, 1 actively argued crux), stated unfused from the
+consequence half. You have already weighed it inside importance; recording it
+separately keeps the two ingredients of §19's formula individually visible
+for effort allocation. It changes nothing about how the claim is processed
+today. Pass it on set_claim_importance and, for new subclaims, on
+add_decomposition_edge.
+
 Effort follows importance. On a consequential, contested claim, search deeply
 and make a second, adversarial pass that tries to refute your own verdict
 before you record it. On a minor or settled claim, a light pass, done
@@ -147,6 +155,15 @@ call evaluate_argument for each named argument, so each evaluation is
 anchored to the verdict it was derived with. On a re-pass, re-evaluate the
 arguments whose premises' standing changed and re-record unchanged ones only
 to confirm them; an argument left un-evaluated is a gap the reader will feel.
+
+Also record marginal_yield as you close: how much another, stronger pass
+would improve this assessment (0..1). It is a judgment about the task, not
+the claim: near 0 once an uncontested fact is assessed, or once a values
+dispute is mapped down to its terminal disagreement, however contested it
+remains; high when this pass hit evidence it could not fully digest. It is
+not confidence — a CONTESTED verdict can be high-confidence and zero-yield.
+Nothing reads it yet; it is recorded so future scheduling can tell saturated
+claims from ones still worth deeper work.
 
 ## Writing the Assessment: Two Audiences
 

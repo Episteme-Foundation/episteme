@@ -128,7 +128,11 @@ async function processUrlExtraction(
         // document + reach in the discourse); it seeds the Steward work-queue
         // ordering and the Steward overrides it with a considered, dependency-
         // aware judgment (#67).
-        const importance = clampImportance(claim.importance);
+        const importance = clampUnit(claim.importance);
+        // Contestation prior recorded alongside (#172 phase 1): the
+        // contestability half of the importance formula, stored unfused so the
+        // eventual stakes/yield split has data. Read by nothing yet.
+        const contestation = clampUnit(claim.contestation);
 
         const [newClaim] = await db
           .insert(claims)
@@ -136,6 +140,7 @@ async function processUrlExtraction(
             text: canonicalText,
             claimType: claim.claim_type,
             ...(importance !== undefined ? { importance } : {}),
+            ...(contestation !== undefined ? { contestation } : {}),
             embedding,
             pipelineEpoch: loadConfig().pipelineEpoch,
             createdBy: "extractor",
@@ -201,8 +206,8 @@ async function processUrlExtraction(
   }
 }
 
-/** Coerce the extractor's importance to [0, 1], or undefined (→ DB default) if absent/invalid. */
-function clampImportance(value: unknown): number | undefined {
+/** Coerce an extractor unit-interval score to [0, 1], or undefined (→ DB default) if absent/invalid. */
+function clampUnit(value: unknown): number | undefined {
   if (value === undefined || value === null) return undefined;
   const n = Number(value);
   if (!Number.isFinite(n)) return undefined;

@@ -231,6 +231,9 @@ async function materializeProposedClaim(contribution: {
       createdBy: "user",
       embedding,
       importance: proposedClaimImportancePrior,
+      // contestation stays NULL (not yet judged): intake sees no discourse
+      // context, so unlike the Extractor it has no basis for a prior; the
+      // Steward records the first real value (#172 phase 1).
       pipelineEpoch,
     })
     .returning();

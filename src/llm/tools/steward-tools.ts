@@ -33,8 +33,8 @@ import {
   enqueueCurator,
 } from "../../services/queue-service.js";
 
-/** Coerce a tool input to a clamped importance in [0, 1], or undefined if absent/invalid. */
-function clampImportance(value: unknown): number | undefined {
+/** Coerce a tool input to a clamped unit-interval score in [0, 1], or undefined if absent/invalid. */
+function clampUnit(value: unknown): number | undefined {
   if (value === undefined || value === null) return undefined;
   const n = Number(value);
   if (!Number.isFinite(n)) return undefined;
@@ -110,6 +110,19 @@ export function getStewardToolDefinitions(): Tool[] {
               "the CLAIM'S TRUTH: keep structural bookkeeping out of it. Refer to " +
               "subclaims by their text (quoted or paraphrased), never by bare UUID; " +
               "ids are opaque to the human readers this trace exists for.",
+          },
+          marginal_yield: {
+            type: "number",
+            description:
+              "Exit judgment (0.0-1.0): how much would another, stronger pass " +
+              "improve this assessment? Near 0 for an uncontested fact you have " +
+              "now assessed, or a values dispute mapped down to its terminal " +
+              "disagreement — more effort would not change the product. High " +
+              "when this pass hit evidence it could not fully digest (an " +
+              "unresolved empirical synthesis, sources you could not reach). " +
+              "Distinct from confidence: a saturated CONTESTED verdict can be " +
+              "high-confidence AND zero-yield. Recorded for effort allocation; " +
+              "it does not affect the verdict.",
           },
         },
         required: ["claim_id", "status", "confidence", "assessment", "reasoning_trace"],
@@ -356,6 +369,16 @@ export function getStewardToolDefinitions(): Tool[] {
               "subclaim an un-decomposed embedded stub, so score uncontested " +
               "bedrock low. Defaults to 0.5 if omitted.",
           },
+          contestation: {
+            type: "number",
+            description:
+              "How live the dispute around this subclaim is (0.0-1.0), recorded " +
+              "separately from importance: ~0 for settled bedrock nobody " +
+              "disputes, ~1 for an actively argued crux. This is the " +
+              "contestability half of the importance formula stated on its own; " +
+              "it is recorded for effort allocation and does not affect " +
+              "processing yet.",
+          },
         },
         required: ["parent_id", "child_text", "relation", "reasoning"],
       },
@@ -380,6 +403,17 @@ export function getStewardToolDefinitions(): Tool[] {
             description:
               "Importance score in [0, 1]. Anchor against constitution §19: " +
               "~0.9 central, ~0.6 major, ~0.35 notable, ~0.15 minor/settled.",
+          },
+          contestation: {
+            type: "number",
+            description:
+              "How live the dispute around the claim is (0.0-1.0), recorded " +
+              "separately from importance: ~0 for a settled fact no informed " +
+              "person disputes (even a foundational one), ~1 for an actively " +
+              "argued crux with credible parties on both sides. This is the " +
+              "contestability half of the importance formula stated on its own; " +
+              "it is recorded for effort allocation and does not affect " +
+              "processing yet.",
           },
           reasoning: {
             type: "string",
@@ -480,6 +514,9 @@ export async function executeStewardTool(
         // signal from "credence that the claim is false".
         const claimCredence =
           typeof input.claim_credence === "number" ? input.claim_credence : null;
+        // Optional exit judgment for effort allocation (#172 phase 1): recorded
+        // on the assessment row, read by nothing yet. null = not stated.
+        const marginalYield = clampUnit(input.marginal_yield) ?? null;
         const reasoningTrace = input.reasoning_trace as string;
         // Reader-facing assessment (still persisted to the `summary` column). Also
         // accept the legacy `summary` key so an in-flight tool call from the older
@@ -513,6 +550,7 @@ export async function executeStewardTool(
           status,
           confidence,
           claimCredence,
+          marginalYield,
           summary,
           reasoningTrace,
           subclaimSummary: prev?.subclaimSummary ?? {},
@@ -583,23 +621,35 @@ export async function executeStewardTool(
 
       case "set_claim_importance": {
         const claimId = input.claim_id as string;
-        const importance = clampImportance(input.importance);
+        const importance = clampUnit(input.importance);
         if (importance === undefined) {
           return JSON.stringify({
             success: false,
             message: "importance must be a number in [0, 1].",
           });
         }
+        // Contestation is recorded alongside importance when the Steward states
+        // it (#172 phase 1); absent means "leave the stored judgment as is",
+        // never "reset to unjudged".
+        const contestation = clampUnit(input.contestation);
 
         const db = getDb();
         await db
           .update(claims)
-          .set({ importance, updatedAt: new Date() })
+          .set({
+            importance,
+            ...(contestation !== undefined ? { contestation } : {}),
+            updatedAt: new Date(),
+          })
           .where(eq(claims.id, claimId));
 
         return JSON.stringify({
           success: true,
-          message: `Importance of claim ${claimId} set to ${importance}.`,
+          message:
+            `Importance of claim ${claimId} set to ${importance}.` +
+            (contestation !== undefined
+              ? ` Contestation recorded as ${contestation}.`
+              : ""),
         });
       }
 
@@ -865,7 +915,10 @@ export async function executeStewardTool(
         const relation = input.relation as string;
         const reasoning = input.reasoning as string;
         const argumentId = (input.argument_id as string) ?? null;
-        const importance = clampImportance(input.importance);
+        const importance = clampUnit(input.importance);
+        // Recorded on the new subclaim for the eventual stakes/yield split
+        // (#172 phase 1); the deferral gate below still reads only importance.
+        const contestation = clampUnit(input.contestation);
 
         const db = getDb();
 
@@ -901,6 +954,7 @@ export async function executeStewardTool(
             claimType: "empirical_derived",
             embedding: embedding ?? undefined,
             ...(importance !== undefined ? { importance } : {}),
+            ...(contestation !== undefined ? { contestation } : {}),
             ...(gated ? { stewardState: "deferred" } : {}),
             pipelineEpoch,
             createdBy: "claim_steward",

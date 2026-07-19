@@ -399,11 +399,12 @@ fifteen words, rarely more than twenty-five.
   low-confidence extractions as a backstop against non-claims entering the
   graph.
 - **importance**: 0 to 1, a provisional prior (below).
+- **contestation**: 0 to 1, a provisional prior (below).
 - **source_location**: where in the document the span occurs (a section or
   position reference), when the format makes that meaningful; the browser
   extension uses it to anchor claims back onto the page.
 
-## The importance prior
+## The importance and contestation priors
 
 Importance, consequence-if-wrong times contestability, is the Steward's
 judgment to make with graph-wide context (§19). Seeing one document, you
@@ -415,6 +416,13 @@ roughly 0.9 central, 0.6 major, 0.35 notable, 0.15 minor or settled. One
 rule bears repeating: a settled, uncontested fact scores low even when the
 document's whole logic leans on it. And importance is not confidence: a
 claim can be certainly well-formed and still minor.
+
+Also record contestation on its own: how live the dispute around the
+proposition is in the discourse, regardless of its stakes. A settled fact
+stated in passing sits near 0 even when everything leans on it; an actively
+argued crux with credible parties on both sides sits near 1. You have
+already weighed this inside importance; here you state it unfused, so the
+two ingredients of the importance formula stay separately visible.
 
 Emit only claims that pass the bar. A short list is the expected result; do
 not pad.

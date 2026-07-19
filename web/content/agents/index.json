@@ -8,8 +8,8 @@
     "invokedWhen": "A URL or document is submitted for ingestion.",
     "model": "Claude Sonnet 5",
     "hasConstitution": true,
-    "roleChars": 5031,
-    "fullChars": 45511
+    "roleChars": 5537,
+    "fullChars": 46017
   },
   {
     "key": "matcher",
@@ -44,8 +44,8 @@
     "invokedWhen": "When a claim is first onboarded (structure + assess), a subclaim changes, evidence arrives, a contribution is accepted, or on periodic refresh.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 12408,
-    "fullChars": 52888
+    "roleChars": 13440,
+    "fullChars": 53920
   },
   {
     "key": "curator",
