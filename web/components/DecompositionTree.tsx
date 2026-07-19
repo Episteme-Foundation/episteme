@@ -100,12 +100,15 @@ function Node({ node, texts }: { node: TreeNode; texts: Map<string, string> }) {
             {node.text}
           </span>{" "}
           <Link className="plain" href={`/claims/${node.id}`} title="open this claim" style={{ color: "var(--faint)" }}>↗</Link>
+          {/* "shown above" pointed at a first occurrence the reader has
+              usually never expanded; name what the node is instead (#197),
+              in the map's vocabulary ("shared"). */}
           {node.subtree_collapsed && (
             <span
-              title="shared subclaim: its decomposition appears at its first occurrence in this tree"
+              title="A shared subclaim: it belongs to more than one branch of this decomposition, and its own subclaims are listed at its other occurrence. ↗ opens its page."
               style={{ color: "var(--faint)", fontSize: "0.85em", fontStyle: "italic" }}
             >
-              {" "}· shown above
+              {" "}· shared subclaim
             </span>
           )}
           {node.children_truncated && (
