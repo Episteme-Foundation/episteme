@@ -122,7 +122,13 @@ export async function drainLocalQueues(opts: DrainOptions = {}): Promise<DrainSt
         processed[name] = (processed[name] ?? 0) + 1;
         opts.onEvent?.({ seq, queue: name, message, ok: true, durationMs: now() - startedAt });
       } catch (err) {
-        if (err instanceof LlmBudgetExceededError) throw err;
+        if (err instanceof LlmBudgetExceededError) {
+          // The message was dequeued before the handler ran; without this it
+          // would be silently dropped (#218). Put it back at the front so the
+          // next drain — after the budget pause — retries it first.
+          (getLocalQueue(name) as unknown[]).unshift(message);
+          throw err;
+        }
         errors[name] = (errors[name] ?? 0) + 1;
         opts.onEvent?.({
           seq,

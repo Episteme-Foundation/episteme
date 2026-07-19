@@ -208,6 +208,10 @@ describe("escalate_to_arbitrator", () => {
     expect(mocks.updateSets).toContainEqual({
       reviewStatus: "escalated",
       escalationReason: "credible sources conflict; needs deeper adjudication",
+      // Escalation opens a new processing phase, so the recovery claim and
+      // attempt counter reset with it (#218).
+      reviewClaimedAt: null,
+      reviewAttempts: 0,
     });
   });
 });

@@ -8,6 +8,7 @@ import { getDb, closeDb } from "./db/client.js";
 import { startPoller } from "./workers/poller.js";
 import { startLocalRunner } from "./workers/local-runner.js";
 import { startAuditScheduler } from "./workers/audit-scheduler.js";
+import { startRecoverySweep } from "./workers/recovery-sweep.js";
 import { handleClaimPipeline } from "./workers/claim-pipeline.js";
 import { handleUrlExtraction } from "./workers/url-extraction.js";
 import { handleContributionMessage } from "./workers/contribution-pipeline.js";
@@ -105,6 +106,11 @@ async function main() {
   // decision sweeps and stale-suspension re-reviews. Its dedupe keys live in
   // the DB, so running it in every task is safe — exactly one request wins.
   pollers.push(startAuditScheduler({ logger }));
+
+  // The recovery sweep (#218) re-enqueues review/arbitration work whose
+  // in-memory message was lost (restart, dropped on error). The pipeline
+  // handlers' atomic claims dedupe, so running it in every task is safe.
+  pollers.push(startRecoverySweep({ logger }));
 
   // Graceful shutdown
   const shutdown = async () => {
