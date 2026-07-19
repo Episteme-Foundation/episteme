@@ -84,7 +84,7 @@ Every named argument carries a written form: one to three sentences stating the 
 
 The judgment the written form withholds lives beside it, in the argument's evaluation. Every named argument carries one, maintained by the claim's steward within the claim's assessment rather than as a separate verdict, so it tracks the premises as their assessments change: whether the inference goes through granting its premises, and which premises, as currently assessed, the argument lives or dies on. The evaluation is held to the same standards as any assessment: its reasoning is visible, it is open to challenge, and it is revised when the claim is reassessed. It is reader-facing prose in the voice of the graph (§12), never a discussion surface; exchanges with contributors live in the contribution record.
 
-When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as a PRESUPPOSES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
+When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as an ASSUMES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
 
 ### 8. Uniformity Across Claim Types
 
@@ -222,7 +222,7 @@ When the admin cannot fully assess a claim, because evidence is missing or the a
 
 ### 21. Coherence Across the Graph
 
-The graph's assessments must cohere along its edges. Recorded relationships carry logical commitments: a claim cannot stand "verified" while a premise it presupposes stands "contradicted"; two claims joined by a contradiction edge cannot both be "verified"; credences on rival explanations of the same event must be jointly tenable; a claim's assessment must be a defensible function of its subclaims' assessments and the direct evidence.
+The graph's assessments must cohere along its edges. Recorded relationships carry logical commitments: a claim cannot stand "verified" while a premise it rests on stands "contradicted"; two claims joined by a contradiction edge cannot both be "verified"; credences on rival explanations of the same event must be jointly tenable; a claim's assessment must be a defensible function of its subclaims' assessments and the direct evidence.
 
 Periodic sweeps hunt for incoherence. Each find is a defect in an assessment or in the structure: sometimes a verdict must change, and sometimes the discovery is that an edge mischaracterized a dependency. Either way the graph improves. Underneath this, the same evidential standards apply everywhere, so that two assessments differ only where their evidence differs, never with the temperament of the steward.
 
@@ -378,9 +378,13 @@ get_claim_subclaims: is this the proposition you need, or a near neighbor?
 When identity stays uncertain after real searching, prefer the recoverable
 error: a duplicate the Curator can merge later is cheap.
 
-Relation types: requires, supports, contradicts, specifies, defines,
-presupposes. Add a defines edge only when a term's meaning is itself disputed
-and load-bearing.
+Relation types: requires, supports, contradicts, specifies, defines, assumes.
+Pick by what the child being false would do to the parent: requires when it
+makes the parent false (a load-bearing premise), assumes when it makes the
+parent ill-posed or beside the point rather than false (a framework or scope
+premise the claim takes as given, usually settled). supports is evidence that
+moves confidence without being logically required. Add a defines edge only
+when a term's meaning is itself disputed and load-bearing.
 
 ## Arguments
 
@@ -398,7 +402,7 @@ here and only here; the written form states the inference, never a verdict on
 it, and it may carry the minor premises and steps that are not proper claims
 (§7). Rewrite it whenever the argument's subclaims change, and if you find an
 argument whose content is still just its label, write its form as part of
-your pass. A disputed framework enters as a presupposes subclaim and appears
+your pass. A disputed framework enters as an assumes subclaim and appears
 in the written form too.
 
 The judgment the written form withholds lives in the argument's evaluation
@@ -507,6 +511,15 @@ voice of §12.
   disclosure: the specific evidence and instances, how the material subclaims
   weighed, and what would change the conclusion (§11). It is still about the
   claim's truth, and still in plain prose.
+
+In both texts, when a sentence references a subclaim, link it inline as
+[[claim:<uuid>|the phrase you would use anyway]], the same syntax as argument
+written forms; the reader follows the link to that claim's own page. Prefer
+the |inline form: §12 holds, so the phrasing names what the claim says and
+the sentence reads whole without the link. A bare [[claim:<uuid>]] renders as
+the linked claim's canonical text. Link only claims that exist; do not invent
+ids. Cite source URLs in plain text where the reasoning rests on them; they
+render as links.
 
 Your own bookkeeping (matching decisions, canonical-form edits, importance
 changes, escalations) appears in neither text; route it to

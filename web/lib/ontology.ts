@@ -84,13 +84,25 @@ export function nodeStatusMeta(s: unknown) {
 }
 
 export const RELATION: Record<RelationType, { label: string; cls: string; gloss: string }> = {
-  requires:    { label: "requires",    cls: "rel-requires",    gloss: "the parent's truth depends on this" },
+  requires:    { label: "requires",    cls: "rel-requires",    gloss: "a load-bearing premise: the parent is false without it" },
   supports:    { label: "supports",    cls: "rel-supports",    gloss: "this provides evidence for the parent" },
   contradicts: { label: "contradicts", cls: "rel-contradicts", gloss: "this argues against the parent" },
   specifies:   { label: "specifies",   cls: "rel-specifies",   gloss: "a more specific version of the parent" },
   defines:     { label: "defines",     cls: "rel-defines",     gloss: "defines a key term in the parent" },
-  presupposes: { label: "presupposes", cls: "rel-presupposes", gloss: "an assumption the parent makes" },
+  assumes:     { label: "assumes",     cls: "rel-assumes",     gloss: "background the parent's framing takes as given" },
 };
+
+// Legacy alias (#205): the relation was `presupposes` until it was renamed to
+// `assumes`. Rows written before the data migration lands — or served by an API
+// that redeploys after the frontend — still carry the old token, so resolve it
+// to the same meta rather than rendering an unlabelled edge during the race.
+(RELATION as Record<string, (typeof RELATION)["assumes"]>).presupposes = RELATION.assumes;
+
+// True for both the current `assumes` token and its legacy `presupposes` form,
+// so the map's special treatment survives the same deploy race.
+export function isAssumesRelation(rel: string | null | undefined): boolean {
+  return rel === "assumes" || rel === "presupposes";
+}
 
 // Claim types (constitution §2 and §8: the system treats all of these
 // uniformly). The two empirical variants are the pipeline's split of the
@@ -320,7 +332,9 @@ export const EFFECT: Record<Effect, { label: string; cls: string; gloss: string 
 export const EFFECT_ORDER: Effect[] = ["supports", "uncertain", "against", "weak"];
 
 // Only `contradicts` reverses polarity. requires / supports / specifies /
-// defines / presupposes are all structurally affirmative edges.
+// defines / assumes are all structurally affirmative edges (a failed
+// assumption leaves the parent ill-posed, not argued-against, so it must not
+// flip the sign).
 function flipsPolarity(relation: string | null): boolean {
   return relation === "contradicts";
 }

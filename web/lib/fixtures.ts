@@ -120,9 +120,9 @@ const FLAGSHIP: ClaimDetail = {
       id: "savings-erosion-2022",
       text: "Inflation in 2022 materially eroded the value of US household cash savings.",
       claim_type: "empirical_derived",
-      relation_type: "presupposes",
+      relation_type: "assumes",
       reasoning:
-        "Erosion of cash savings presupposes that prices rose materially over the year; the size of the loss is read straight off the inflation rate this claim states.",
+        "Erosion of cash savings assumes that prices rose materially over the year; the size of the loss is read straight off the inflation rate this claim states.",
       assessment_status: "supported",
       assessment_confidence: 0.72,
       assessment_credence: 0.85,

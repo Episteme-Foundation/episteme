@@ -27,6 +27,7 @@ import {
   setArgumentEvaluation,
 } from "../../services/argument-service.js";
 import { loadConfig } from "../../config.js";
+import { RELATION_TYPES, RELATION_GUIDANCE } from "../../schemas/common.js";
 import {
   enqueueSteward,
   enqueueClaimPipeline,
@@ -260,7 +261,7 @@ export function getStewardToolDefinitions(): Tool[] {
               "qualifications. 'fails': the conclusion does not follow even " +
               "granting the premises. 'contested': the validity of the " +
               "argument's framework is itself live-disputed (it should then " +
-              "also carry a presupposes subclaim, §7).",
+              "also carry an assumes subclaim, §7).",
           },
           evaluation: {
             type: "string",
@@ -299,15 +300,8 @@ export function getStewardToolDefinitions(): Tool[] {
           },
           relation: {
             type: "string",
-            enum: [
-              "requires",
-              "supports",
-              "contradicts",
-              "specifies",
-              "defines",
-              "presupposes",
-            ],
-            description: "Relationship type",
+            enum: [...RELATION_TYPES],
+            description: RELATION_GUIDANCE,
           },
           reasoning: {
             type: "string",
@@ -342,15 +336,8 @@ export function getStewardToolDefinitions(): Tool[] {
           },
           relation: {
             type: "string",
-            enum: [
-              "requires",
-              "supports",
-              "contradicts",
-              "specifies",
-              "defines",
-              "presupposes",
-            ],
-            description: "Relationship type",
+            enum: [...RELATION_TYPES],
+            description: RELATION_GUIDANCE,
           },
           reasoning: {
             type: "string",

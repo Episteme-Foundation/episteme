@@ -117,7 +117,7 @@ describe("tree-service", () => {
       ]);
       mockRawQuery.mockResolvedValueOnce([
         edgeRow("a", "shared", { relation_type: "supports" }),
-        edgeRow("b", "shared", { relation_type: "presupposes" }),
+        edgeRow("b", "shared", { relation_type: "assumes" }),
       ]);
       mockRawQuery.mockResolvedValueOnce([edgeRow("shared", "leaf")]);
       mockRawQuery.mockResolvedValueOnce([]); // leaf level
@@ -130,7 +130,7 @@ describe("tree-service", () => {
       expect(underA.id).toBe("shared");
       expect(underA.relation_type).toBe("supports");
       expect(underB.id).toBe("shared");
-      expect(underB.relation_type).toBe("presupposes");
+      expect(underB.relation_type).toBe("assumes");
 
       // ...but the subtree is rendered once: the second occurrence is a
       // flagged stub instead of a duplicate of the whole subtree.

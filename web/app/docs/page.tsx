@@ -75,7 +75,7 @@ export default function DocsPage() {
           </li>
           <li>
             <strong>Decomposition</strong>: typed edges (requires, supports, contradicts,
-            specifies, defines, presupposes) linking a claim to the subclaims it rests on.
+            specifies, defines, assumes) linking a claim to the subclaims it rests on.
           </li>
           <li>
             <strong>Assessment</strong>: one of six verdicts (verified, supported,

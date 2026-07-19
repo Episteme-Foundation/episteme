@@ -37,14 +37,44 @@ export const assessmentStatusEnum = z.enum([
   "unknown",
 ]);
 
-export const decompositionRelationEnum = z.enum([
+// The decomposition relation vocabulary — the single source of truth the tool
+// schemas and validators build on, so the enum and the LLM guidance never drift
+// apart. `assumes` was named `presupposes` until #205; the old token collected
+// uncontested background far more than the contested frameworks §7 reserved it
+// for, and "assumes" matches the dominant real usage.
+export const RELATION_TYPES = [
   "requires",
   "supports",
   "contradicts",
   "specifies",
   "defines",
-  "presupposes",
-]);
+  "assumes",
+] as const;
+
+export const decompositionRelationEnum = z.enum(RELATION_TYPES);
+
+// Guidance handed to the LLM at the moment it picks a relation token. The tool
+// schemas previously described this enum as only "Relationship type", which
+// left `requires` and `assumes` to collapse into each other (#205). The fix is
+// one discriminating question — what the child's falsity does to the parent —
+// which partitions the vocabulary cleanly and generalizes to cases no example
+// list anticipates.
+export const RELATION_GUIDANCE =
+  "How the child bears on the parent. Decide by what the child being false " +
+  "would do to the parent. " +
+  "'requires': the parent is false without it — a load-bearing premise in the " +
+  "inference. " +
+  "'supports': evidence that raises confidence in the parent without being " +
+  "logically required. " +
+  "'contradicts': evidence or argument that weighs against the parent. " +
+  "'assumes': background the parent's framing takes as given, so if it fails " +
+  "the parent is ill-posed or beside the point rather than simply false — a " +
+  "framework or scope premise, usually settled. When such an assumption is " +
+  "itself disputed in the discourse it still enters here, and the argument's " +
+  "evaluation carries the 'contested' verdict (§7). " +
+  "'specifies': a narrower or more precise version of part of the parent. " +
+  "'defines': fixes the meaning of a term in the parent, only when that " +
+  "meaning is itself disputed and load-bearing.";
 
 export const stanceEnum = z.enum(["for", "against", "neutral"]);
 

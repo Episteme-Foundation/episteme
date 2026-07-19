@@ -20,15 +20,9 @@ import {
   reassignInstance,
 } from "../../services/reconciliation-service.js";
 import { enqueueSteward } from "../../services/queue-service.js";
+import { RELATION_TYPES, RELATION_GUIDANCE } from "../../schemas/common.js";
 
-const RELATION_ENUM = [
-  "requires",
-  "supports",
-  "contradicts",
-  "specifies",
-  "defines",
-  "presupposes",
-] as const;
+const RELATION_ENUM = RELATION_TYPES;
 
 export function getCuratorToolDefinitions(): Tool[] {
   return [
@@ -87,7 +81,7 @@ export function getCuratorToolDefinitions(): Tool[] {
         properties: {
           parent_id: { type: "string", description: "Parent claim UUID" },
           child_id: { type: "string", description: "Child (subclaim) UUID" },
-          relation: { type: "string", enum: [...RELATION_ENUM], description: "Relationship type" },
+          relation: { type: "string", enum: [...RELATION_ENUM], description: RELATION_GUIDANCE },
           reasoning: { type: "string", description: "Why this edge holds" },
         },
         required: ["parent_id", "child_id", "relation", "reasoning"],
@@ -137,7 +131,7 @@ export function getCuratorToolDefinitions(): Tool[] {
         properties: {
           parent_id: { type: "string", description: "The claim that would gain the subclaim" },
           child_id: { type: "string", description: "The existing claim to suggest as a subclaim" },
-          relation: { type: "string", enum: [...RELATION_ENUM], description: "Suggested relationship type" },
+          relation: { type: "string", enum: [...RELATION_ENUM], description: `Suggested relationship type. ${RELATION_GUIDANCE}` },
           reasoning: { type: "string", description: "Why this dependency likely holds" },
         },
         required: ["parent_id", "child_id", "relation", "reasoning"],

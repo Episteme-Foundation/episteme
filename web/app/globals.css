@@ -326,7 +326,8 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 .rel-contradicts { color: var(--st-contradicted); }
 .rel-specifies   { color: var(--muted); }
 .rel-defines     { color: var(--link); }
-.rel-presupposes { color: var(--st-contested); }
+.rel-assumes,
+.rel-presupposes { color: var(--st-contested); } /* .rel-presupposes: legacy alias, #205 */
 
 /* ==========================================================================
    Claim view

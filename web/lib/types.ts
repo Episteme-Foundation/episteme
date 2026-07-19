@@ -16,7 +16,7 @@ export type Stance = "for" | "against" | "neutral";
 
 export type RelationType =
   | "requires" | "supports" | "contradicts"
-  | "specifies" | "defines" | "presupposes";
+  | "specifies" | "defines" | "assumes";
 
 // Steward verdict on a named argument's inference (issue #173): does it go
 // through granting its premises? "contested" means the framework's validity

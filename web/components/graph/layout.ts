@@ -3,6 +3,7 @@ import type {
   Stance, TreeNode,
 } from "@/lib/types";
 import { orderByMention } from "@/lib/claim-links";
+import { isAssumesRelation } from "@/lib/ontology";
 
 // ---------------------------------------------------------------------------
 // The map view's layout engine (issue #79, "The View from a Claim").
@@ -267,14 +268,14 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
   misc.push(depLabel);
 
   // ---- downward: children grouped by argument ------------------------------
-  // Presupposition edges break the vertical grammar deliberately: a framework
+  // Assumption edges break the vertical grammar deliberately: a framework
   // premise sits BESIDE the claim (a sidenote), not beneath it in a lane.
   const presup: TreeNode[] = [];
   const laneChildren: TreeNode[] = [];
   for (const c of children) {
     if (seen.has(c.id)) continue;
     seen.add(c.id);
-    if (c.relation_type === "presupposes" && presup.length < 3) presup.push(c);
+    if (isAssumesRelation(c.relation_type) && presup.length < 3) presup.push(c);
     else laneChildren.push(c);
   }
 
@@ -426,7 +427,7 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
     gx += g.w + GRPGAP;
   }
 
-  // ---- presupposition sidenotes (left flank of the focus) ------------------
+  // ---- assumption sidenotes (left flank of the focus) ----------------------
   presup.forEach((p, i) => {
     const sx = -(W.focus / 2 + 88 + W.side / 2);
     const sy = yFocus + 4 + i * (H.side + 12);
@@ -434,9 +435,9 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
     edges.push({
       x1: -W.focus / 2, y1: yFocus + focusH / 2,
       x2: sx + W.side / 2, y2: sy + H.side / 2,
-      rel: "presupposes", ids: [p.id], horiz: true,
+      rel: "assumes", ids: [p.id], horiz: true,
     });
-    labels.push({ x: (-W.focus / 2 + sx + W.side / 2) / 2, y: yFocus + focusH / 2 - 12 + i * (H.side + 12), rel: "presupposes", text: "presupposes" });
+    labels.push({ x: (-W.focus / 2 + sx + W.side / 2) / 2, y: yFocus + focusH / 2 - 12 + i * (H.side + 12), rel: "assumes", text: "assumes" });
   });
 
   // ---- the focus card -------------------------------------------------------
@@ -515,7 +516,7 @@ export function defaultExpanded(detail: ClaimDetail, compact: boolean): Set<stri
   const cap = compact ? 2 : 3;
   for (const c of detail.tree?.children ?? []) {
     if (out.size >= cap) break;
-    if (c.children.length && c.relation_type !== "presupposes") out.add(c.id);
+    if (c.children.length && !isAssumesRelation(c.relation_type)) out.add(c.id);
   }
   return out;
 }

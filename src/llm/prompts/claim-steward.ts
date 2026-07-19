@@ -58,9 +58,13 @@ get_claim_subclaims: is this the proposition you need, or a near neighbor?
 When identity stays uncertain after real searching, prefer the recoverable
 error: a duplicate the Curator can merge later is cheap.
 
-Relation types: requires, supports, contradicts, specifies, defines,
-presupposes. Add a defines edge only when a term's meaning is itself disputed
-and load-bearing.
+Relation types: requires, supports, contradicts, specifies, defines, assumes.
+Pick by what the child being false would do to the parent: requires when it
+makes the parent false (a load-bearing premise), assumes when it makes the
+parent ill-posed or beside the point rather than false (a framework or scope
+premise the claim takes as given, usually settled). supports is evidence that
+moves confidence without being logically required. Add a defines edge only
+when a term's meaning is itself disputed and load-bearing.
 
 ## Arguments
 
@@ -78,7 +82,7 @@ here and only here; the written form states the inference, never a verdict on
 it, and it may carry the minor premises and steps that are not proper claims
 (§7). Rewrite it whenever the argument's subclaims change, and if you find an
 argument whose content is still just its label, write its form as part of
-your pass. A disputed framework enters as a presupposes subclaim and appears
+your pass. A disputed framework enters as an assumes subclaim and appears
 in the written form too.
 
 The judgment the written form withholds lives in the argument's evaluation

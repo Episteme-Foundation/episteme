@@ -55,9 +55,13 @@ get_claim_subclaims: is this the proposition you need, or a near neighbor?
 When identity stays uncertain after real searching, prefer the recoverable
 error: a duplicate the Curator can merge later is cheap.
 
-Relation types: requires, supports, contradicts, specifies, defines,
-presupposes. Add a defines edge only when a term's meaning is itself disputed
-and load-bearing.
+Relation types: requires, supports, contradicts, specifies, defines, assumes.
+Pick by what the child being false would do to the parent: requires when it
+makes the parent false (a load-bearing premise), assumes when it makes the
+parent ill-posed or beside the point rather than false (a framework or scope
+premise the claim takes as given, usually settled). supports is evidence that
+moves confidence without being logically required. Add a defines edge only
+when a term's meaning is itself disputed and load-bearing.
 
 ## Arguments
 
@@ -75,7 +79,7 @@ here and only here; the written form states the inference, never a verdict on
 it, and it may carry the minor premises and steps that are not proper claims
 (§7). Rewrite it whenever the argument's subclaims change, and if you find an
 argument whose content is still just its label, write its form as part of
-your pass. A disputed framework enters as a presupposes subclaim and appears
+your pass. A disputed framework enters as an assumes subclaim and appears
 in the written form too.
 
 The judgment the written form withholds lives in the argument's evaluation
@@ -184,6 +188,15 @@ voice of §12.
   disclosure: the specific evidence and instances, how the material subclaims
   weighed, and what would change the conclusion (§11). It is still about the
   claim's truth, and still in plain prose.
+
+In both texts, when a sentence references a subclaim, link it inline as
+[[claim:<uuid>|the phrase you would use anyway]], the same syntax as argument
+written forms; the reader follows the link to that claim's own page. Prefer
+the |inline form: §12 holds, so the phrasing names what the claim says and
+the sentence reads whole without the link. A bare [[claim:<uuid>]] renders as
+the linked claim's canonical text. Link only claims that exist; do not invent
+ids. Cite source URLs in plain text where the reasoning rests on them; they
+render as links.
 
 Your own bookkeeping (matching decisions, canonical-form edits, importance
 changes, escalations) appears in neither text; route it to

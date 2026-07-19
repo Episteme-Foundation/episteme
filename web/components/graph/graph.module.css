@@ -84,7 +84,8 @@
 }
 .edges path[data-rel="supports"]     { stroke: rgba(79, 125, 74, 0.55); }
 .edges path[data-rel="contradicts"]  { stroke: rgba(143, 58, 44, 0.6); stroke-dasharray: 5 3; }
-.edges path[data-rel="presupposes"]  { stroke: rgba(154, 109, 18, 0.55); stroke-dasharray: 1.5 3; }
+.edges path[data-rel="assumes"],
+.edges path[data-rel="presupposes"]  { stroke: rgba(154, 109, 18, 0.55); stroke-dasharray: 1.5 3; } /* presupposes: legacy alias, #205 */
 .edges path[data-rel="defines"]      { stroke: rgba(42, 80, 120, 0.5); }
 .edges path[data-rel="spine"]        { stroke: var(--faint); }
 .edges path.miniEdge                 { stroke: var(--rule-soft); }
@@ -227,7 +228,7 @@
 }
 .more:hover { color: var(--ink); border-color: var(--muted); }
 
-/* presupposition sidenote */
+/* assumption sidenote */
 .side {
   background: var(--paper-card);
   border: 1px solid var(--rule);
