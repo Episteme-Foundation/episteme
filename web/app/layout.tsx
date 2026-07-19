@@ -38,7 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/claims">claims</Link>
               <Link href="/docs">docs</Link>
               <Link href="/about">about</Link>
-              <Link href="/contributors">contributors</Link>
+              {/* /contributors stays reachable by URL but is not linked until
+                  the contributor experience is ready (#191) */}
               <Link href="/account">account</Link>
               <a href="https://github.com/Episteme-Foundation/episteme">source</a>
             </nav>
