@@ -49,7 +49,9 @@ export function ClaimsControls({
   q: string;
   assessed: AssessedFilter;
   imp: ImportanceFloor;
-  resultCount: number;
+  // Omitted on the pre-search overview (#206), where there is no result list to
+  // count and a number would misrepresent the territory cards as a feed.
+  resultCount?: number;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(q);
@@ -106,7 +108,11 @@ export function ClaimsControls({
         </span>
 
         <span className="filter-meta">
-          {resultCount} {resultCount === 1 ? "claim" : "claims"}
+          {typeof resultCount === "number" && (
+            <>
+              {resultCount} {resultCount === 1 ? "claim" : "claims"}
+            </>
+          )}
           {!isDefault && (
             <button type="button" className="filter-reset" onClick={() => { setQuery(""); router.push("/claims"); }}>
               reset

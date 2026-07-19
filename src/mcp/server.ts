@@ -298,7 +298,7 @@ export function buildMcpServer(ctx: McpRequestContext): McpServer {
         "parent marks exactly where the disagreement lives. Free.",
       inputSchema: {
         claim_id: z.string().uuid(),
-        max_depth: z.number().int().min(1).max(8).default(5),
+        max_depth: z.number().int().min(1).max(20).default(10),
       },
     },
     async ({ claim_id, max_depth }) => {

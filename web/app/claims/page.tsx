@@ -1,12 +1,17 @@
 import Link from "next/link";
-import { loadClaims } from "@/lib/data";
+import { loadClaims, loadTerritories } from "@/lib/data";
 import { claimTypeMeta, DEFINED_IN, IMPORTANCE_FLOORS, importanceFloorMin } from "@/lib/ontology";
 import type { ImportanceFloor } from "@/lib/ontology";
 import { StatusBadge, Unassessed, Importance } from "@/components/Assessment";
 import { Term } from "@/components/Term";
 import { ClaimsControls } from "@/components/ClaimsControls";
+import { Territories, RecentClaims } from "@/components/Territories";
 import { ProposeClaim } from "@/components/ProposeClaim";
 import type { AssessedFilter } from "@/lib/types";
+
+// How many newest claims the demoted "recently added" strip shows in the
+// overview. Small on purpose: it is orientation, not the feed.
+const RECENT_STRIP = 8;
 
 export default async function ClaimsIndex({
   searchParams,
@@ -23,6 +28,57 @@ export default async function ClaimsIndex({
     IMPORTANCE_FLOORS.find((f) => f.value === impRaw)?.value ?? "any";
   const minImportance = importanceFloorMin(impFloor);
   const filtersActive = assessed !== "assessed" || minImportance > 0;
+
+  // Before any search or filter, /claims shows what the graph CONTAINS — a few
+  // curated investigations — not a stack of newest claims that reads like search
+  // results the user never asked for (#206). A query or an active filter switches
+  // to the result list, unchanged.
+  const overview = !q && !filtersActive;
+
+  if (overview) {
+    const [territories, recent] = await Promise.all([
+      loadTerritories(),
+      loadClaims(undefined, { assessed, minImportance }),
+    ]);
+
+    return (
+      <div className="col-wide">
+        <p className="sc" style={{ marginBottom: ".5rem" }}>Browse</p>
+        <h1>Claims</h1>
+        <p className="lede" style={{ fontSize: "1.05rem" }}>
+          Claimspace is every claim the graph holds, each decomposed to its bedrock and weighed
+          against the evidence. Right now it gathers around a few investigations. Search it by
+          meaning, or start from one below.
+        </p>
+
+        <p className="sc" style={{ marginTop: "-0.4rem", marginBottom: "1.4rem" }}>
+          {territories.length} investigations · growing as claims are ingested
+        </p>
+
+        <ClaimsControls q="" assessed={assessed} imp={impFloor} />
+
+        <Territories territories={territories} />
+
+        <RecentClaims items={recent.results.slice(0, RECENT_STRIP)} />
+
+        {/* provenance: these clusters are the FLF Epistack case studies (#78) */}
+        <p
+          style={{
+            marginTop: "2.4rem",
+            fontFamily: "var(--sans)",
+            fontSize: ".82rem",
+            color: "var(--muted)",
+          }}
+        >
+          These investigations began as the case studies in the{" "}
+          <Link href="/flf">FLF Epistack competition</Link> — the origin of SARS-CoV-2, the safety
+          of micro black holes, and eggs and cardiovascular risk.
+        </p>
+
+        <ProposeClaim />
+      </div>
+    );
+  }
 
   const { results: claims, source } = await loadClaims(q, { assessed, minImportance });
 

@@ -30,9 +30,12 @@ export const claimListParams = z.object({
 
 export const claimGetParams = z.object({
   information_depth: informationDepthEnum.default("standard"),
-  // Optional cap on how deep the decomposition tree is fetched (default 5).
-  // The claim map renders three rings per view, so it asks for less.
-  depth: z.coerce.number().int().min(1).max(5).optional(),
+  // Optional cap on how deep the decomposition tree is fetched (default 10).
+  // The claim map renders three rings per view, so it asks for less. The real
+  // cost bound is the node cap (MAX_TREE_NODES), not depth: a level-at-a-time
+  // walk stops as soon as a tree runs out, so a high cap only costs on trees
+  // that are genuinely that deep. Real claims already exceed a depth of 5.
+  depth: z.coerce.number().int().min(1).max(20).optional(),
 });
 
 // GET /claims/:id/dependents (issue #102) — reverse decomposition edges,
