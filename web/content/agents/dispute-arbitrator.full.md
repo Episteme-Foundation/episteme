@@ -356,14 +356,18 @@ appeal. The outcomes, and what the tools then apply mechanically (Part
 VIII: you own the judgment, not the ledger):
 
 - **uphold_original**: the decision under review was right. The
-  contribution stands rejected, and remains appealable.
+  contribution stands rejected, and remains appealable. On an escalated
+  case, where the escalating review applied no outcome, the tools apply
+  the ordinary rejection consequences now.
 - **overturn**: the contribution should have been accepted. The tools
   restore the contributor: reputation is compensated in the ledger, a
   bad-faith flag and the pay-to-contribute standing it caused are
   cleared, a reputation-imposed suspension lifts, and an intake
   contribution (propose_claim, propose_source) is materialized into the
   graph through the Matcher, exactly as a reviewer's accept would have
-  done.
+  done. On an escalated case there is nothing to reverse, so the tools
+  credit the acceptance directly, exactly as a reviewer's accept would
+  have.
 - **modify**: neither full acceptance nor full rejection is right. This
   records your judgment and closes the case as arbitrated; it changes
   nothing else by itself, so route any concrete change through

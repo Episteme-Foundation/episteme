@@ -73,7 +73,8 @@ export function getReviewerToolDefinitions(): Tool[] {
               "deliberate misinformation), NOT for sincere contributions " +
               "rejected on the merits. This flag has real consequences " +
               "(reputation penalty, pay-to-contribute standing) and is " +
-              "appealable; when uncertain, reject without the flag or escalate.",
+              "appealable; when uncertain, reject without the flag or " +
+              "escalate. Setting it requires bad_faith_category.",
           },
           bad_faith_category: {
             type: "string",
@@ -163,8 +164,26 @@ export async function executeReviewerTool(
         // accident (#71: sincere contributions must never pay).
         const suspectedBadFaith =
           input.suspected_bad_faith === true && decision === "reject";
+        // Which kind of abuse is the reviewer's judgment; code must not
+        // fabricate one by default (#179). Refuse the call before any write
+        // so the reviewer can restate the decision with the category.
+        if (
+          suspectedBadFaith &&
+          !BAD_FAITH_CATEGORIES.includes(
+            input.bad_faith_category as (typeof BAD_FAITH_CATEGORIES)[number]
+          )
+        ) {
+          return JSON.stringify({
+            success: false,
+            error:
+              "suspected_bad_faith requires bad_faith_category (one of: " +
+              BAD_FAITH_CATEGORIES.join(", ") +
+              "). Nothing was recorded. Repeat the call naming the kind of " +
+              "abuse you found, or drop the flag if none applies.",
+          });
+        }
         const badFaithCategory = suspectedBadFaith
-          ? ((input.bad_faith_category as string) ?? "spam")
+          ? (input.bad_faith_category as string)
           : null;
 
         const db = getDb();
