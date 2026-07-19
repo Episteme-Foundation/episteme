@@ -113,7 +113,7 @@ merge that surprises you.
 
 **Standard.** *Neutral* decomposition: identify what a claim depends on, don't evaluate it. Decompose until
 reaching genuine bedrock (bedrock fact / contested empirical / value premise). Surface definitional
-subclaims (DEFINES) and hidden assumptions (PRESUPPOSES). Include both supporting and contradicting
+subclaims (DEFINES) and hidden assumptions (ASSUMES). Include both supporting and contradicting
 dependencies. Group distinct lines of reasoning into named arguments; don't manufacture arguments for simple
 claims. Don't add subclaims that aren't logically necessary. (Constitution §6, §7; Policy 2; Decomposer prompt.)
 
@@ -123,7 +123,7 @@ claims. Don't add subclaims that aren't logically necessary. (Constitution §6, 
   hits the depth cap (`maxDecompositionDepth` = 5) without ever reaching real bedrock.
 - **Evaluation leakage** — the decomposer judges validity instead of structure ("this subclaim is false…"),
   violating neutral decomposition.
-- **Missing definitional / presupposition subclaims** — fails to surface what load-bearing terms mean
+- **Missing definitional / assumption subclaims** — fails to surface what load-bearing terms mean
   ("aligned," "AGI," "sharp left turn"). These are exactly the hidden disagreements §6 wants exposed.
 - **Argument structure misuse** — dumps everything into one default argument when distinct for/against lines
   exist, or invents named arguments for a simple claim.

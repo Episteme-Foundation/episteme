@@ -266,7 +266,7 @@ export const argumentEvaluations = pgTable(
     // Does the inference go through granting its premises?
     //   holds | holds_with_caveats | fails | contested
     // "contested" is for a framework whose validity is itself live-disputed
-    // (the PRESUPPOSES case, constitution §7).
+    // (the ASSUMES case, constitution §7).
     verdict: text("verdict").notNull(),
     // Reader-facing prose (2–4 sentences, §12 voice): whether the inference
     // goes through and which premises, given their current assessments, the

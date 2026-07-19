@@ -110,7 +110,7 @@ export async function setArgumentContent(argumentId: string, content: string) {
 /**
  * Whether the inference goes through granting its premises. "contested" is
  * for a framework whose validity is itself live-disputed (constitution §7's
- * PRESUPPOSES case).
+ * ASSUMES case).
  */
 export const ARGUMENT_VERDICTS = [
   "holds",

@@ -173,7 +173,7 @@ Two design decisions follow:
 
 When the *validity of an argument's framework* is itself disputed in the
 discourse, "this framework is valid" is added as a subclaim within that
-argument, typically with a `presupposes` relation, and the evaluation marks
+argument, typically with an `assumes` relation, and the evaluation marks
 the verdict `contested`. The meta-dispute itself stays inside the claim
 layer, where decomposition, assessment, and contribution already operate.
 
@@ -188,12 +188,12 @@ triples, and self-edges are rejected outright. The relation types are:
 
 | Relation | Meaning |
 |----------|---------|
-| `requires` | The parent's truth depends on the child being true. |
-| `supports` | The child provides evidence for the parent. |
+| `requires` | The child is a load-bearing premise: the parent is false without it. |
+| `supports` | The child provides evidence for the parent without being logically required. |
 | `contradicts` | The child weighs against the parent. |
 | `specifies` | The child narrows or makes precise part of the parent. |
 | `defines` | The child fixes the meaning of a term in the parent. |
-| `presupposes` | The parent assumes the child (often a framework claim). |
+| `assumes` | Background the parent's framing takes as given (often a framework or scope claim): if it fails the parent is ill-posed rather than simply false. Renamed from `presupposes` (#205). |
 
 ### Assessments
 

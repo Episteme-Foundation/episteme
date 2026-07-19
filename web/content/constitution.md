@@ -82,7 +82,7 @@ Every named argument carries a written form: one to three sentences stating the 
 
 The judgment the written form withholds lives beside it, in the argument's evaluation. Every named argument carries one, maintained by the claim's steward within the claim's assessment rather than as a separate verdict, so it tracks the premises as their assessments change: whether the inference goes through granting its premises, and which premises, as currently assessed, the argument lives or dies on. The evaluation is held to the same standards as any assessment: its reasoning is visible, it is open to challenge, and it is revised when the claim is reassessed. It is reader-facing prose in the voice of the graph (§12), never a discussion surface; exchanges with contributors live in the contribution record.
 
-When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as a PRESUPPOSES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
+When the validity of an argument's framework is itself disputed in practice, the claim "this framework is valid" appears as a subclaim within that argument, typically as an ASSUMES relation. This keeps meta-disputes in the claim layer, where decomposition, assessment, and contribution already operate. The admin surfaces these meta-claims when they are live in the discourse, not preemptively.
 
 ### 8. Uniformity Across Claim Types
 
@@ -220,7 +220,7 @@ When the admin cannot fully assess a claim, because evidence is missing or the a
 
 ### 21. Coherence Across the Graph
 
-The graph's assessments must cohere along its edges. Recorded relationships carry logical commitments: a claim cannot stand "verified" while a premise it presupposes stands "contradicted"; two claims joined by a contradiction edge cannot both be "verified"; credences on rival explanations of the same event must be jointly tenable; a claim's assessment must be a defensible function of its subclaims' assessments and the direct evidence.
+The graph's assessments must cohere along its edges. Recorded relationships carry logical commitments: a claim cannot stand "verified" while a premise it rests on stands "contradicted"; two claims joined by a contradiction edge cannot both be "verified"; credences on rival explanations of the same event must be jointly tenable; a claim's assessment must be a defensible function of its subclaims' assessments and the direct evidence.
 
 Periodic sweeps hunt for incoherence. Each find is a defect in an assessment or in the structure: sometimes a verdict must change, and sometimes the discovery is that an edge mischaracterized a dependency. Either way the graph improves. Underneath this, the same evidential standards apply everywhere, so that two assessments differ only where their evidence differs, never with the temperament of the steward.
 

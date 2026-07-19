@@ -91,7 +91,7 @@ describe("steward add_decomposition_edge", () => {
     const out = await executeStewardTool("add_decomposition_edge", {
       parent_id: "22222222-2222-2222-2222-222222222222",
       child_text: "In a field of characteristic != 2, the element 2 is invertible",
-      relation: "presupposes",
+      relation: "assumes",
       reasoning: "settled algebra, uncontested",
       importance: 0.1,
     });

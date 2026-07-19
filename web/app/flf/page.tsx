@@ -182,8 +182,8 @@ export default function FlfPage() {
             already metadata: the decomposition of a claim into its arguments, its subclaims, and its
             assumptions is recursively rich structure that a reader can follow as far down as they
             want. Rather than label a claim from the outside, we record the relationships that place
-            it. An assumption, for instance, is not a tag but a subclaim on a{" "}
-            <em>presupposes</em> edge, which means it can itself be examined and assessed.
+            it. An assumption, for instance, is not a tag but a subclaim on an{" "}
+            <em>assumes</em> edge, which means it can itself be examined and assessed.
           </p>
           <Quote cite="§6">
             Claims decompose into other claims. The admin&rsquo;s central structural function is to
@@ -202,7 +202,7 @@ export default function FlfPage() {
           <p>
             Each claim is decomposed into the subclaims it rests on, grouped under named{" "}
             <em>arguments</em>, with every edge labelled by how the child bears on the parent:
-            requires, supports, contradicts, specifies, defines, or presupposes. Each argument also
+            requires, supports, contradicts, specifies, defines, or assumes. Each argument also
             carries a short written form stating how its subclaims combine. Decomposition stops at
             contestedness, not at logical bedrock, so a claim no informed person disputes is left a
             leaf even when much depends on it.
@@ -239,7 +239,7 @@ export default function FlfPage() {
           <p>
             When a claim has more than one distinct line of reasoning, each is a named argument with
             its own subclaims, for or against. Where the validity of an argument&rsquo;s framework is
-            itself in dispute, that meta-claim enters the same structure as a presupposition, so a
+            itself in dispute, that meta-claim enters the same structure as an assumption, so a
             dispute about the terms of the debate lives in the claim layer rather than off to the
             side. Different sources emphasize different arguments, and because each source&rsquo;s
             instances record which claims it engaged and on which side, the emphasis is recoverable.

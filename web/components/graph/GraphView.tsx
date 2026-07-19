@@ -12,7 +12,7 @@ import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
   decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
   nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS,
-  DEFINED_IN, STEWARD_SOURCE,
+  DEFINED_IN, STEWARD_SOURCE, isAssumesRelation,
 } from "@/lib/ontology";
 import { buildClaimTextMap } from "@/lib/claim-links";
 import { ArgumentText } from "@/components/ArgumentText";
@@ -319,7 +319,7 @@ export function GraphView({
           return t.slice(0, -1);
         });
       } else if (ev.key === "ArrowDown") {
-        const kid = (view.detail.tree?.children ?? []).find((c) => c.relation_type !== "presupposes");
+        const kid = (view.detail.tree?.children ?? []).find((c) => !isAssumesRelation(c.relation_type));
         if (kid) recenter(kid.id);
       } else if (ev.key === "ArrowUp") {
         const dep = (view.detail.dependents ?? [])[0];
@@ -566,7 +566,7 @@ export function GraphView({
           <>
             <div className={styles.chipHead}>
               <Glyph status={c.status} size="0.56rem" />
-              <span className={styles.atomicTag}>presupposed</span>
+              <span className={styles.atomicTag}>assumed</span>
             </div>
             <div className={styles.sideText}>{c.text}</div>
             <BedStrip bed={c.bedrock} />
@@ -882,8 +882,8 @@ export function GraphView({
           <Term gloss={RELATION.contradicts.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
             <span className={`${styles.legendEdge} ${styles.dashed}`} style={{ borderColor: "rgba(143,58,44,.7)" }} /><span className="rel-contradicts">contradicts</span>
           </Term>
-          <Term gloss={RELATION.presupposes.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
-            <span className={`${styles.legendEdge} ${styles.dotted}`} style={{ borderColor: "rgba(154,109,18,.8)" }} /><span className="rel-presupposes">presupposes</span>
+          <Term gloss={RELATION.assumes.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
+            <span className={`${styles.legendEdge} ${styles.dotted}`} style={{ borderColor: "rgba(154,109,18,.8)" }} /><span className="rel-assumes">assumes</span>
           </Term>
           <Term gloss={RELATION.requires.gloss} href={DEFINED_IN.relation} source={STEWARD_SOURCE} className={styles.legendItem}>
             <span className={styles.legendEdge} style={{ borderColor: "var(--rule)" }} />requires
