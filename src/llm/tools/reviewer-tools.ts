@@ -96,9 +96,11 @@ export function getReviewerToolDefinitions(): Tool[] {
       description:
         "Place a contribution in the dispute arbitrator's queue. Use when " +
         "uncertain, when stakes are high, or when the situation requires " +
-        "deeper adjudication. This call is what enqueues arbitration; also " +
-        "record the review itself with record_review_decision (decision " +
-        "'escalate'), whose reasoning is what the arbitrator reads.",
+        "deeper adjudication. This call is what enqueues arbitration, and " +
+        "the reason given here is persisted on the contribution for the " +
+        "arbitrator to read; also record the review itself with " +
+        "record_review_decision (decision 'escalate'), which carries your " +
+        "fuller reasoning of record.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -248,11 +250,13 @@ export async function executeReviewerTool(
           trigger: "escalated_review",
         });
 
-        // Update contribution status
+        // Update contribution status and persist the escalation reason (#178)
+        // so the Arbitrator sees why the case was escalated even when no
+        // review row was recorded.
         const db = getDb();
         await db
           .update(contributions)
-          .set({ reviewStatus: "escalated" })
+          .set({ reviewStatus: "escalated", escalationReason: reason })
           .where(eq(contributions.id, contributionId));
 
         return JSON.stringify({

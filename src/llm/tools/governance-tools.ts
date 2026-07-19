@@ -18,6 +18,8 @@ import {
   contributions,
   contributionReviews,
   contributors,
+  appeals,
+  arbitrationResults,
 } from "../../db/schema.js";
 import { trustLevelFor } from "../../services/reputation-service.js";
 import { hasWrittenForm } from "../../services/argument-service.js";
@@ -46,7 +48,9 @@ export function getGovernanceToolDefinitions(): Tool[] {
       name: "get_contribution_details",
       description:
         "Get full details about a contribution, including the contributor, " +
-        "the target claim, and any existing review.",
+        "the target claim, any existing review, the reviewer's escalation " +
+        "reason, any appeals (with the appellant's reasoning), and prior " +
+        "arbitration results.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -323,12 +327,41 @@ async function getContributionDetails(contributionId: string) {
     .where(eq(contributors.id, contribution.contributorId))
     .limit(1);
 
-  // Review if exists
+  // Review if exists (latest first: a re-reviewed contribution should show
+  // the decision currently in force)
   const [review] = await db
     .select()
     .from(contributionReviews)
     .where(eq(contributionReviews.contributionId, contributionId))
+    .orderBy(desc(contributionReviews.reviewedAt))
     .limit(1);
+
+  // Appeals, newest first — the appellant's reasoning is the substance of an
+  // appeal adjudication, so the Arbitrator must be able to read it (#178).
+  const appealRows = await db
+    .select({
+      id: appeals.id,
+      appealReasoning: appeals.appealReasoning,
+      appellantId: appeals.appellantId,
+      appellantName: contributors.displayName,
+      originalReviewId: appeals.originalReviewId,
+      status: appeals.status,
+      submittedAt: appeals.submittedAt,
+    })
+    .from(appeals)
+    .leftJoin(contributors, eq(contributors.id, appeals.appellantId))
+    .where(eq(appeals.contributionId, contributionId))
+    .orderBy(desc(appeals.submittedAt));
+
+  // Prior arbitrations, newest first — repeat arbitration is a real path
+  // (uphold_original returns the contribution to 'rejected', which can be
+  // appealed again), and the second arbitrator should see the first's
+  // reasoning (#178).
+  const arbitrations = await db
+    .select()
+    .from(arbitrationResults)
+    .where(eq(arbitrationResults.contributionId, contributionId))
+    .orderBy(desc(arbitrationResults.arbitratedAt));
 
   // Target claim — null for pending intake contributions (#157), which
   // propose NEW content and have no claim until accepted and materialized.
@@ -371,6 +404,9 @@ async function getContributionDetails(contributionId: string) {
       submitted_at: contribution.submittedAt.toISOString(),
       proposed_canonical_form: contribution.proposedCanonicalForm,
       merge_target_claim_id: contribution.mergeTargetClaimId,
+      // Why the reviewer escalated — present even when the reviewer skipped
+      // record_review_decision, so an escalation never arrives reasonless.
+      escalation_reason: contribution.escalationReason,
     },
     ...(source
       ? {
@@ -407,6 +443,34 @@ async function getContributionDetails(contributionId: string) {
           reviewed_at: review.reviewedAt.toISOString(),
         }
       : null,
+    ...(appealRows.length > 0
+      ? {
+          appeals: appealRows.map((a) => ({
+            id: a.id,
+            appeal_reasoning: a.appealReasoning,
+            appellant: {
+              id: a.appellantId,
+              display_name: a.appellantName,
+            },
+            original_review_id: a.originalReviewId,
+            status: a.status,
+            submitted_at: a.submittedAt.toISOString(),
+          })),
+        }
+      : {}),
+    ...(arbitrations.length > 0
+      ? {
+          arbitration_history: arbitrations.map((r) => ({
+            id: r.id,
+            appeal_id: r.appealId,
+            outcome: r.outcome,
+            decision: r.decision,
+            reasoning: r.reasoning,
+            human_review_recommended: r.humanReviewRecommended,
+            arbitrated_at: r.arbitratedAt.toISOString(),
+          })),
+        }
+      : {}),
   };
 }
 

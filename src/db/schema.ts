@@ -567,6 +567,10 @@ export const contributions = pgTable(
       .notNull()
       .defaultNow(),
     reviewStatus: text("review_status").notNull().default("pending"),
+    // Why the reviewer escalated (#178). Written by escalate_to_arbitrator so
+    // the reason reaches the Arbitrator even when no review row was recorded;
+    // the review record, when present, carries the fuller reasoning.
+    escalationReason: text("escalation_reason"),
     mergeTargetClaimId: uuid("merge_target_claim_id").references(
       () => claims.id
     ),
