@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { TreeNode } from "@/lib/types";
 import {
@@ -13,13 +13,68 @@ import { ArgumentText } from "@/components/ArgumentText";
 import { Term } from "@/components/Term";
 import styles from "./margins.module.css";
 
+// Scrollspy over the reading column (issue #202). DecompositionTree tags every
+// rendered node with data-claim-node; we watch which of those spans a "reading
+// line" near the top of the viewport and report the deepest one, so the outline
+// can follow the reading position. Null until the reader reaches the tree.
+function useActiveNodeId(enabled: boolean): string | null {
+  const [active, setActive] = useState<string | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    const tree = document.querySelector(".tree");
+    if (!tree) return;
+
+    const intersecting = new Set<Element>();
+    const pick = () => {
+      let best: Element | null = null;
+      for (const el of intersecting) {
+        // A node's wrapper contains its children, so descendants (and later
+        // siblings) both report FOLLOWING: the last in document order is the
+        // most specific node under the reading line.
+        if (!best || best.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) best = el;
+      }
+      // Between nodes (argument prose, section gaps) keep the previous active.
+      if (best) setActive(best.getAttribute("data-claim-node"));
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) intersecting.add(e.target);
+          else intersecting.delete(e.target);
+        }
+        pick();
+      },
+      // a zero-height reading line 28% down the viewport
+      { rootMargin: "-28% 0px -72% 0px" },
+    );
+    const observeAll = () => {
+      io.disconnect();
+      intersecting.clear();
+      tree.querySelectorAll("[data-claim-node]").forEach((el) => io.observe(el));
+    };
+    observeAll();
+    // expanding or collapsing tree nodes changes which nodes exist to observe
+    const mo = new MutationObserver(observeAll);
+    mo.observe(tree, { childList: true, subtree: true });
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+    };
+  }, [enabled]);
+  return active;
+}
+
 // One subclaim line in the revealed outline.
-function OutlineNode({ scored }: { scored: ScoredNode }) {
+function OutlineNode({ scored, active }: { scored: ScoredNode; active: boolean }) {
   const { node, effect } = scored;
   const rel = node.relation_type ? RELATION[node.relation_type] : null;
   const own = statusMeta(node.assessment_status).label;
   return (
-    <li className={styles.outlineItem} style={{ paddingLeft: `${Math.max(0, node.depth - 1) * 0.7}rem` }}>
+    <li
+      className={`${styles.outlineItem}${active ? ` ${styles.outlineItemActive}` : ""}`}
+      data-spy-node={node.id}
+      style={{ paddingLeft: `${Math.max(0, node.depth - 1) * 0.7}rem` }}
+    >
       <span
         className={`swatch ${EFFECT[effect].cls}`}
         title={`${EFFECT[effect].label} — ${own} subclaim, ${EFFECT[effect].gloss}`}
@@ -35,19 +90,30 @@ function OutlineNode({ scored }: { scored: ScoredNode }) {
 
 // A collapsible argument group, coloured by its NET effect on the main claim.
 function ArgumentBlock({
-  group, defaultOpen, texts,
-}: { group: ArgumentGroup; defaultOpen: boolean; texts: Map<string, string> }) {
+  group, spyKey, defaultOpen, texts, activeId,
+}: {
+  group: ArgumentGroup; spyKey: string; defaultOpen: boolean;
+  texts: Map<string, string>; activeId: string | null;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   const present = EFFECT_ORDER.filter((e) => group.counts[e] > 0);
   const n = group.nodes.length;
+  // Scrollspy (issue #202): mark the group the reader is currently inside, so
+  // it stays findable even when the group itself is collapsed.
+  const active = activeId !== null && group.nodes.some((s) => s.node.id === activeId);
   // The written form: how these subclaims combine to bear on the claim, with
   // the subclaims linked inline. Label-only legacy content is skipped.
   const written = group.content && hasClaimLinks(group.content) ? group.content : null;
   // The steward's evaluation of the inference (issue #173); null until judged.
   const verdict = argumentVerdictMeta(group.verdict);
   return (
-    <li className={styles.argGroup}>
-      <button type="button" className={styles.argHead} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+    <li className={styles.argGroup} data-spy-group={spyKey}>
+      <button
+        type="button"
+        className={`${styles.argHead}${active ? ` ${styles.argHeadActive}` : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
         <span className={styles.argCaret}>{open ? "▾" : "▸"}</span>
         <span
           className={`swatch ${EFFECT[group.net].cls}`}
@@ -77,7 +143,9 @@ function ArgumentBlock({
             ))}
           </div>
           <ol className={styles.argNodes}>
-            {group.nodes.map((s) => <OutlineNode key={s.node.id} scored={s} />)}
+            {group.nodes.map((s) => (
+              <OutlineNode key={s.node.id} scored={s} active={s.node.id === activeId} />
+            ))}
           </ol>
         </>
       )}
@@ -94,6 +162,35 @@ export function DecompositionCompass({ tree }: { tree: TreeNode }) {
   const counts = effectCounts(scored);
   const total = scored.length;
   const present = EFFECT_ORDER.filter((e) => counts[e] > 0);
+  const groups = groupByArgument(scored);
+
+  // Scrollspy (issue #202): while the outline is open, follow the reading
+  // position in the centre column and keep the active entry visible inside the
+  // outline's own scrollbox — otherwise a tall decomposition clips its tail and
+  // the reader never learns it is there.
+  const activeId = useActiveNodeId(open && total > 0);
+  const activeGroupIdx =
+    activeId === null ? -1 : groups.findIndex((g) => g.nodes.some((s) => s.node.id === activeId));
+  const activeGroupKey = activeGroupIdx < 0 ? null : groups[activeGroupIdx].id ?? `g${activeGroupIdx}`;
+  const boxRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || activeId === null) return;
+    const node = CSS.escape(activeId);
+    // Prefer the node inside the active group (a shared subclaim can appear in
+    // several); fall back to the group head when the group is collapsed.
+    const target =
+      (activeGroupKey &&
+        box.querySelector(`[data-spy-group="${CSS.escape(activeGroupKey)}"] [data-spy-node="${node}"]`)) ||
+      box.querySelector(`[data-spy-node="${node}"]`) ||
+      (activeGroupKey && box.querySelector(`[data-spy-group="${CSS.escape(activeGroupKey)}"]`));
+    if (!target) return;
+    // Scroll only the outline's scrollbox, never the page.
+    const bt = box.getBoundingClientRect();
+    const tt = target.getBoundingClientRect();
+    if (tt.top < bt.top) box.scrollTop += tt.top - bt.top;
+    else if (tt.bottom > bt.bottom) box.scrollTop += tt.bottom - bt.bottom;
+  }, [activeId, activeGroupKey, open]);
 
   // Atomic claim: nothing to summarise. Show a quiet resting note, no bar.
   if (total === 0) {
@@ -113,7 +210,6 @@ export function DecompositionCompass({ tree }: { tree: TreeNode }) {
     );
   }
 
-  const groups = groupByArgument(scored);
   const texts = buildClaimTextMap(tree);
   // The argument primitive is optional: only group when an argument is actually
   // named. Otherwise the outline is a flat list. When there are many arguments,
@@ -158,14 +254,23 @@ export function DecompositionCompass({ tree }: { tree: TreeNode }) {
 
       {open &&
         (grouped ? (
-          <ul className={styles.argList}>
+          <ul className={styles.argList} ref={(el) => { boxRef.current = el; }}>
             {groups.map((g, i) => (
-              <ArgumentBlock key={g.id ?? `g${i}`} group={g} defaultOpen={openAll || i === 0} texts={texts} />
+              <ArgumentBlock
+                key={g.id ?? `g${i}`}
+                spyKey={g.id ?? `g${i}`}
+                group={g}
+                defaultOpen={openAll || i === 0}
+                texts={texts}
+                activeId={activeId}
+              />
             ))}
           </ul>
         ) : (
-          <ol className={styles.outline}>
-            {scored.map((s) => <OutlineNode key={s.node.id} scored={s} />)}
+          <ol className={styles.outline} ref={(el) => { boxRef.current = el; }}>
+            {scored.map((s) => (
+              <OutlineNode key={s.node.id} scored={s} active={s.node.id === activeId} />
+            ))}
           </ol>
         ))}
     </aside>
