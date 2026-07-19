@@ -4,8 +4,10 @@ import {
   statusMeta, isStatus, claimTypeMeta, decompositionNote,
   DEFINED_IN, VERDICT_CONFIDENCE_GLOSS,
 } from "@/lib/ontology";
+import { buildClaimTextMap } from "@/lib/claim-links";
 import { StatusBadge, Credence, VerdictConfidence, Swatch, Importance } from "./Assessment";
 import { Term } from "./Term";
+import { AssessmentText } from "./AssessmentText";
 import { DecompositionTree } from "./DecompositionTree";
 import { ContributionRecord } from "./claim/ContributionRecord";
 import { Contribute } from "./claim/Contribute";
@@ -25,6 +27,9 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
     detail.assessment && isStatus(detail.assessment.status) ? detail.assessment : null;
   const claimType = claimTypeMeta(claim.claim_type);
   const hasTree = !!(tree && tree.children && tree.children.length > 0);
+  // Canonical text for [[claim:<id>]] references in assessment prose (#203):
+  // assessments cite subclaims, and subclaims live in the tree already held.
+  const linkTexts = buildClaimTextMap(tree);
 
   return (
     <article className="col">
@@ -91,18 +96,14 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
               returns the trace as the summary); only show the separate reasoning
               disclosure when it actually differs. */}
           <div className="assessment-body">
-            {assessment.summary.split(/\n{2,}/).map((para, i) => (
-              <p key={i}>{para}</p>
-            ))}
+            <AssessmentText content={assessment.summary} texts={linkTexts} />
           </div>
           {assessment.reasoning_trace &&
             assessment.reasoning_trace !== assessment.summary && (
               <details className="reasoning-detail">
                 <summary>Full reasoning — evidence and decisions behind this verdict</summary>
                 <div className="reasoning">
-                  {assessment.reasoning_trace.split(/\n{2,}/).map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
+                  <AssessmentText content={assessment.reasoning_trace} texts={linkTexts} />
                 </div>
               </details>
             )}

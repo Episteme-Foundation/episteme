@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { parseWrittenForm } from "@/lib/claim-links";
+import { parseProse } from "@/lib/claim-links";
 
 /**
- * An argument's written form: brief prose in which [[claim:<id>]] references
- * become links to the subclaims the argument runs on. Authored inline phrasing
- * wins; otherwise the claim's canonical text (via `texts`, usually built from
- * the decomposition tree with buildClaimTextMap); otherwise a generic label.
+ * The graph's inline prose conventions, rendered: [[claim:<id>]] references
+ * become links to the claims they name, and bare source URLs become external
+ * links (issue #203). For a claim link, authored inline phrasing wins;
+ * otherwise the claim's canonical text (via `texts`, usually built from the
+ * decomposition tree with buildClaimTextMap); otherwise a generic label.
+ * Serves argument written forms and evaluations (#129/#173) and assessment
+ * prose (#203) alike.
  */
 export function ArgumentText({
   content,
@@ -16,8 +19,15 @@ export function ArgumentText({
 }) {
   return (
     <>
-      {parseWrittenForm(content).map((seg, i) => {
+      {parseProse(content).map((seg, i) => {
         if (seg.kind === "text") return <span key={i}>{seg.text}</span>;
+        if (seg.kind === "url") {
+          return (
+            <a key={i} href={seg.href} className="prose-url" rel="nofollow noopener">
+              {seg.href.replace(/^https?:\/\//, "")}
+            </a>
+          );
+        }
         const canonical = texts?.get(seg.claimId);
         return (
           <Link

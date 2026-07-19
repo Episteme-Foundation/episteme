@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ClaimEvent, ClaimEventsPage } from "@/lib/types";
 import { statusMeta, VERDICT_CONFIDENCE_GLOSS, CREDENCE_GLOSS } from "@/lib/ontology";
 import { Swatch } from "@/components/Assessment";
+import { ArgumentText } from "@/components/ArgumentText";
 import styles from "./timeline.module.css";
 
 // The full claim history (issue #175): assessments, contributions, and the
@@ -97,7 +98,9 @@ function Dateline({
   );
 }
 
-function AssessmentEntry({ e }: { e: Extract<ClaimEvent, { kind: "assessment" }> }) {
+function AssessmentEntry({
+  e, texts,
+}: { e: Extract<ClaimEvent, { kind: "assessment" }>; texts?: Map<string, string> }) {
   const meta = statusMeta(e.status);
   const changed = e.prev_status !== null && e.prev_status !== e.status;
   const headline = e.prev_status === null
@@ -125,8 +128,12 @@ function AssessmentEntry({ e }: { e: Extract<ClaimEvent, { kind: "assessment" }>
         {/* A verdict-changing assessment gets its summary; a routine
             reassessment that landed in the same place stays one line, so a
             long run of quiet re-checks doesn't drown the record. */}
+        {/* Summaries may carry [[claim:<id>]] references and bare source
+            URLs (#203); render them as links, like the claim page does. */}
         {(e.prev_status === null || changed) && e.summary && (
-          <p className={styles.prose}>{e.summary}</p>
+          <p className={styles.prose}>
+            <ArgumentText content={e.summary} texts={texts} />
+          </p>
         )}
       </div>
     </>
@@ -239,9 +246,9 @@ function CreatedEntry({ e }: { e: Extract<ClaimEvent, { kind: "created" }> }) {
   );
 }
 
-function Entry({ event }: { event: ClaimEvent }) {
+function Entry({ event, texts }: { event: ClaimEvent; texts?: Map<string, string> }) {
   switch (event.kind) {
-    case "assessment": return <AssessmentEntry e={event} />;
+    case "assessment": return <AssessmentEntry e={event} texts={texts} />;
     case "contribution": return <ContributionEntry e={event} />;
     case "review": return <ReviewEntry e={event} />;
     case "appeal": return <AppealEntry e={event} />;
@@ -264,14 +271,20 @@ function Entry({ event }: { event: ClaimEvent }) {
   }
 }
 
-export function ClaimTimeline({ page }: { page: ClaimEventsPage }) {
+export function ClaimTimeline({
+  page, texts,
+}: {
+  page: ClaimEventsPage;
+  /** id → canonical text for resolving bare [[claim:<id>]] references (#203). */
+  texts?: Map<string, string>;
+}) {
   const { events, total } = page;
   return (
     <>
       <ol className={styles.timeline} aria-label="Claim history">
         {events.map((event) => (
           <li className={styles.entry} key={event.id} id={event.id}>
-            <Entry event={event} />
+            <Entry event={event} texts={texts} />
           </li>
         ))}
       </ol>

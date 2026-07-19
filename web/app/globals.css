@@ -423,6 +423,11 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
 }
 .argform-link { text-decoration-style: dotted; text-underline-offset: 2px; }
 
+/* A bare source URL cited in assessment or argument prose (issue #203):
+   rendered scheme-stripped, and allowed to break anywhere so a long archive
+   path never overflows the reading column. */
+.prose-url { overflow-wrap: anywhere; }
+
 /* The steward's evaluation of a named argument (issue #173): whether the
    inference goes through granting its premises, and which premises bear the
    weight. Epistemic where the written form is structural, so it is set off
