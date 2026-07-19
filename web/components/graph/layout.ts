@@ -381,6 +381,14 @@ export function computeLayout(detail: ClaimDetail, opts: LayoutOptions): Layout 
           tx += W.t2 + 6;
           continue;
         }
+        // Re-check at draw time: t2list snapshots `seen` before earlier
+        // branches' minis run, so a shared subclaim already drawn as a mini
+        // elsewhere would be drawn twice here — duplicate node, duplicate
+        // React key (#230). First placement wins; keep the slot's spacing.
+        if (seen.has(te.id)) {
+          tx += W.t2 + 6;
+          continue;
+        }
         seen.add(te.id);
         nodes.push({ key: te.id, kind: "t2", x: tx + W.t2 / 2, y: yT2, w: W.t2, h: H.t2, claim: treeBits(te), node: te });
         edges.push({ x1: cx, y1: yT1 + H.t1, x2: tx + W.t2 / 2, y2: yT2, rel: te.relation_type ?? "requires", ids: [te.id, t1.id] });
