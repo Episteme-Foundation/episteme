@@ -169,10 +169,23 @@ export async function executeCuratorTool(
   try {
     switch (toolName) {
       case "merge_claims": {
+        // Strict on purpose (#182): 'opposed' flips every moved stance, so a
+        // hedged or misspelled value silently coerced to 'same' would corrupt
+        // all of them. Reject and make the model restate its intent exactly.
+        const stanceRelation = input.stance_relation;
+        if (stanceRelation !== "same" && stanceRelation !== "opposed") {
+          return JSON.stringify({
+            success: false,
+            message:
+              `Invalid stance_relation ${JSON.stringify(stanceRelation)}: must be ` +
+              `exactly "same" or "opposed". Nothing was merged; re-call with a ` +
+              `legal value.`,
+          });
+        }
         const result = await mergeClaims({
           survivorId: String(input.survivor_id),
           loserId: String(input.loser_id),
-          stanceRelation: input.stance_relation === "opposed" ? "opposed" : "same",
+          stanceRelation,
           reasoning: String(input.reasoning ?? ""),
         });
         return JSON.stringify({

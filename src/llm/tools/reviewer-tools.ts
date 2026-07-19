@@ -133,8 +133,8 @@ export function getReviewerToolDefinitions(): Tool[] {
           },
           change_type: {
             type: "string",
-            description:
-              "Type of change: contribution_accepted, new_challenge, new_support",
+            enum: ["contribution_accepted", "new_challenge", "new_support"],
+            description: "Type of change",
           },
           details: {
             type: "string",

@@ -212,7 +212,6 @@ const configSchema = z.object({
     .string()
     .transform((s) => s === "true")
     .default("false"),
-  escalationConfidenceThreshold: z.coerce.number().default(0.6),
   auditSampleRate: z.coerce.number().default(0.05),
 
   // SQS governance queues
@@ -285,7 +284,6 @@ export function loadConfig(): Config {
     extensionModel: process.env.EXTENSION_MODEL,
     judgeModel: process.env.JUDGE_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
-    escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
     auditSampleRate: process.env.AUDIT_SAMPLE_RATE,
     sqsContributionQueue: process.env.SQS_CONTRIBUTION_QUEUE,
     sqsArbitrationQueue: process.env.SQS_ARBITRATION_QUEUE,

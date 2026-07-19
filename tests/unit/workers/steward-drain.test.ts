@@ -25,7 +25,12 @@ const { runCalls, state } = vi.hoisted(() => ({
 
 vi.mock("../../../src/db/client.js", () => ({
   rawQuery: vi.fn(async (q: string, params: unknown[] = []) => {
-    if (q.includes("steward_state = 'running'")) {
+    // Dispatch keys: SKIP LOCKED is unique to the task-claim query (the
+    // terminal writes also mention 'running' in their mid-run guards, so the
+    // state literal alone no longer identifies a claim). The quoted 'error' /
+    // 'pending' literals identify the park and requeue writes; the guarded
+    // success write ('done') is a no-op here.
+    if (q.includes("SKIP LOCKED")) {
       const id = state.pending.shift();
       return id
         ? [
@@ -41,9 +46,9 @@ vi.mock("../../../src/db/client.js", () => ({
     if (q.includes("count(")) return [{ n: state.pending.length }];
     if (q.startsWith("UPDATE")) {
       const id = params[0] as string;
-      if (q.includes("steward_state = 'error'")) {
+      if (q.includes("'error'")) {
         state.markedError.push(id);
-      } else if (q.includes("steward_state = 'pending'")) {
+      } else if (q.includes("'pending'")) {
         state.markedPendingAgain.push(id);
         // Simulate the DB column: capture the attempts value written back, and
         // requeue the id so the drain can re-serve it.

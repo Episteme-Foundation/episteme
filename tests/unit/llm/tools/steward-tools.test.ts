@@ -42,7 +42,11 @@ vi.mock("../../../../src/services/queue-service.js", () => ({
 }));
 
 import { executeStewardTool } from "../../../../src/llm/tools/steward-tools.js";
-import { enqueueClaimPipeline } from "../../../../src/services/queue-service.js";
+import {
+  enqueueClaimPipeline,
+  enqueueSteward,
+} from "../../../../src/services/queue-service.js";
+import { rawQuery } from "../../../../src/db/client.js";
 
 describe("steward add_decomposition_edge", () => {
   beforeEach(() => {
@@ -173,6 +177,61 @@ describe("steward log_stewardship_decision", () => {
   });
 });
 
+describe("steward notify_dependent_stewards", () => {
+  const CLAIM = "33333333-3333-3333-3333-333333333333";
+  const PARENT_A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+  const PARENT_B = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("notifies every dependent when parent_ids is omitted", async () => {
+    vi.mocked(rawQuery).mockResolvedValueOnce([
+      { parent_id: PARENT_A },
+      { parent_id: PARENT_B },
+    ]);
+    const out = await executeStewardTool("notify_dependent_stewards", {
+      claim_id: CLAIM,
+      change_summary: "moved SUPPORTED -> CONTESTED",
+    });
+    expect(enqueueSteward).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(out).parent_claim_ids).toEqual([PARENT_A, PARENT_B]);
+  });
+
+  it("restricts the fan-out to parent_ids when the steward triages (#182)", async () => {
+    vi.mocked(rawQuery).mockResolvedValueOnce([
+      { parent_id: PARENT_A },
+      { parent_id: PARENT_B },
+    ]);
+    const out = await executeStewardTool("notify_dependent_stewards", {
+      claim_id: CLAIM,
+      change_summary: "confidence nudged within CONTESTED",
+      parent_ids: [PARENT_A],
+    });
+    expect(enqueueSteward).toHaveBeenCalledTimes(1);
+    expect(enqueueSteward).toHaveBeenCalledWith(
+      expect.objectContaining({ claimId: PARENT_A, trigger: "subclaim_change" })
+    );
+    expect(JSON.parse(out).parent_claim_ids).toEqual([PARENT_A]);
+  });
+
+  it("never enqueues an id that is not actually a dependent; reports it instead", async () => {
+    // A hallucinated/stale parent_id must not trigger an unrelated claim's
+    // Steward; the tool result names the dropped ids so the model can correct.
+    vi.mocked(rawQuery).mockResolvedValueOnce([{ parent_id: PARENT_A }]);
+    const out = await executeStewardTool("notify_dependent_stewards", {
+      claim_id: CLAIM,
+      change_summary: "s",
+      parent_ids: [PARENT_A, PARENT_B],
+    });
+    expect(enqueueSteward).toHaveBeenCalledTimes(1);
+    const parsed = JSON.parse(out);
+    expect(parsed.parent_claim_ids).toEqual([PARENT_A]);
+    expect(parsed.skipped_not_dependents).toEqual([PARENT_B]);
+  });
+});
+
 describe("steward update_claim_assessment", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -214,6 +273,44 @@ describe("steward update_claim_assessment", () => {
     });
     const row = insertedValues.find((r) => "reasoningTrace" in r);
     expect(row?.status).toBe("verified");
+  });
+
+  it("records the run's actual trigger and context on the assessment row (#182)", async () => {
+    await executeStewardTool(
+      "update_claim_assessment",
+      {
+        claim_id: "22222222-2222-2222-2222-222222222222",
+        status: "contested",
+        confidence: 0.5,
+        assessment: "Now contested.",
+        reasoning_trace: "A depended-on subclaim flipped.",
+      },
+      {
+        trigger: "subclaim_change",
+        context: "[subclaim_change] Subclaim X changed: moved to REFUTED",
+      }
+    );
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    // The regression this guards: every steward write stamped the generic
+    // "steward_reassessment", so the cause of a re-assessment was
+    // unrecoverable from the row.
+    expect(row?.trigger).toBe("subclaim_change");
+    expect(row?.triggerContext).toBe(
+      "[subclaim_change] Subclaim X changed: moved to REFUTED"
+    );
+  });
+
+  it("still stamps steward_reassessment when no run info is threaded", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "supported",
+      confidence: 0.7,
+      assessment: "Fine.",
+      reasoning_trace: "Trace.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.trigger).toBe("steward_reassessment");
+    expect(row?.triggerContext).toBeNull();
   });
 
   it("falls back to the reasoning trace when the assessment is omitted (never writes blank)", async () => {
