@@ -68,8 +68,8 @@
     "invokedWhen": "A review is escalated, an appeal is filed, or a claim is persistently contested.",
     "model": "Claude Fable 5",
     "hasConstitution": true,
-    "roleChars": 6761,
-    "fullChars": 47241
+    "roleChars": 7034,
+    "fullChars": 47514
   },
   {
     "key": "audit-agent",

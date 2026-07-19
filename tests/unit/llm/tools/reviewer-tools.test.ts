@@ -124,6 +124,45 @@ describe("record_review_decision", () => {
     );
   });
 
+  // The category is the reviewer's judgment; code must not fabricate a
+  // default (#179). The call is refused before any write so the reviewer
+  // can restate the decision.
+  it("refuses a bad-faith flag without a category, writing nothing", async () => {
+    const out = JSON.parse(
+      await executeReviewerTool("record_review_decision", {
+        contribution_id: CONTRIBUTION_ID,
+        decision: "reject",
+        reasoning: "fabricated sources",
+        confidence: 0.95,
+        policy_citations: ["GF"],
+        suspected_bad_faith: true,
+      })
+    );
+
+    expect(out.success).toBe(false);
+    expect(out.error).toContain("bad_faith_category");
+    expect(mocks.insertedReviews).toHaveLength(0);
+    expect(mocks.updateSets).toHaveLength(0);
+    expect(mocks.applyReviewOutcome).not.toHaveBeenCalled();
+  });
+
+  it("refuses a bad-faith flag with an unknown category", async () => {
+    const out = JSON.parse(
+      await executeReviewerTool("record_review_decision", {
+        contribution_id: CONTRIBUTION_ID,
+        decision: "reject",
+        reasoning: "fabricated sources",
+        confidence: 0.95,
+        policy_citations: ["GF"],
+        suspected_bad_faith: true,
+        bad_faith_category: "trolling",
+      })
+    );
+
+    expect(out.success).toBe(false);
+    expect(mocks.insertedReviews).toHaveLength(0);
+  });
+
   it("records a plain sincere rejection without any flag", async () => {
     await executeReviewerTool("record_review_decision", {
       contribution_id: CONTRIBUTION_ID,
