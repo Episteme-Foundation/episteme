@@ -166,26 +166,56 @@ export async function enqueueArbitration(
   );
 }
 
+// Backstop against a propagation storm growing a pending slot without bound:
+// keep the NEWEST chunks up to this many characters (roughly 4k tokens). The
+// oldest context is what gets dropped, marked so the Steward knows it is
+// working from a partial batch.
+export const STEWARD_CONTEXT_MAX_CHARS = 16000;
+
 /**
  * "Enqueue" a Steward run by marking the claim pending in the DB — the claim row
- * IS the work queue. Idempotent: re-triggers coalesce into the single pending
- * slot (latest trigger/context wins), which tames the propagation storm where
- * one assessment notifies many dependents. Ordering is by the persisted
- * `claims.importance` column, so the message carries no importance of its own.
- * Works identically in dev and prod — there is no SQS path for the Steward.
+ * IS the work queue. Re-triggers still coalesce into the single pending slot
+ * (taming the propagation storm where one assessment notifies many dependents),
+ * but losslessly (#182): while the claim is already pending, the new context is
+ * APPENDED rather than clobbering the earlier message, so everything that
+ * arrived before the drain reaches the Steward as one batched run. Each chunk
+ * is labeled `[trigger]` since the row holds a single trigger column; for that
+ * column, `structure_and_assess` outranks any re-trigger (the first pass
+ * subsumes a re-assessment), otherwise the pending value is kept. Once the slot
+ * is consumed (running/done/error), the next message starts a fresh context.
+ * The whole update is one statement, so concurrent enqueues cannot interleave.
+ * Ordering is by the persisted `claims.importance` column, so the message
+ * carries no importance of its own. Works identically in dev and prod — there
+ * is no SQS path for the Steward.
  */
 export async function enqueueSteward(
   message: StewardMessage
 ): Promise<void> {
+  const chunk = `[${message.trigger}] ${message.context}`.trim();
   await rawQuery(
     `UPDATE claims
         SET steward_state = 'pending',
-            steward_trigger = $2,
-            steward_context = $3,
+            steward_trigger = CASE
+              WHEN steward_state = 'pending'
+                   AND (steward_trigger = 'structure_and_assess'
+                        OR $2 <> 'structure_and_assess')
+                THEN COALESCE(steward_trigger, $2)
+              ELSE $2
+            END,
+            steward_context = CASE
+              WHEN steward_state = 'pending' AND COALESCE(steward_context, '') <> ''
+                THEN CASE
+                  WHEN length(steward_context || E'\\n\\n' || $3) > ${STEWARD_CONTEXT_MAX_CHARS}
+                    THEN '[earlier context truncated]' || E'\\n'
+                         || right(steward_context || E'\\n\\n' || $3, ${STEWARD_CONTEXT_MAX_CHARS})
+                  ELSE steward_context || E'\\n\\n' || $3
+                END
+              ELSE $3
+            END,
             updated_at = now()
       WHERE id = $1
         AND state = 'active'`,
-    [message.claimId, message.trigger, message.context]
+    [message.claimId, message.trigger, chunk]
   );
 }
 
