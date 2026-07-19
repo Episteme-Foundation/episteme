@@ -348,6 +348,39 @@ describe("steward update_claim_assessment", () => {
     // null, not 0: "not stated" must stay distinct from "judged zero-yield".
     expect(row?.marginalYield).toBeNull();
   });
+
+  it("bounces a [[claim:<uuid>]] link to a claim that does not exist (#203)", async () => {
+    const ghost = "99999999-9999-9999-9999-999999999999";
+    // The existence check finds nothing (default rawQuery mock returns []).
+    const out = await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "supported",
+      confidence: 0.7,
+      assessment: `Rests on [[claim:${ghost}|a hallucinated subclaim]].`,
+      reasoning_trace: "Trace.",
+    });
+    const parsed = JSON.parse(out);
+    // A dead link would sit in front of every reader; the write must not land.
+    expect(parsed.success).toBe(false);
+    expect(parsed.message).toContain(ghost);
+    expect(insertedValues.find((r) => "reasoningTrace" in r)).toBeUndefined();
+  });
+
+  it("persists assessment prose whose [[claim:<uuid>]] links all exist (#203)", async () => {
+    const linked = "33333333-3333-3333-3333-333333333333";
+    vi.mocked(rawQuery).mockResolvedValueOnce([{ id: linked }]);
+    const out = await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "supported",
+      confidence: 0.7,
+      assessment: `Rests on [[claim:${linked}|the measured figure]].`,
+      reasoning_trace: `The trace also cites [[claim:${linked}]].`,
+    });
+    expect(JSON.parse(out).success).toBe(true);
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    // Link markup is stored verbatim; renderers resolve it at display time.
+    expect(row?.summary).toBe(`Rests on [[claim:${linked}|the measured figure]].`);
+  });
 });
 
 describe("steward set_claim_importance", () => {

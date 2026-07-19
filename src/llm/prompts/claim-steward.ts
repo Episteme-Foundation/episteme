@@ -188,6 +188,15 @@ voice of §12.
   weighed, and what would change the conclusion (§11). It is still about the
   claim's truth, and still in plain prose.
 
+In both texts, when a sentence references a subclaim, link it inline as
+[[claim:<uuid>|the phrase you would use anyway]], the same syntax as argument
+written forms; the reader follows the link to that claim's own page. Prefer
+the |inline form: §12 holds, so the phrasing names what the claim says and
+the sentence reads whole without the link. A bare [[claim:<uuid>]] renders as
+the linked claim's canonical text. Link only claims that exist; do not invent
+ids. Cite source URLs in plain text where the reasoning rests on them; they
+render as links.
+
 Your own bookkeeping (matching decisions, canonical-form edits, importance
 changes, escalations) appears in neither text; route it to
 log_stewardship_decision (§12).

@@ -39,10 +39,13 @@ const FLAGSHIP: ClaimDetail = {
     // Credence that the claim is true: high, since under any mainstream
     // threshold the 6.5% figure qualifies as "high".
     claim_credence: 0.9,
+    // Assessment prose carries the same inline conventions as written forms
+    // (issue #203): [[claim:<id>]] references link to subclaims, bare source
+    // URLs become links.
     summary:
-      "US consumer prices rose 6.5% over 2022, so whether inflation was “high” comes down to where you set the bar. Against the Federal Reserve's 2% target — or the looser 5% often used in policy debate — 6.5% is unambiguously high, which is the mainstream reading. The one genuine question is definitional, not factual: a minority reserve “high” for double-digit or hyperinflationary episodes, under which 2022 would not qualify. The underlying figure itself is not in dispute.",
+      "US consumer prices [[claim:bls-cpi|rose 6.5% over 2022]], so whether inflation was “high” comes down to [[claim:threshold-def|where you set the bar]]. Against [[claim:fed-target|the Federal Reserve's 2% target]] — or the looser 5% often used in policy debate — 6.5% is unambiguously high, which is the mainstream reading. The one genuine question is definitional, not factual: [[claim:hyperinflation-view|a minority reserve “high” for double-digit or hyperinflationary episodes]], under which 2022 would not qualify. The underlying figure itself is not in dispute.",
     reasoning_trace:
-      "The measured-magnitude leg of this claim is settled: the Bureau of Labor Statistics reported year-over-year CPI growth of 6.5% for 2022, a verified bedrock fact traceable to the primary release. The claim's overall status turns instead on a definitional subclaim — what annual rate constitutes “high” inflation. Under the most common reference point (the Federal Reserve's 2% target, or the looser 5% figure used in policy commentary) 6.5% clearly qualifies; but the threshold is a contested definitional choice rather than an empirical fact, and a minority of sources reserve “high” for double-digit or hyperinflationary regimes. Because the arithmetic is verified but rests on a contested definition, the claim is Supported rather than Verified. It is not Contested overall: no credible source disputes the 6.5% figure, and under any mainstream threshold the conclusion holds.",
+      "The measured-magnitude leg of this claim is settled: [[claim:bls-cpi|the Bureau of Labor Statistics reported year-over-year CPI growth of 6.5% for 2022]], a verified bedrock fact traceable to the primary release (https://www.bls.gov/news.release/archives/cpi_01122023.htm). The claim's overall status turns instead on a definitional subclaim — [[claim:threshold-def|what annual rate constitutes “high” inflation]]. Under the most common reference point (the Federal Reserve's 2% target, or the looser 5% figure used in policy commentary) 6.5% clearly qualifies; but the threshold is a contested definitional choice rather than an empirical fact, and a minority of sources reserve “high” for double-digit or hyperinflationary regimes. Because the arithmetic is verified but rests on a contested definition, the claim is Supported rather than Verified. It is not Contested overall: no credible source disputes the 6.5% figure, and under any mainstream threshold the conclusion holds.",
     subclaim_summary: { verified: 2, contested: 1, supported: 1 },
     assessed_at: "2026-03-18T09:12:00Z",
   },
@@ -307,7 +310,7 @@ const FLAGSHIP_EVENTS: ClaimEventsPage = {
       confidence: 0.78,
       claim_credence: 0.9,
       summary:
-        "The 6.5% figure is beyond dispute, but the accepted challenge is right that “high” rests on a contested definitional threshold. Supported, not Verified: the conclusion holds under any mainstream threshold, while the threshold itself remains a definitional choice.",
+        "The 6.5% figure is beyond dispute, but the accepted challenge is right that “high” rests on [[claim:threshold-def|a contested definitional threshold]]. Supported, not Verified: the conclusion holds under any mainstream threshold, while the threshold itself remains a definitional choice.",
       trigger: "contribution_accepted",
       trigger_context:
         "Accepted challenge: the “high” threshold is definitional and contested; Verified overstated the settled part.",
