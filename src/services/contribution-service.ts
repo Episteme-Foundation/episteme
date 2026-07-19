@@ -86,10 +86,15 @@ export async function listContributions(filters: {
 
 export async function getReviewForContribution(contributionId: string) {
   const db = getDb();
+  // The decision in force: an audit re-review marks the old row superseded
+  // (#180), and an appeal must attach to the live decision, not history.
   const [review] = await db
     .select()
     .from(contributionReviews)
-    .where(eq(contributionReviews.contributionId, contributionId))
+    .where(
+      sql`${contributionReviews.contributionId} = ${contributionId} AND ${contributionReviews.superseded} = false`
+    )
+    .orderBy(desc(contributionReviews.reviewedAt))
     .limit(1);
   return review ?? null;
 }

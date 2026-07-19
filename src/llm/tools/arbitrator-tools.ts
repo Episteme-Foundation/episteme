@@ -7,14 +7,18 @@
 import type Anthropic from "@anthropic-ai/sdk";
 type Tool = Anthropic.Tool;
 import { eq } from "drizzle-orm";
-import { getDb } from "../../db/client.js";
+import { getDb, rawQuery } from "../../db/client.js";
 import {
   arbitrationResults,
   contributions,
+  contributors,
   appeals,
 } from "../../db/schema.js";
-import { enqueueSteward } from "../../services/queue-service.js";
-import { reverseReviewOutcome } from "../../services/reputation-service.js";
+import { enqueueSteward, requestAudit } from "../../services/queue-service.js";
+import {
+  reverseReviewOutcome,
+  AUDIT_SUSPENSION_PREFIX,
+} from "../../services/reputation-service.js";
 import {
   isIntakeContributionType,
   materializeAcceptedIntake,
@@ -102,6 +106,29 @@ export function getArbitratorToolDefinitions(): Tool[] {
           },
         },
         required: ["claim_id", "change_type", "details"],
+      },
+    },
+    {
+      name: "lift_suspension",
+      description:
+        "Lift a contributor's suspension. The mechanical restoration on an " +
+        "overturn only lifts score-based suspensions; a deliberate audit " +
+        "suspension needs this judgment call. Use it when adjudication shows " +
+        "the suspension's basis no longer holds — an audit finding the " +
+        "suspension cites is then marked resolved with your reasoning.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          contributor_id: {
+            type: "string",
+            description: "The UUID of the suspended contributor",
+          },
+          reasoning: {
+            type: "string",
+            description: "Why the suspension should not stand",
+          },
+        },
+        required: ["contributor_id", "reasoning"],
       },
     },
     {
@@ -204,6 +231,28 @@ export async function executeArbitratorTool(
         let restoration = null;
         if (outcome === "overturn") {
           restoration = await reverseReviewOutcome({ contributionId });
+
+          // The second instance disagreed with the first — the strongest
+          // routine signal the review was made badly. Request a decision
+          // audit of the overturned review (#180); at most one per
+          // contribution, and a failure to enqueue must not fail the
+          // arbitration that was already recorded.
+          try {
+            await requestAudit({
+              auditType: "decision_audit",
+              context:
+                `An appeal overturned the review of contribution ` +
+                `${contributionId}. Audit the overturned decision: was it an ` +
+                `isolated error, or part of a pattern across similar cases?`,
+              triggeredBy: "arbitration_overturn",
+              dedupeKey: `overturn:${contributionId}`,
+            });
+          } catch (auditErr) {
+            console.error(
+              "Failed to request overturn audit:",
+              auditErr instanceof Error ? auditErr.message : auditErr
+            );
+          }
         }
 
         return JSON.stringify({
@@ -237,6 +286,70 @@ export async function executeArbitratorTool(
         return JSON.stringify({
           success: true,
           message: `Claim steward notified about claim ${claimId}`,
+        });
+      }
+
+      case "lift_suspension": {
+        const contributorId = input.contributor_id as string;
+        const reasoning = input.reasoning as string;
+
+        const db = getDb();
+        const [contributor] = await db
+          .select({
+            id: contributors.id,
+            isSuspended: contributors.isSuspended,
+            suspensionReason: contributors.suspensionReason,
+          })
+          .from(contributors)
+          .where(eq(contributors.id, contributorId))
+          .limit(1);
+
+        if (!contributor) {
+          return JSON.stringify({
+            success: false,
+            message: `Contributor ${contributorId} not found.`,
+          });
+        }
+        if (!contributor.isSuspended) {
+          return JSON.stringify({
+            success: false,
+            message: `Contributor ${contributorId} is not suspended.`,
+          });
+        }
+
+        const previousReason = contributor.suspensionReason ?? "";
+        await db
+          .update(contributors)
+          .set({ isSuspended: false, suspensionReason: null, suspendedAt: null })
+          .where(eq(contributors.id, contributorId));
+
+        // An audit suspension carries "audit:<finding_id> …" (#180); lifting
+        // it resolves the finding it rested on, so the audit's records agree
+        // with the contributor's standing.
+        let resolvedFindingId: string | null = null;
+        if (previousReason.startsWith(AUDIT_SUSPENSION_PREFIX)) {
+          const findingId = previousReason
+            .slice(AUDIT_SUSPENSION_PREFIX.length)
+            .split(/\s/)[0];
+          if (findingId) {
+            const resolved = await rawQuery<{ id: string }>(
+              `UPDATE audit_findings
+               SET status = 'resolved', resolution_note = $1,
+                   resolved_by = 'dispute_arbitrator', resolved_at = now()
+               WHERE id = $2
+               RETURNING id`,
+              [`Suspension lifted by arbitration: ${reasoning}`, findingId]
+            );
+            resolvedFindingId = resolved[0]?.id ?? null;
+          }
+        }
+
+        return JSON.stringify({
+          success: true,
+          message: `Suspension lifted for contributor ${contributorId}.`,
+          ...(resolvedFindingId
+            ? { resolved_finding_id: resolvedFindingId }
+            : {}),
         });
       }
 

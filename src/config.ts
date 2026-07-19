@@ -213,7 +213,14 @@ const configSchema = z.object({
     .transform((s) => s === "true")
     .default("false"),
   escalationConfidenceThreshold: z.coerce.number().default(0.6),
-  auditSampleRate: z.coerce.number().default(0.05),
+  // Audit invocation (#180). The sweep period: at most one pattern_analysis
+  // sweep per this many hours (skipped when the period saw no review
+  // decisions). 0 disables the scheduler entirely — event-triggered audits
+  // (overturns, bad-faith flags) still run.
+  auditSweepIntervalHours: z.coerce.number().default(24),
+  // A suspension that has stood unexamined this many days gets a
+  // contributor_review audit asking whether it should still hold.
+  auditStaleSuspensionDays: z.coerce.number().default(14),
 
   // SQS governance queues
   sqsContributionQueue: z.string().default(""),
@@ -286,7 +293,8 @@ export function loadConfig(): Config {
     judgeModel: process.env.JUDGE_MODEL,
     enableContributions: process.env.ENABLE_CONTRIBUTIONS,
     escalationConfidenceThreshold: process.env.ESCALATION_CONFIDENCE_THRESHOLD,
-    auditSampleRate: process.env.AUDIT_SAMPLE_RATE,
+    auditSweepIntervalHours: process.env.AUDIT_SWEEP_INTERVAL_HOURS,
+    auditStaleSuspensionDays: process.env.AUDIT_STALE_SUSPENSION_DAYS,
     sqsContributionQueue: process.env.SQS_CONTRIBUTION_QUEUE,
     sqsArbitrationQueue: process.env.SQS_ARBITRATION_QUEUE,
     sqsStewardQueue: process.env.SQS_STEWARD_QUEUE,

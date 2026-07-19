@@ -59,6 +59,9 @@ export interface AuditMessage {
     | "contributor_review"
     | "anomaly_investigation";
   context: string;
+  // The audit_runs row this message executes (#180): findings attach to it,
+  // and completion is recorded on it. Absent only for hand-crafted messages.
+  runId?: string;
 }
 
 export interface CuratorMessage {
@@ -221,4 +224,44 @@ export async function enqueueAudit(
       MessageBody: JSON.stringify(message),
     })
   );
+}
+
+/**
+ * Request an Audit Agent run (#180): the single entry point every trigger
+ * uses. Creates the audit_runs row FIRST — the run's identity, which findings
+ * attach to — and only then enqueues. When dedupeKey is set, the row's
+ * partial unique index makes the request at-most-once ('sweep:<date>',
+ * 'bad-faith:<contribution_id>'), safe across concurrent processes: the
+ * loser's INSERT inserts nothing and no duplicate run is enqueued.
+ *
+ * Returns the run id, or null when an earlier request already claimed the
+ * dedupe key.
+ */
+export async function requestAudit(input: {
+  auditType: AuditMessage["auditType"];
+  context: string;
+  triggeredBy:
+    | "arbitration_overturn"
+    | "bad_faith_flag"
+    | "scheduled_sweep"
+    | "suspension_review"
+    | "manual";
+  dedupeKey?: string;
+}): Promise<string | null> {
+  const rows = await rawQuery<{ id: string }>(
+    `INSERT INTO audit_runs (audit_type, context, triggered_by, dedupe_key)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
+     RETURNING id`,
+    [input.auditType, input.context, input.triggeredBy, input.dedupeKey ?? null]
+  );
+  const runId = rows[0]?.id;
+  if (!runId) return null;
+
+  await enqueueAudit({
+    auditType: input.auditType,
+    context: input.context,
+    runId,
+  });
+  return runId;
 }

@@ -225,9 +225,12 @@ decision it touched flagged, and a process change recommended.
 Actions against contributors follow §13. Reputation adjustments are
 small and evidence-backed. Suspension demands clear evidence of
 deliberate abuse, never honest error, weak sourcing, or an unpopular
-position; it also closes the contributor's appeal channel, so from
-their side it is irreversible (§16). Impose it only on evidence that
-would survive review, and lift it yourself when it no longer holds.`;
+position. It is severe but not one-way (§16): the contributor keeps the
+right to appeal their own contributions, the Arbitrator can lift a
+suspension whose basis an appeal dissolves, and a suspension that has
+stood unexamined too long returns to you for re-review. Impose it only
+on evidence that would survive that scrutiny, and lift it yourself when
+it no longer holds.`;
 
 // Accessors that combine policies as needed by each agent role
 

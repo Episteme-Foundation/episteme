@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     suspended: false,
     kudosAwarded: 0,
   })),
+  requestAudit: vi.fn(async () => "run-1"),
 }));
 
 vi.mock("../../../../src/db/client.js", () => ({
@@ -35,6 +36,7 @@ vi.mock("../../../../src/db/client.js", () => ({
 vi.mock("../../../../src/services/queue-service.js", () => ({
   enqueueArbitration: vi.fn(async () => {}),
   enqueueSteward: vi.fn(async () => {}),
+  requestAudit: mocks.requestAudit,
 }));
 
 vi.mock("../../../../src/services/reputation-service.js", async (importOriginal) => {
@@ -64,6 +66,7 @@ import { executeReviewerTool } from "../../../../src/llm/tools/reviewer-tools.js
 beforeEach(() => {
   mocks.insertedReviews.length = 0;
   mocks.applyReviewOutcome.mockClear();
+  mocks.requestAudit.mockClear();
 });
 
 describe("record_review_decision", () => {
@@ -94,6 +97,15 @@ describe("record_review_decision", () => {
       badFaithCategory: "misinformation",
     });
     expect(out.contributor).toMatchObject({ reputation: 49, standing: "good" });
+    // Every bad-faith flag triggers a decision audit (#180), at most once
+    // per contribution via the dedupe key.
+    expect(mocks.requestAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auditType: "decision_audit",
+        triggeredBy: "bad_faith_flag",
+        dedupeKey: `bad-faith:${CONTRIBUTION_ID}`,
+      })
+    );
   });
 
   it("ignores a bad-faith flag on a non-reject decision", async () => {
@@ -117,6 +129,7 @@ describe("record_review_decision", () => {
     expect(mocks.applyReviewOutcome).toHaveBeenCalledWith(
       expect.objectContaining({ suspectedBadFaith: false })
     );
+    expect(mocks.requestAudit).not.toHaveBeenCalled();
   });
 
   it("records a plain sincere rejection without any flag", async () => {
