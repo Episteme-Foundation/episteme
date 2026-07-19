@@ -46,7 +46,7 @@ export default function FlfPage() {
       <header className={s.hero}>
         <p className={s.kicker}>FLF Epistack · submission notes</p>
         <h1>How Episteme handles the ingestion, structure, and assessment questions</h1>
-        <p className="lede">
+        <p>
           Episteme is a public knowledge graph of claims. It reads sources, extracts the
           propositions they assert, links each claim to every source that speaks to it,
           decomposes a claim into what it rests on, and assesses how well the evidence supports
