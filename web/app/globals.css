@@ -422,6 +422,15 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   color: var(--ink-soft);
 }
 .argform-link { text-decoration-style: dotted; text-underline-offset: 2px; }
+/* The ↗ open-claim affordance after each linked subclaim, matching the tree
+   and the map (issue #200). inline-block keeps the dotted underline from
+   running under the glyph. */
+.argform-link .open-claim {
+  display: inline-block;
+  margin-left: 0.15em;
+  color: var(--faint);
+  font-size: 0.85em;
+}
 
 /* The steward's evaluation of a named argument (issue #173): whether the
    inference goes through granting its premises, and which premises bear the

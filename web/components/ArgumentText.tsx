@@ -6,6 +6,8 @@ import { parseWrittenForm } from "@/lib/claim-links";
  * become links to the subclaims the argument runs on. Authored inline phrasing
  * wins; otherwise the claim's canonical text (via `texts`, usually built from
  * the decomposition tree with buildClaimTextMap); otherwise a generic label.
+ * Each link carries the ↗ open-claim affordance used in the tree and on the
+ * map, marking the linked phrase as itself a claim with a page (issue #200).
  */
 export function ArgumentText({
   content,
@@ -27,6 +29,7 @@ export function ArgumentText({
             title={canonical && seg.display ? canonical : "open this claim"}
           >
             {seg.display ?? canonical ?? "linked claim"}
+            <span className="open-claim" aria-hidden="true">↗</span>
           </Link>
         );
       })}
