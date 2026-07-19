@@ -326,6 +326,11 @@
   position: absolute;
   top: 14px; right: 16px;
   width: 264px;
+  /* The stage clips its overflow, so a long preview (claim text + edge
+     reasoning + bedrock note) must scroll rather than run off the bottom
+     of the stage (#190). Mirrors the bottom-sheet rule at narrow widths. */
+  max-height: calc(100% - 28px);
+  overflow-y: auto;
   z-index: 30;
   background: rgba(254, 253, 251, 0.97);
   border: 1px solid var(--rule);
