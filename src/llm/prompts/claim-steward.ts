@@ -66,7 +66,8 @@ and load-bearing.
 
 Where distinct lines of reasoning bear on the claim (§7), group each one's
 subclaims under a named argument: add_argument, then pass the returned
-argument_id on the edges. One natural line of support needs no named argument.
+argument_id on the edges. One natural line of support needs no named argument;
+its subclaims stand as the claim's basis, the dependencies it rests on directly.
 
 Every named argument carries a written form. After attaching its edges, call
 write_argument with one to three sentences stating how the subclaims combine,
