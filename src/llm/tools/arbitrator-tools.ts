@@ -228,9 +228,12 @@ export async function executeArbitratorTool(
         const changeType = input.change_type as string;
         const details = input.details as string;
 
+        // Not contribution_accepted (#182): an arbitration can overturn as
+        // well as uphold, and the Steward should know it is integrating a
+        // ruling, not an acceptance.
         await enqueueSteward({
           claimId,
-          trigger: "contribution_accepted",
+          trigger: "arbitration_outcome",
           context: `Arbitration outcome - ${changeType}: ${details}`,
         });
 

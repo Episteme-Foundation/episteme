@@ -239,6 +239,44 @@ describe("steward update_claim_assessment", () => {
     expect(row?.status).toBe("verified");
   });
 
+  it("records the run's actual trigger and context on the assessment row (#182)", async () => {
+    await executeStewardTool(
+      "update_claim_assessment",
+      {
+        claim_id: "22222222-2222-2222-2222-222222222222",
+        status: "contested",
+        confidence: 0.5,
+        assessment: "Now contested.",
+        reasoning_trace: "A depended-on subclaim flipped.",
+      },
+      {
+        trigger: "subclaim_change",
+        context: "[subclaim_change] Subclaim X changed: moved to REFUTED",
+      }
+    );
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    // The regression this guards: every steward write stamped the generic
+    // "steward_reassessment", so the cause of a re-assessment was
+    // unrecoverable from the row.
+    expect(row?.trigger).toBe("subclaim_change");
+    expect(row?.triggerContext).toBe(
+      "[subclaim_change] Subclaim X changed: moved to REFUTED"
+    );
+  });
+
+  it("still stamps steward_reassessment when no run info is threaded", async () => {
+    await executeStewardTool("update_claim_assessment", {
+      claim_id: "22222222-2222-2222-2222-222222222222",
+      status: "supported",
+      confidence: 0.7,
+      assessment: "Fine.",
+      reasoning_trace: "Trace.",
+    });
+    const row = insertedValues.find((r) => "reasoningTrace" in r);
+    expect(row?.trigger).toBe("steward_reassessment");
+    expect(row?.triggerContext).toBeNull();
+  });
+
   it("falls back to the reasoning trace when the assessment is omitted (never writes blank)", async () => {
     await executeStewardTool("update_claim_assessment", {
       claim_id: "22222222-2222-2222-2222-222222222222",

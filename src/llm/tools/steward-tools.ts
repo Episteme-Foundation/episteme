@@ -419,7 +419,11 @@ export function getStewardToolDefinitions(): Tool[] {
 
 export async function executeStewardTool(
   toolName: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  // Why this run happened (the enqueued trigger/context). Threaded into the
+  // assessment row (#182) so a re-assessment records its actual cause rather
+  // than a generic "steward_reassessment".
+  run: { trigger?: string; context?: string } = {}
 ): Promise<string> {
   try {
     switch (toolName) {
@@ -473,7 +477,8 @@ export async function executeStewardTool(
           reasoningTrace,
           subclaimSummary: prev?.subclaimSummary ?? {},
           isCurrent: true,
-          trigger: "steward_reassessment",
+          trigger: run.trigger ?? "steward_reassessment",
+          triggerContext: run.context?.trim() ? run.context : null,
         });
 
         return JSON.stringify({

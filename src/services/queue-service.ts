@@ -42,6 +42,10 @@ export interface StewardMessage {
     // dependency is found).
     | "subclaim_change"
     | "contribution_accepted"
+    // A Dispute Arbitrator ruled on a dispute touching this claim. Distinct
+    // from contribution_accepted because the ruling may be an overturn — the
+    // Steward may need to unwind a change, not integrate one.
+    | "arbitration_outcome"
     | "staleness_check"
     // The Curator merged/split this claim, or suggests a structural edge — review
     // and reconcile (re-assess; adopt the suggested edge if apt).

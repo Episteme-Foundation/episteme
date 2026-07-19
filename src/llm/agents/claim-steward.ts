@@ -178,7 +178,10 @@ ${structureStep}
         }
         newSubclaimsThisRun++;
       }
-      return executeStewardTool(name, toolInput);
+      return executeStewardTool(name, toolInput, {
+        trigger: input.trigger,
+        context: input.context,
+      });
     },
   });
 }

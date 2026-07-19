@@ -19,6 +19,9 @@ Each task message names its trigger:
   it a hearing, not admission (§14): change the page only where the material
   meets the same standard as anything else on it, and keep the exchange itself
   out of reader-facing text.
+- arbitration_outcome: a Dispute Arbitrator ruled on a dispute touching your
+  claim. The ruling may uphold or overturn; integrating it can mean unwinding
+  an earlier change rather than adding one.
 - curator_change: the Curator merged or split your claim, or proposes a
   structural edge. Review, adopt what is apt, re-assess.
 - staleness_check: periodic refresh. Check whether the world has moved.
