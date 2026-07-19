@@ -110,6 +110,10 @@ export const treeNodeResponse: z.ZodType<TreeNode> = z.lazy(() =>
     confidence: z.number().nullable(),
     assessment_status: assessmentStatusEnum.nullable(),
     assessment_confidence: z.number().nullable(),
+    // Credence that the node's claim is true (#238); null where the Steward
+    // stated none (constitution §10: the omission is itself information).
+    // Optional so pre-deploy responses still parse.
+    assessment_credence: z.number().nullable().optional(),
     argument_id: uuidSchema.nullable(),
     argument_name: z.string().nullable(),
     argument_stance: stanceEnum.nullable(),
@@ -145,6 +149,7 @@ export interface TreeNode {
   confidence: number | null;
   assessment_status: string | null;
   assessment_confidence: number | null;
+  assessment_credence?: number | null;
   argument_id: string | null;
   argument_name: string | null;
   argument_stance: string | null;

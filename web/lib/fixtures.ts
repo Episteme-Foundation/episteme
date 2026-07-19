@@ -94,6 +94,7 @@ const FLAGSHIP: ClaimDetail = {
         "Real-wage arithmetic subtracts the inflation rate from nominal wage growth, so the derived claim needs the underlying inflation figure to hold.",
       assessment_status: "verified",
       assessment_confidence: 0.9,
+      assessment_credence: 0.93,
     },
     {
       id: "cost-of-living-crisis-2022",
@@ -124,6 +125,7 @@ const FLAGSHIP: ClaimDetail = {
         "Erosion of cash savings presupposes that prices rose materially over the year; the size of the loss is read straight off the inflation rate this claim states.",
       assessment_status: "supported",
       assessment_confidence: 0.72,
+      assessment_credence: 0.85,
     },
   ],
   // The public contribution record (#171), newest first. The accepted
@@ -238,6 +240,7 @@ const FLAGSHIP: ClaimDetail = {
         relation_type: "requires",
         reasoning: "The claim asserts a magnitude of inflation; that magnitude is fixed by the official CPI release. If the reported figure were different, the parent claim's truth would change accordingly.",
         confidence: 0.99, assessment_status: "verified", assessment_confidence: 0.97,
+        assessment_credence: 0.99,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
         argument_content: ARG_DIRECT_WRITTEN,
         children: [],
@@ -259,6 +262,7 @@ const FLAGSHIP: ClaimDetail = {
             relation_type: "supports",
             reasoning: "A 2% target is the conventional baseline against which deviations are judged “high”; 6.5% is more than triple it.",
             confidence: 0.95, assessment_status: "verified", assessment_confidence: 0.96,
+            assessment_credence: 0.98,
             argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
             argument_content: ARG_DIRECT_WRITTEN,
             children: [],

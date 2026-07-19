@@ -367,6 +367,7 @@ export async function claimRoutes(app: FastifyInstance): Promise<void> {
                     importance: { type: "number" },
                     assessment_status: { type: "string", nullable: true },
                     assessment_confidence: { type: "number", nullable: true },
+                    assessment_credence: { type: "number", nullable: true },
                   },
                 },
               },

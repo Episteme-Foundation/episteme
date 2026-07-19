@@ -8,6 +8,7 @@ interface TreeRootRow {
   state: string;
   assessment_status: string | null;
   assessment_confidence: number | null;
+  assessment_credence: number | null;
 }
 
 interface TreeEdgeRow {
@@ -27,6 +28,7 @@ interface TreeEdgeRow {
   argument_evaluation: string | null;
   assessment_status: string | null;
   assessment_confidence: number | null;
+  assessment_credence: number | null;
 }
 
 /**
@@ -58,7 +60,8 @@ export async function getClaimTree(
 ): Promise<TreeNode | null> {
   const [root] = await rawQuery<TreeRootRow>(
     `SELECT c.id, c.text, c.claim_type, c.state,
-            a.status AS assessment_status, a.confidence AS assessment_confidence
+            a.status AS assessment_status, a.confidence AS assessment_confidence,
+            a.claim_credence AS assessment_credence
        FROM claims c
        LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
       WHERE c.id = $1`,
@@ -83,7 +86,8 @@ export async function getClaimTree(
               arg.name AS argument_name, arg.stance AS argument_stance,
               arg.content AS argument_content,
               ae.verdict AS argument_verdict, ae.content AS argument_evaluation,
-              a.status AS assessment_status, a.confidence AS assessment_confidence
+              a.status AS assessment_status, a.confidence AS assessment_confidence,
+              a.claim_credence AS assessment_credence
          FROM claim_relationships cr
          JOIN claims c ON c.id = cr.child_claim_id
          LEFT JOIN assessments a ON a.claim_id = c.id AND a.is_current = true
@@ -129,6 +133,7 @@ export interface DependentClaim {
   importance: number;
   assessment_status: string | null;
   assessment_confidence: number | null;
+  assessment_credence: number | null;
 }
 
 /**
@@ -144,7 +149,8 @@ export async function getClaimDependents(claimId: string): Promise<DependentClai
   return rawQuery<DependentClaim>(
     `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
             cr.relation_type, cr.reasoning, c.importance,
-            a.status AS assessment_status, a.confidence AS assessment_confidence
+            a.status AS assessment_status, a.confidence AS assessment_confidence,
+            a.claim_credence AS assessment_credence
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.parent_claim_id
      LEFT JOIN assessments a ON a.claim_id = cr.parent_claim_id AND a.is_current = true
@@ -172,6 +178,7 @@ export async function listClaimDependents(
     `SELECT cr.parent_claim_id AS id, c.text, c.claim_type,
             cr.relation_type, cr.reasoning, c.importance,
             a.status AS assessment_status, a.confidence AS assessment_confidence,
+            a.claim_credence AS assessment_credence,
             COUNT(*) OVER ()::text AS total
      FROM claim_relationships cr
      JOIN claims c ON c.id = cr.parent_claim_id
@@ -247,6 +254,7 @@ function assembleTree(
       confidence: edge?.confidence ?? null,
       assessment_status: node.assessment_status,
       assessment_confidence: node.assessment_confidence,
+      assessment_credence: node.assessment_credence,
       argument_id: edge?.argument_id ?? null,
       argument_name: edge?.argument_name ?? null,
       argument_stance: edge?.argument_stance ?? null,
