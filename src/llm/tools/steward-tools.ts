@@ -364,7 +364,10 @@ export function getStewardToolDefinitions(): Tool[] {
       name: "notify_dependent_stewards",
       description:
         "Notify stewards of claims that depend on this claim, so they can " +
-        "evaluate whether the change is material to their claims.",
+        "evaluate whether the change is material to their claims. Which " +
+        "dependents to notify is your judgment (§22): pass parent_ids to " +
+        "reach only the dependents the change could actually be material to; " +
+        "omit it to notify all of them.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -375,6 +378,13 @@ export function getStewardToolDefinitions(): Tool[] {
           change_summary: {
             type: "string",
             description: "Brief summary of what changed",
+          },
+          parent_ids: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Optional triage: UUIDs of the dependent (parent) claims to " +
+              "notify. Omit to notify every dependent.",
           },
         },
         required: ["claim_id", "change_summary"],
@@ -784,18 +794,35 @@ export async function executeStewardTool(
       case "notify_dependent_stewards": {
         const claimId = input.claim_id as string;
         const changeSummary = input.change_summary as string;
+        // Optional triage (#182): the constitution assigns this steward the
+        // judgment of WHICH dependents a change is material to, so an explicit
+        // parent_ids list restricts the fan-out. Absent, all dependents are
+        // notified (the correct reading of "material to everyone").
+        const requested = Array.isArray(input.parent_ids)
+          ? (input.parent_ids as unknown[]).map(String)
+          : null;
 
-        // Find parent claims and enqueue steward messages for each
         const parents = await rawQuery<{ parent_id: string }>(
           `SELECT DISTINCT parent_claim_id AS parent_id
            FROM claim_relationships
            WHERE child_claim_id = $1`,
           [claimId]
         );
+        const parentIds = parents.map((p) => p.parent_id);
 
-        for (const parent of parents) {
+        // Intersect with the real dependent set so a hallucinated or stale id
+        // can't enqueue an unrelated claim's Steward; report what was dropped
+        // so the model can correct itself.
+        const targets = requested
+          ? parentIds.filter((id) => requested.includes(id))
+          : parentIds;
+        const skipped = requested
+          ? requested.filter((id) => !parentIds.includes(id))
+          : [];
+
+        for (const parentId of targets) {
           await enqueueSteward({
-            claimId: parent.parent_id,
+            claimId: parentId,
             trigger: "subclaim_change",
             context: `Subclaim ${claimId} changed: ${changeSummary}`,
           });
@@ -803,8 +830,16 @@ export async function executeStewardTool(
 
         return JSON.stringify({
           success: true,
-          message: `Notified ${parents.length} dependent claim stewards`,
-          parent_claim_ids: parents.map((p) => p.parent_id),
+          message: `Notified ${targets.length} dependent claim stewards`,
+          parent_claim_ids: targets,
+          ...(skipped.length > 0
+            ? {
+                skipped_not_dependents: skipped,
+                note:
+                  "These parent_ids are not dependents of this claim and were " +
+                  "not notified.",
+              }
+            : {}),
         });
       }
 

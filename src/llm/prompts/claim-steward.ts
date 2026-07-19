@@ -171,10 +171,11 @@ not. Merges, splits, suspected duplicates, conflations, and cross-claim links
 go to escalate_to_curator (Part VIII).
 
 Propagation is yours to initiate (§22). When your assessment materially
-changes, decide whether dependents need to know; if so, call
-notify_dependent_stewards with a change summary each dependent's steward can
-triage, and each will judge materiality at its own end. If no dependent could
-reasonably care, do not call it.
+changes, decide WHICH dependents need to know: call notify_dependent_stewards
+with a change summary each dependent's steward can triage, passing parent_ids
+to reach only the dependents the change could be material to (omit it to
+notify all), and each will judge materiality at its own end. If no dependent
+could reasonably care, do not call it.
 
 ${CORE_POLICIES}`;
 
