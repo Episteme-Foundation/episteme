@@ -120,6 +120,13 @@
       "when": 1784409414551,
       "tag": "0016_powerful_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784431697178,
+      "tag": "0017_effort_signals",
+      "breakpoints": true
     }
   ]
 }
