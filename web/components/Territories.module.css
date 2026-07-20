@@ -92,6 +92,19 @@
 .core :global(.badge) {
   white-space: nowrap;
 }
+/* The ↗ open-claim affordance after the core claim, matching the tree and
+   the map: faint until hovered, raised above the stretched map link so it
+   is the card's one exit to the claim page. */
+a.open,
+a.open:visited {
+  position: relative;
+  z-index: 1;
+  color: var(--faint);
+}
+a.open:hover {
+  color: var(--link);
+  text-decoration: none;
+}
 
 .spacer {
   flex: 1;

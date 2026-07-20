@@ -12,6 +12,8 @@ import styles from "./Territories.module.css";
 // front door into the cluster: the footer's "Walk the map" link is stretched
 // over the card (same pattern as the search-result cards, #198/#247), with the
 // verdict badge sitting above it so its definition popover stays reachable.
+// The ↗ after the core claim is the one exit to the claim page itself, the
+// same open-claim affordance the tree, argument prose, and map all use.
 
 function TerritoryCard({ t }: { t: Territory }) {
   const s = t.stats;
@@ -33,7 +35,10 @@ function TerritoryCard({ t }: { t: Territory }) {
             {" "}
             <StatusBadge status={s.coreStatus} linkTo={mapHref} />
           </>
-        )}
+        )}{" "}
+        <Link className={styles.open} href={`/claims/${t.anchorId}`} title="open this claim">
+          ↗&#xFE0E;
+        </Link>
       </p>
 
       <div className={styles.spacer} />
