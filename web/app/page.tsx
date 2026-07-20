@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FLAGSHIP_ID } from "@/lib/fixtures";
 import { apiConfigured } from "@/lib/api";
 import { loadClaim } from "@/lib/data";
+import { TERRITORIES } from "@/lib/territories";
 import { SearchInput } from "@/components/home/SearchInput";
 import { Surfaces } from "@/components/home/Surfaces";
 import styles from "@/components/home/home.module.css";
@@ -45,6 +46,22 @@ export default async function Home() {
         <form className={styles.search} role="search" action="/claims" method="get">
           <SearchInput />
         </form>
+        {/* coverage caption (#246): the corpus is a few investigations so far, and
+            search makes a broader promise than that. Name what's mapped, at the
+            point of action, rendered from TERRITORIES so a fourth cluster shows
+            up here without a copy edit. Each name is the same front door the
+            /claims cards use. */}
+        <p className={styles.coverage}>
+          Mapped so far:{" "}
+          {TERRITORIES.map((t, i) => (
+            <span key={t.key}>
+              {i > 0 && " · "}
+              <Link href={`/claims/${t.anchorId}/map`}>{t.name}</Link>
+            </span>
+          ))}
+          . The graph grows as claims are ingested; a search outside these areas
+          may miss for now.
+        </p>
       </div>
 
       {/* what's built on the graph: 01 map · 02 extension · 03 MCP & API */}
