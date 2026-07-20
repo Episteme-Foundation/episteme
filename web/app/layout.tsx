@@ -21,6 +21,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav>
               <Link href="/claims">claims</Link>
               <Link href="/docs">docs</Link>
+              {/* reopens the home walkthrough (#251) */}
+              <Link href="/?tour=1">tour</Link>
               <Link href="/about">about</Link>
               <Link href="/account">account</Link>
             </nav>

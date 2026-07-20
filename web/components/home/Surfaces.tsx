@@ -106,7 +106,7 @@ export function Surfaces({
 
   return (
     <section className={styles.section}>
-      <div className={styles.tabs} role="tablist" aria-label="What's built on the graph">
+      <div className={styles.tabs} role="tablist" aria-label="What's built on the graph" data-tour="tabs">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -124,9 +124,11 @@ export function Surfaces({
 
       {/* ---- 01 · the graph: the live claim map ---- */}
       <div id="panel-graph" role="tabpanel" aria-labelledby="tab-graph" hidden={tab !== "graph"}>
-        <div className={styles.mapbox}>
+        <div className={styles.mapbox} data-tour="map">
           <div className={styles.mapbar}>
-            <span className="sc">Claim map · focus + context</span>
+            <span className="sc">
+              Claim map · {source === "live" ? "click a claim to open it full-screen" : "click a claim to focus on it"}
+            </span>
             {/* only claim "live" when the data actually is; the fixture
                 fallback owns up to being a sample */}
             {source === "live" ? (
@@ -146,8 +148,13 @@ export function Surfaces({
           )}
         </div>
         <p className={styles.mapLinks}>
-          <Link className={styles.cta} href="/claims/inflation-2022/map">Open the map full-screen →</Link>
-          <span style={{ color: "var(--faint)" }}> · </span>
+          {/* full-screen opens the claim the embedded map is showing (#252) */}
+          {detail && (
+            <>
+              <Link className={styles.cta} href={`/claims/${detail.claim.id}/map`}>Open the map full-screen →</Link>
+              <span style={{ color: "var(--faint)" }}> · </span>
+            </>
+          )}
           <Link className={styles.cta} href="/claims">Browse all claims</Link>
         </p>
       </div>
