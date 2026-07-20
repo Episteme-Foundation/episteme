@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { FLAGSHIP_ID } from "@/lib/fixtures";
 import { apiConfigured } from "@/lib/api";
 import { loadClaim } from "@/lib/data";
 import { SearchInput } from "@/components/home/SearchInput";
 import { Surfaces } from "@/components/home/Surfaces";
+import { HomeTour } from "@/components/home/Tour";
 import styles from "@/components/home/home.module.css";
 
 // The home page (issue #80): show the graph, don't describe it. Hero + search,
@@ -42,10 +44,16 @@ export default async function Home() {
           current as the world changes, by AI administrators bound by a public
           constitution.
         </p>
-        <form className={styles.search} role="search" action="/claims" method="get">
+        <form className={styles.search} role="search" action="/claims" method="get" data-tour="search">
           <SearchInput />
         </form>
       </div>
+
+      {/* guided walkthrough (#251), opened only from the masthead's "tour"
+          entry; Suspense because it watches ?tour=1 via useSearchParams */}
+      <Suspense fallback={null}>
+        <HomeTour />
+      </Suspense>
 
       {/* what's built on the graph: 01 map · 02 extension · 03 MCP & API */}
       <Surfaces detail={detail} source={source} />
@@ -57,7 +65,7 @@ export default async function Home() {
           The graph is maintained by seven LLM administrators. Every decision carries a
           reasoning trace, and every trace is open to challenge.
         </p>
-        <div className={styles.triptych}>
+        <div className={styles.triptych} data-tour="docs">
           <Link className={styles.panelLink} href="/docs/constitution">
             <span className="sc">The constitution</span>
             <h3>The principles that bind every agent</h3>

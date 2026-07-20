@@ -21,6 +21,7 @@ import {
   BEDROCK, bedrockOf, computeLayout, defaultExpanded,
   type ClaimBits, type LEdge, type LNode, type Layout,
 } from "./layout";
+import { useRouter } from "next/navigation";
 import styles from "./graph.module.css";
 
 // ---------------------------------------------------------------------------
@@ -164,6 +165,10 @@ export function GraphView({
 }) {
   CACHE.set(initialDetail.claim.id, initialDetail);
 
+  const router = useRouter();
+  // The embedded live map links out on click; the offline sample keeps walking
+  // in place, because fixture subclaims have no pages of their own to open.
+  const linkOut = embed && source === "live";
   const stageRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 1200, h: 640 });
   const compact = box.w < 700;
@@ -425,6 +430,13 @@ export function GraphView({
       return;
     }
     if (n.claim && n.claim.id !== focusId) {
+      // Embedded (home) map: a click is a commitment, not a step. Open the
+      // claim in the full-screen map rather than walking the graph inside the
+      // small stage; browser back then returns to the untouched home (#254).
+      if (linkOut) {
+        router.push(`/claims/${encodeURIComponent(n.claim.id)}/map`);
+        return;
+      }
       // The preview follows the recentre: same claim, now the centred one, and
       // its edge note explains the step just taken.
       setPreview({ kind: "claim", claim: n.claim, isFocus: true });
@@ -855,7 +867,13 @@ export function GraphView({
                       </div>
                     )}
                     <div className={styles.previewFoot}>
-                      <span>{preview.isFocus ? "the claim in focus" : "click to focus the map on this claim"}</span>
+                      <span>
+                        {preview.isFocus
+                          ? "the claim in focus"
+                          : linkOut
+                            ? "click to open this claim in the full map"
+                            : "click to focus the map on this claim"}
+                      </span>
                       <Link href={`/claims/${c.id}`}>open claim page ↗</Link>
                     </div>
                   </>
@@ -867,7 +885,7 @@ export function GraphView({
       </div>
 
       {/* legend — a figure caption, not app chrome */}
-      <div className={styles.legend}>
+      <div className={styles.legend} data-tour="legend">
         <span className={styles.legendGroup}>
           {STATUS_ORDER.map((s) => (
             <Term key={s} gloss={STATUS[s].def} href={DEFINED_IN.status} className={styles.legendItem}>
@@ -901,7 +919,13 @@ export function GraphView({
             <span className={styles.legendEdge} style={{ borderColor: "var(--rule)" }} />requires
           </Term>
         </span>
-        <span className={styles.legendCaption}>Fig. — detail falls off with distance; every claim is an address.</span>
+        <span className={styles.legendCaption}>
+          {linkOut
+            ? "Hover a claim to preview it; click one to open the full-screen map."
+            : embed
+              ? "Hover a claim to preview it; click one to focus the map on it."
+              : "Fig. — detail falls off with distance; every claim is an address."}
+        </span>
       </div>
     </div>
   );
