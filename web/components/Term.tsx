@@ -13,8 +13,15 @@ import Link from "next/link";
 // `className` styles the visible label (e.g. "tag kind", "badge st-verified").
 // `align` shifts the popover for labels near a viewport edge: "start" pins its
 // left edge to the label (left margin rail), "end" its right edge (right rail).
+//
+// `linkTo` is for terms that sit inside a larger click target (a claim card,
+// a list row): instead of pinning the popover on click, the label becomes a
+// link to that destination so a click opens the claim like the rest of the card
+// (#247). Hover/focus still reveals the definition. Standalone terms (claim-page
+// header, legends) omit `linkTo` and keep click-to-pin so touch and keyboard
+// users can still open the popover.
 export function Term({
-  gloss, href, source = "constitution", className, align = "center", ariaLabel, children,
+  gloss, href, source = "constitution", className, align = "center", ariaLabel, linkTo, children,
 }: {
   gloss: string;
   href?: string;
@@ -22,6 +29,7 @@ export function Term({
   className?: string;
   align?: "center" | "start" | "end";
   ariaLabel?: string;
+  linkTo?: string;
   children: ReactNode;
 }) {
   const [pinned, setPinned] = useState(false);
@@ -53,22 +61,29 @@ export function Term({
 
   const popCls =
     align === "center" ? "term-pop" : `term-pop pop-${align}`;
+  const labelCls = `term-label${className ? ` ${className}` : ""}`;
 
   return (
     <span className={`term${pinned ? " pinned" : ""}`} ref={ref}>
-      <span
-        role="button"
-        tabIndex={0}
-        aria-expanded={pinned}
-        aria-label={ariaLabel}
-        className={`term-label${className ? ` ${className}` : ""}`}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") toggle(e);
-        }}
-      >
-        {children}
-      </span>
+      {linkTo ? (
+        <Link href={linkTo} className={`${labelCls} term-open`} aria-label={ariaLabel}>
+          {children}
+        </Link>
+      ) : (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-expanded={pinned}
+          aria-label={ariaLabel}
+          className={labelCls}
+          onClick={toggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") toggle(e);
+          }}
+        >
+          {children}
+        </span>
+      )}
       <span className={popCls} role="note" onClick={(e) => e.stopPropagation()}>
         {gloss}
         {href && (
