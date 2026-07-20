@@ -113,18 +113,21 @@ export default async function ClaimsIndex({
         <div className="cards">
           {claims.map((c) => {
             const kind = claimTypeMeta(c.claim_type);
+            const claimHref = `/claims/${c.id}`;
             return (
               // A div with a stretched link, not a Link: the footer's ontology
               // terms are themselves clickable (#198), and interactive elements
-              // may not nest inside an anchor.
+              // may not nest inside an anchor. Each term is given the claim's own
+              // href (`linkTo`) so a click opens the claim like the rest of the
+              // card, while hover still reveals the definition (#247).
               <div className="card" key={c.id}>
-                <Link href={`/claims/${c.id}`} className="card-link">
+                <Link href={claimHref} className="card-link">
                   <div className="card-claim">{c.text}</div>
                 </Link>
                 <div className="card-foot">
-                  {c.assessment_status ? <StatusBadge status={c.assessment_status} /> : <Unassessed />}
+                  {c.assessment_status ? <StatusBadge status={c.assessment_status} linkTo={claimHref} /> : <Unassessed linkTo={claimHref} />}
                   {kind ? (
-                    <Term gloss={kind.gloss} href={DEFINED_IN.claimType} className="tag kind">
+                    <Term gloss={kind.gloss} href={DEFINED_IN.claimType} linkTo={claimHref} className="tag kind">
                       {kind.label}
                     </Term>
                   ) : (
@@ -132,7 +135,7 @@ export default async function ClaimsIndex({
                   )}
                   {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
                   <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>
-                    <Importance value={c.importance} />
+                    <Importance value={c.importance} linkTo={claimHref} />
                     {/* Verdict confidence used to sit here as a bare number and
                         read as P(claim true); it now lives on the claim page,
                         quietly labelled (#160). Search relevance stays: it is

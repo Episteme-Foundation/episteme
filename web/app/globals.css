@@ -244,6 +244,10 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
    popover is positioned within them. */
 .term { position: relative; display: inline-flex; }
 .term-label { cursor: help; }
+/* a Term whose click opens the claim (inside a card/row) rather than pinning the
+   popover (#247): signal "clickable", not just "hoverable for info" */
+.term-open { cursor: pointer; color: inherit; }
+.term-open:hover { text-decoration: none; }
 .term-pop {
   position: absolute;
   bottom: calc(100% + 0.5rem);
