@@ -10,7 +10,7 @@ import type {
 import type { DataSource } from "@/lib/data";
 import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
-  decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
+  claimTypeMeta, decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
   nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS, CREDENCE_GLOSS,
   DEFINED_IN, STEWARD_SOURCE, isAssumesRelation,
 } from "@/lib/ontology";
@@ -102,8 +102,20 @@ interface PreviewState {
   kind: "claim" | "pill";
   claim?: ClaimBits;
   isFocus?: boolean;
-  pill?: { name: string; stance: string; desc: string | null };
+  pill?: { argId: string; name: string; stance: string; desc: string | null };
+  /** A clicked pill pins its explanation with a steer toward the claims (#249). */
+  nudge?: boolean;
 }
+
+// The map's grammar, taught where the vocabulary already is (#253): the legend
+// keys the shapes, in the same Term popovers as the statuses and relations.
+// Node-level explanation belongs to the margin preview instead — the shapes'
+// overflow clipping rules Terms out inside them, and the preview is the map's
+// one consistent tooltip surface (pinned on click for pills, #249).
+const MAP_KEY = {
+  claim: "A box is a claim: a single proposition the graph assesses, with its own page and map. Click any claim to centre the map on it.",
+  argument: "A pill is an argument: one line of reasoning stating how the claims beneath it combine to bear on the claim above it, for or against. Arguments are not destinations; click their claims to explore.",
+} as const;
 
 // null is "unassessed" (pending), never the assessed "Unknown" verdict (#160).
 function statusVars(status: AssessmentStatus | null): React.CSSProperties {
@@ -416,7 +428,21 @@ export function GraphView({
   }, []);
 
   const onNodeClick = (n: LNode) => {
-    if (n.kind === "pill") return;
+    if (n.kind === "pill") {
+      // No dead clicks (#249): an argument is not a recentre target, so the
+      // click pins the explanation the hover preview already carries, with a
+      // nudge toward the claims — and, while that preview stays open, rings
+      // the claims this argument rests on (see nudgeArgId below).
+      setPreview({
+        kind: "pill",
+        nudge: true,
+        pill: {
+          argId: n.pill!.argId, name: n.pill!.name, stance: n.pill!.stance,
+          desc: argDesc(n.pill!.argId),
+        },
+      });
+      return;
+    }
     if (n.kind === "more" && n.more) {
       if (n.more.action === "deps") setDepsOpen((v) => !v);
       else if (n.more.key) {
@@ -463,6 +489,10 @@ export function GraphView({
   // Canonical text for every claim in the focus tree, so a written form's
   // [[claim:<id>]] references render as the claims they name.
   const treeTexts = buildClaimTextMap(d.tree);
+  // While a clicked pill's preview is pinned, ring the claims that argument
+  // rests on — the destinations the pill itself is not (#249). Derived, not
+  // stored: the highlight lives exactly as long as the pinned preview.
+  const nudgeArgId = preview?.kind === "pill" && preview.nudge ? preview.pill?.argId : null;
 
   const nodeBody = (n: LNode) => {
     switch (n.kind) {
@@ -470,7 +500,14 @@ export function GraphView({
         return (
           <>
             <div className={styles.eyebrow}>
-              <span className="sc">claim · {d.claim.claim_type ? CLAIM_TYPE_LABEL[d.claim.claim_type as ClaimType] : "—"}</span>
+              <Term
+                gloss={claimTypeMeta(d.claim.claim_type)?.gloss ?? MAP_KEY.claim}
+                href={claimTypeMeta(d.claim.claim_type) ? DEFINED_IN.claimType : DEFINED_IN.claim}
+                align="start"
+                className="sc"
+              >
+                claim · {d.claim.claim_type ? CLAIM_TYPE_LABEL[d.claim.claim_type as ClaimType] : "—"}
+              </Term>
               <Link className={styles.pageLink} href={`/claims/${d.claim.id}`} title="Open the claim page — provenance, discourse, assessment">
                 claim page ↗
               </Link>
@@ -478,22 +515,30 @@ export function GraphView({
             <div className={styles.heroText}>{d.claim.text}</div>
             <div className={styles.focusBand}>
               {d.assessment ? (
-                <span className={`badge ${focusMeta.cls}`}>
+                <Term gloss={focusMeta.def} href={DEFINED_IN.status} align="start" className={`badge ${focusMeta.cls}`}>
                   <span className="badge-glyph">{focusMeta.glyph}</span>
                   {focusMeta.label}
-                </span>
+                </Term>
               ) : (
-                <span className="badge unassessed">unassessed</span>
+                <Term gloss={UNASSESSED_META.def} href={DEFINED_IN.importance} align="start" className="badge unassessed">
+                  unassessed
+                </Term>
               )}
               {/* Verdict confidence is meta and easily misread as P(claim
                   true); on the map it lives in the hover preview, labelled,
                   not as a bare number beside the badge (#160). */}
               {!view.partial && (
-                <span className="imp-pips" title={`importance: ${IMPORTANCE[impLevel].label} — ${IMPORTANCE[impLevel].gloss}`}>
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <span key={i} className={`imp-pip${i < IMPORTANCE[impLevel].pips ? " on" : ""}`} />
-                  ))}
-                </span>
+                <Term
+                  gloss={`importance · ${IMPORTANCE[impLevel].label}: ${IMPORTANCE[impLevel].gloss}`}
+                  href={DEFINED_IN.importance}
+                  ariaLabel={`importance: ${IMPORTANCE[impLevel].label}`}
+                >
+                  <span className="imp-pips">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i} className={`imp-pip${i < IMPORTANCE[impLevel].pips ? " on" : ""}`} />
+                    ))}
+                  </span>
+                </Term>
               )}
             </div>
           </>
@@ -520,19 +565,11 @@ export function GraphView({
                   {n.expandedNow ? "▾" : "▸"} {c.childCount}{c.truncated ? "+" : ""} subclaim{c.childCount > 1 || c.truncated ? "s" : ""}
                 </button>
               ) : c.collapsed ? (
-                <span
-                  className={styles.atomicTag}
-                  title="A shared subclaim: its decomposition is drawn at its other occurrence on this map. Click to bring it into focus and see it in full."
-                >
-                  shared · shown elsewhere
-                </span>
+                // The tag's meaning lives in the margin preview, which hovering
+                // this node already opens — one tooltip surface, not two (#253).
+                <span className={styles.atomicTag}>shared · shown elsewhere</span>
               ) : c.truncated ? (
-                <span
-                  className={styles.atomicTag}
-                  title="This view is size-capped and this claim's subclaims were not loaded. Click to bring it into focus and see them."
-                >
-                  more on its map
-                </span>
+                <span className={styles.atomicTag}>more on its map</span>
               ) : c.bedrock ? null : (
                 <span className={styles.atomicTag}>atomic</span>
               )}
@@ -608,7 +645,9 @@ export function GraphView({
           <span className="sc"><Link href={`/claims/${focusId}`}>← claim page</Link></span>
           <span className="sc" style={{ color: "var(--ink-soft)" }}>map view</span>
           {source === "fixture" && (
-            <span className="tag" title="The API is not connected; showing a design fixture.">fixture data</span>
+            <Term gloss="The API is not connected, so this map shows a built-in design fixture rather than live claims." className="tag">
+              fixture data
+            </Term>
           )}
           <span className={`sc ${styles.hint}`} style={{ color: "var(--faint)" }}>
             click a claim to focus on it · hover to preview · ⌫ back
@@ -678,6 +717,7 @@ export function GraphView({
             {layout.nodes.map((n) => {
               const fresh = !prevKeys.current.has(n.key);
               const isMini = n.kind === "mini";
+              const interactive = (n.claim && n.claim.id !== focusId) || n.kind === "pill";
               return (
                 <div
                   key={n.key}
@@ -688,6 +728,9 @@ export function GraphView({
                       ? n.pill!.stance === "for" ? styles.pillFor
                         : n.pill!.stance === "against" ? styles.pillAgainst : styles.pillNeutral
                       : "",
+                    (n.kind === "t1" || n.kind === "side")
+                      && nudgeArgId != null && n.claim?.argumentId === nudgeArgId
+                      ? styles.nudged : "",
                   ].join(" ").trim()}
                   data-enter={fresh ? "1" : undefined}
                   style={{
@@ -697,18 +740,26 @@ export function GraphView({
                     height: n.h,
                     ...(isMini ? statusVars(n.claim!.status) : null),
                   }}
-                  role={n.claim && n.claim.id !== focusId ? "button" : undefined}
-                  tabIndex={n.claim && n.claim.id !== focusId ? 0 : undefined}
-                  aria-label={n.claim ? n.claim.text : n.pill?.name}
+                  role={interactive ? "button" : undefined}
+                  tabIndex={interactive ? 0 : undefined}
+                  aria-label={n.claim ? n.claim.text : n.pill ? `argument · ${n.pill.name} · ${n.pill.stance}` : undefined}
                   onClick={() => onNodeClick(n)}
-                  onKeyDown={(ev) => { if (ev.key === "Enter") onNodeClick(n); }}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onNodeClick(n); }
+                  }}
                   onMouseEnter={() => {
                     if (n.claim) showClaimPreview(n.claim, n.kind === "focus");
                     else if (n.kind === "pill") {
-                      setPreview({
-                        kind: "pill",
-                        pill: { name: n.pill!.name, stance: n.pill!.stance, desc: argDesc(n.pill!.argId) },
-                      });
+                      // Re-hovering the pinned pill keeps the pin; hovering it
+                      // fresh shows the plain preview, no nudge.
+                      setPreview((prev) => (
+                        prev?.kind === "pill" && prev.nudge && prev.pill?.argId === n.pill!.argId
+                          ? prev
+                          : {
+                              kind: "pill",
+                              pill: { argId: n.pill!.argId, name: n.pill!.name, stance: n.pill!.stance, desc: argDesc(n.pill!.argId) },
+                            }
+                      ));
                     }
                   }}
                   onMouseLeave={() => setHoverId(null)}
@@ -809,6 +860,13 @@ export function GraphView({
                     <ArgumentText content={preview.pill.desc} texts={treeTexts} />
                   </div>
                 )}
+                {preview.nudge && (
+                  <div className={styles.previewNudge}>
+                    An argument is not a destination on this map; the claims it
+                    rests on are. Click one of the claims highlighted beneath it
+                    to keep exploring.
+                  </div>
+                )}
                 <div className={styles.previewFoot}>
                   <span>an argument states how its subclaims combine to bear on the claim</span>
                 </div>
@@ -861,6 +919,27 @@ export function GraphView({
                         {c.reasoning || rel.gloss}
                       </div>
                     )}
+                    {/* What the node's drawing means (#253): shared, size-capped
+                        and atomic states explained here, in the map's one
+                        tooltip surface, instead of clipped native titles. */}
+                    {c.collapsed && (
+                      <div className={styles.previewNote}>
+                        A shared subclaim: it also appears elsewhere on this map,
+                        where its decomposition is drawn. Focus on it to see it in full.
+                      </div>
+                    )}
+                    {c.truncated && (
+                      <div className={styles.previewNote}>
+                        This view is size-capped, so this claim&apos;s subclaims are
+                        not drawn here. Focus on it to see them.
+                      </div>
+                    )}
+                    {!preview.isFocus && !c.up && !c.collapsed && !c.truncated
+                      && !c.bedrock && c.childCount === 0 && (
+                      <div className={styles.previewNote}>
+                        Atomic: no decomposition is recorded beneath this claim.
+                      </div>
+                    )}
                     {c.bedrock && (
                       <div className={styles.previewNote} style={{ borderLeftColor: `var(--st-${c.status ?? "unknown"})` }}>
                         {BEDROCK[c.bedrock].note}
@@ -886,6 +965,18 @@ export function GraphView({
 
       {/* legend — a figure caption, not app chrome */}
       <div className={styles.legend} data-tour="legend">
+        {/* the map's grammar first (#253): what the shapes are, before what
+            their colours and edges say */}
+        <span className={styles.legendGroup}>
+          <Term gloss={MAP_KEY.claim} href={DEFINED_IN.claim} align="start" className={styles.legendItem}>
+            <span className={styles.legendClaim} aria-hidden />claim
+          </Term>
+          <Term gloss={MAP_KEY.argument} href={DEFINED_IN.argument} align="start" className={styles.legendItem}>
+            <span className={styles.legendPill} aria-hidden />argument
+          </Term>
+        </span>
+        <span className={styles.legendRule} />
+
         <span className={styles.legendGroup}>
           {STATUS_ORDER.map((s) => (
             <Term key={s} gloss={STATUS[s].def} href={DEFINED_IN.status} className={styles.legendItem}>

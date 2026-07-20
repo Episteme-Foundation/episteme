@@ -30,6 +30,14 @@
 .search input::placeholder { color: var(--faint); }
 .search input:focus { border-color: var(--muted); }
 
+/* coverage caption under the search box (#246): scope disclaimer in the
+   form-caption register — sans, muted, one size down from the input. */
+.coverage {
+  margin: 0.65rem auto 0; max-width: 34rem;
+  font-family: var(--sans); font-size: 0.78rem; line-height: 1.55;
+  color: var(--muted);
+}
+
 /* ----- surface tabs ----- */
 .section { padding: 3.2rem 0 0; }
 .tabs {
