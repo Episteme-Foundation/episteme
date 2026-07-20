@@ -154,7 +154,7 @@ function ContributionEntry({ e }: { e: Extract<ClaimEvent, { kind: "contribution
         {e.evidence_urls.length > 0 && (
           <p className={styles.evidence}>
             {e.evidence_urls.map((url) => (
-              <a key={url} href={url} rel="nofollow noopener">evidence ↗</a>
+              <a key={url} href={url} rel="nofollow noopener">evidence ↗&#xFE0E;</a>
             ))}
           </p>
         )}

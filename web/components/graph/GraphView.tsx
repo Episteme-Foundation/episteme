@@ -509,7 +509,7 @@ export function GraphView({
                 claim · {d.claim.claim_type ? CLAIM_TYPE_LABEL[d.claim.claim_type as ClaimType] : "—"}
               </Term>
               <Link className={styles.pageLink} href={`/claims/${d.claim.id}`} title="Open the claim page — provenance, discourse, assessment">
-                claim page ↗
+                claim page ↗&#xFE0E;
               </Link>
             </div>
             <div className={styles.heroText}>{d.claim.text}</div>
@@ -953,7 +953,7 @@ export function GraphView({
                             ? "click to open this claim in the full map"
                             : "click to focus the map on this claim"}
                       </span>
-                      <Link href={`/claims/${c.id}`}>open claim page ↗</Link>
+                      <Link href={`/claims/${c.id}`}>open claim page ↗&#xFE0E;</Link>
                     </div>
                   </>
                 );

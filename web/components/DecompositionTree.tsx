@@ -73,11 +73,11 @@ function BasisNode({ node }: { node: TreeNode }) {
         >
           {node.text}
         </span>{" "}
-        <Link className="plain" href={`/claims/${node.id}`} title="open this claim" style={{ color: "var(--faint)" }}>↗</Link>
+        <Link className="plain" href={`/claims/${node.id}`} title="open this claim" style={{ color: "var(--faint)" }}>↗&#xFE0E;</Link>
         {node.subtree_collapsed && (
           <span
             className="basis-flag"
-            title="A shared subclaim: it belongs to more than one branch of this decomposition, and its own subclaims are listed at its other occurrence. ↗ opens its page."
+            title="A shared subclaim: it belongs to more than one branch of this decomposition, and its own subclaims are listed at its other occurrence. ↗&#xFE0E; opens its page."
           >
             {" "}· shared subclaim
           </span>

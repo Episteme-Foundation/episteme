@@ -65,6 +65,10 @@ body {
   font-family: var(--serif);
   line-height: 1.58;
   font-feature-settings: "kern" 1, "liga" 1, "onum" 1, "calt" 1;
+  /* iOS renders ↗ ▶ ⚠ and kin as color emoji by default; force the text
+     glyphs sitewide. Key affordances also carry U+FE0E inline for
+     browsers that predate this property (Safari < 17.4). */
+  font-variant-emoji: text;
 }
 
 /* ----- links ----- */
