@@ -17,6 +17,14 @@ const ARG_DIRECT_WRITTEN =
   "Reserve's 2% target]] anchors the threshold, though [[claim:hyperinflation-view|a " +
   "minority usage]] reserves “high” for double-digit regimes.";
 
+// The steward's evaluation of that argument (issue #173): the verdict on the
+// inference plus prose naming the load-bearing premise. Like the written form,
+// it is threaded onto every edge in the argument and into the argument record.
+const ARG_DIRECT_EVALUATION =
+  "The inference is sound arithmetic once its premises are granted, but it " +
+  "leans entirely on [[claim:threshold-def|where the “high” threshold sits]], " +
+  "which is a contested definitional choice rather than a measurement.";
+
 const FLAGSHIP: ClaimDetail = {
   claim: {
     id: "inflation-2022",
@@ -65,6 +73,8 @@ const FLAGSHIP: ClaimDetail = {
       name: "Direct measurement",
       stance: "for",
       content: ARG_DIRECT_WRITTEN,
+      verdict: "holds_with_caveats",
+      evaluation: ARG_DIRECT_EVALUATION,
       evidence_urls: ["https://www.bls.gov/news.release/archives/cpi_01122023.htm"],
       created_by: "decomposer",
       created_at: "2024-11-02T14:25:00Z",
@@ -243,6 +253,7 @@ const FLAGSHIP: ClaimDetail = {
         assessment_credence: 0.99,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
         argument_content: ARG_DIRECT_WRITTEN,
+        argument_verdict: "holds_with_caveats", argument_evaluation: ARG_DIRECT_EVALUATION,
         children: [],
       },
       {
@@ -254,6 +265,7 @@ const FLAGSHIP: ClaimDetail = {
         confidence: 0.6, assessment_status: "contested", assessment_confidence: 0.55,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
         argument_content: ARG_DIRECT_WRITTEN,
+        argument_verdict: "holds_with_caveats", argument_evaluation: ARG_DIRECT_EVALUATION,
         children: [
           {
             id: "fed-target",
@@ -265,6 +277,7 @@ const FLAGSHIP: ClaimDetail = {
             assessment_credence: 0.98,
             argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
             argument_content: ARG_DIRECT_WRITTEN,
+            argument_verdict: "holds_with_caveats", argument_evaluation: ARG_DIRECT_EVALUATION,
             children: [],
           },
           {
@@ -276,6 +289,7 @@ const FLAGSHIP: ClaimDetail = {
             confidence: 0.5, assessment_status: "unsupported", assessment_confidence: 0.4,
             argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
             argument_content: ARG_DIRECT_WRITTEN,
+            argument_verdict: "holds_with_caveats", argument_evaluation: ARG_DIRECT_EVALUATION,
             children: [],
           },
         ],
@@ -289,6 +303,7 @@ const FLAGSHIP: ClaimDetail = {
         confidence: 1.0, assessment_status: "verified", assessment_confidence: 1.0,
         argument_id: "arg-direct", argument_name: "Direct measurement", argument_stance: "for",
         argument_content: ARG_DIRECT_WRITTEN,
+        argument_verdict: "holds_with_caveats", argument_evaluation: ARG_DIRECT_EVALUATION,
         children: [],
       },
     ],
