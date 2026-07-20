@@ -9,6 +9,7 @@ import { orderByMention } from "./claim-links";
 // relation vocabulary is enumerated only in the Claim Steward's instructions,
 // so it links there instead.
 export const DEFINED_IN = {
+  claim: "/docs/constitution#2-what-a-claim-is",
   status: "/docs/constitution#10-explicit-uncertainty",
   confidence: "/docs/constitution#10-explicit-uncertainty",
   claimType: "/docs/constitution#8-uniformity-across-claim-types",
