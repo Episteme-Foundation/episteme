@@ -431,7 +431,22 @@
    the caption chrome steps back. Scrolling is expected at this size — the
    stage keeps native touch scrolling in both axes. */
 @media (max-width: 700px) {
-  .stage { height: max(26rem, calc(100vh - 15rem)); }
+  /* The trail is redundant on touch: every step is a pushState, so the
+     browser's back gesture already walks it — and its wrapped lines were
+     pushing the stage off the bottom of the screen. */
+  .trail { display: none; }
+  /* Pull the map up under the masthead: the frame's reading-page top padding
+     suits prose, but on a phone it starves the stage. */
+  .bleed { margin-top: -2.1rem; }
+  .toolbar { padding: 0.5rem 1.1rem 0.5rem; }
+  /* The stage runs to the bottom of the viewport, so the sheet's overlap with
+     the stage equals the sheet's own height (GraphView centres the world in
+     the band above it). dvh tracks the collapsing mobile URL bar. The embed
+     stage is excluded: contained mode keeps its own fixed height. */
+  .stage:not(.embedStage) { height: max(26rem, calc(100vh - 8.6rem)); }
+  @supports (height: 100dvh) {
+    .stage:not(.embedStage) { height: max(26rem, calc(100dvh - 8.6rem)); }
+  }
   .preview {
     position: fixed;
     top: auto; right: 0; left: 0; bottom: 0;
