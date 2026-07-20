@@ -20,13 +20,16 @@ function argKey(group: ArgumentGroup): string {
   return group.id ?? "basis";
 }
 
-// The steward's verdict on the inference (issue #173), as a quiet tag beside
-// the stance. Nothing renders until the argument has been evaluated.
+// The steward's verdict on the inference (issue #173), beside the stance.
+// Boxed like every verdict on the site (cf. the claim's assessment badge), so
+// the bare small-caps stance and the verdict read as two tokens, not one
+// phrase ("For Inference Holds") (#250). Nothing renders until the argument
+// has been evaluated.
 function ArgumentVerdictTag({ verdict }: { verdict: string | null }) {
   const meta = argumentVerdictMeta(verdict);
   if (!meta) return null;
   return (
-    <Term gloss={meta.gloss} href={DEFINED_IN.argument} className={`arg-verdict ${meta.cls}`}>
+    <Term gloss={meta.gloss} href={DEFINED_IN.argument} className={`badge arg-verdict ${meta.cls}`}>
       {meta.label}
     </Term>
   );

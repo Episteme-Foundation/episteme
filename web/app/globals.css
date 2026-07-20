@@ -454,9 +454,19 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   line-height: 1.5;
   color: var(--ink-soft);
 }
+/* The verdict tag sits right beside the stance, and the two once shared one
+   typographic voice, so "For" + "Inference Holds" read as a single phrase
+   (#250). On this site a verdict wears a bordered, tinted badge (the claim's
+   assessment badge above) while bare coloured small-caps mean a structural
+   label (.relation, .arg-stance) — so the verdict composes `.badge`, scaled
+   down to the arghead, and the stance stays bare. Only the deviations from
+   `.badge` live here. */
 .arg-verdict {
-  font-family: var(--sans); font-size: 0.64rem; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  padding: 0.12rem 0.42rem 0.1rem;
+  /* the swatch precedent: at this scale a full-strength border overwhelms */
+  border-color: color-mix(in srgb, currentColor 55%, transparent);
 }
 
 /* The basis (#204): the default decomposition — a claim's direct subclaims that
