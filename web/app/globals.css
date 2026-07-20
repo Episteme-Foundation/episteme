@@ -310,18 +310,12 @@ footer.site .inner { max-width: var(--frame); margin: 0 auto; padding: 1.6rem; }
   font-weight: 500;
 }
 
-/* importance meter — neutral pips, deliberately NOT status-coloured so it never
-   competes with the assessment verdict. */
-.imp { display: inline-flex; align-items: center; gap: 0.4rem; }
-.imp-pips { display: inline-flex; gap: 0.16rem; align-items: center; }
-.imp-pip {
-  width: 0.3rem; height: 0.3rem; border-radius: 50%;
-  border: 1px solid var(--faint); background: transparent;
-}
-.imp-pip.on { background: var(--muted); border-color: var(--muted); }
+/* importance — its band word, quietly labelled ("importance · central").
+   Never a meter: every meter and number in this UI measures belief, so an
+   unlabelled row of pips beside a claim read as P(claim true). */
 .imp-label {
   font-family: var(--sans); font-size: 0.66rem; color: var(--muted);
-  font-variant: small-caps; letter-spacing: 0.02em;
+  font-variant: small-caps; letter-spacing: 0.02em; white-space: nowrap;
 }
 
 /* relation label on a decomposition edge */
