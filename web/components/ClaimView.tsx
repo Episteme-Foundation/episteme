@@ -117,8 +117,8 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
           <>
             <p style={{ color: "var(--muted)", fontFamily: "var(--sans)", fontSize: ".8rem", marginTop: "-.3rem" }}>
               {tree!.children.some((c) => c.argument_name)
-                ? "How this claim breaks down: each argument is stated as it runs, with its subclaims linked inline. ↗ opens a subclaim; the map shows how they fit together."
-                : "The claims this one rests on directly. ↗ opens a subclaim; the map shows how they fit together."}
+                ? "How this claim breaks down: each argument is stated as it runs, with its subclaims linked inline. ↗\uFE0E opens a subclaim; the map shows how they fit together."
+                : "The claims this one rests on directly. ↗\uFE0E opens a subclaim; the map shows how they fit together."}
             </p>
             <DecompositionTree tree={tree!} />
           </>

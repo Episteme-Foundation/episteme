@@ -39,7 +39,7 @@ export function ArgumentText({
             title={canonical && seg.display ? canonical : "open this claim"}
           >
             {seg.display ?? canonical ?? "linked claim"}
-            <span className="open-claim" aria-hidden="true">↗</span>
+            <span className="open-claim" aria-hidden="true">↗&#xFE0E;</span>
           </Link>
         );
       })}
