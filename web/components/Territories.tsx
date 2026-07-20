@@ -8,13 +8,16 @@ import styles from "./Territories.module.css";
 // The "What's mapped so far" overview shown on /claims before a search (#206):
 // one card per curated investigation, fronted by its real core claim and
 // verdict, with counts and a verdict mix derived from the anchor's subtree.
-// A card teaches "what is a claim" by showing one, and its map link is the
-// front door into the cluster.
+// A card teaches "what is a claim" by showing one, and the whole card is the
+// front door into the cluster: the footer's "Walk the map" link is stretched
+// over the card (same pattern as the search-result cards, #198/#247), with the
+// verdict badge sitting above it so its definition popover stays reachable.
 
 function TerritoryCard({ t }: { t: Territory }) {
   const s = t.stats;
   const coreText = s?.coreText ?? t.coreText;
   const assessed = s?.assessedCount ?? 0;
+  const mapHref = `/claims/${t.anchorId}/map`;
 
   return (
     <article className={styles.card}>
@@ -28,7 +31,7 @@ function TerritoryCard({ t }: { t: Territory }) {
         {s?.coreStatus && (
           <>
             {" "}
-            <StatusBadge status={s.coreStatus} />
+            <StatusBadge status={s.coreStatus} linkTo={mapHref} />
           </>
         )}
       </p>
@@ -65,7 +68,7 @@ function TerritoryCard({ t }: { t: Territory }) {
         ) : (
           <span className={styles.count} />
         )}
-        <Link className={styles.walk} href={`/claims/${t.anchorId}/map`}>
+        <Link className={styles.walk} href={mapHref}>
           Walk the map →
         </Link>
       </div>
