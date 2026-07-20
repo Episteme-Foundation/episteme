@@ -47,8 +47,8 @@ export default async function AgentPage({ params }: { params: Promise<{ key: str
         <p style={{ fontFamily: "var(--sans)", fontSize: ".84rem", color: "var(--muted)" }}>
           Every agent&rsquo;s prompt is layered: <strong>(1)</strong> the full{" "}
           <Link href="/docs/constitution">Constitution</Link> (identical for all agents),{" "}
-          <strong>(2)</strong> the role-specific instructions below — including this
-          agent&rsquo;s policies — and <strong>(3)</strong> the task context, supplied at
+          <strong>(2)</strong> the role-specific instructions below, including this
+          agent&rsquo;s policies, and <strong>(3)</strong> the task context, supplied at
           runtime. What follows is layer 2, verbatim.
         </p>
       </div>
@@ -59,7 +59,7 @@ export default async function AgentPage({ params }: { params: Promise<{ key: str
 
       <details style={{ marginTop: "1.6rem", maxWidth: "46rem" }}>
         <summary style={{ cursor: "pointer", fontFamily: "var(--sans)", fontSize: ".82rem", color: "var(--link)" }}>
-          Show the complete assembled system prompt (Constitution included) — {full.length.toLocaleString()} characters
+          Show the complete assembled system prompt (Constitution included) · {full.length.toLocaleString()} characters
         </summary>
         <pre className="prompt-pre" style={{ marginTop: ".8rem" }}>{full}</pre>
       </details>
