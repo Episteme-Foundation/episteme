@@ -6,11 +6,11 @@ import {
 import { Term } from "./Term";
 
 export function StatusBadge({
-  status, size = "sm",
-}: { status: AssessmentStatus | string | null; size?: "sm" | "lg" }) {
+  status, size = "sm", linkTo,
+}: { status: AssessmentStatus | string | null; size?: "sm" | "lg"; linkTo?: string }) {
   const s = statusMeta(status);
   return (
-    <Term gloss={s.def} href={DEFINED_IN.status} className={`badge ${s.cls}${size === "lg" ? " lg" : ""}`}>
+    <Term gloss={s.def} href={DEFINED_IN.status} linkTo={linkTo} className={`badge ${s.cls}${size === "lg" ? " lg" : ""}`}>
       <span className="badge-glyph" aria-hidden>{s.glyph}</span>
       {s.label}
     </Term>
@@ -25,9 +25,9 @@ export function Swatch({ status }: { status: AssessmentStatus | string | null })
 // Shown in place of a StatusBadge when a claim has no current assessment. The
 // dashed, muted treatment signals "still queued" rather than a verdict — many
 // low-importance claims sit unassessed under the Steward's budget by design.
-export function Unassessed() {
+export function Unassessed({ linkTo }: { linkTo?: string } = {}) {
   return (
-    <Term gloss={UNASSESSED_META.def} href={DEFINED_IN.importance} className="badge unassessed">
+    <Term gloss={UNASSESSED_META.def} href={DEFINED_IN.importance} linkTo={linkTo} className="badge unassessed">
       Unassessed
     </Term>
   );
@@ -37,14 +37,14 @@ export function Unassessed() {
 // by assessment status so it never competes with the verdict. The numeric value
 // and band live in the popover; `showLabel` adds the band name inline.
 export function Importance({
-  value, showLabel = false,
-}: { value: number | null | undefined; showLabel?: boolean }) {
+  value, showLabel = false, linkTo,
+}: { value: number | null | undefined; showLabel?: boolean; linkTo?: string }) {
   if (typeof value !== "number") return null;
   const level = importanceLevel(value);
   const meta = IMPORTANCE[level];
   const gloss = `Importance ${value.toFixed(2)}, from 0 to 1 · ${meta.label}: ${meta.gloss}. The Steward assesses and decomposes higher-importance claims first.`;
   return (
-    <Term gloss={gloss} href={DEFINED_IN.importance} className="imp" ariaLabel={`importance: ${meta.label}`}>
+    <Term gloss={gloss} href={DEFINED_IN.importance} linkTo={linkTo} className="imp" ariaLabel={`importance: ${meta.label}`}>
       <span className="imp-pips" aria-hidden>
         {[1, 2, 3, 4, 5].map((i) => (
           <span key={i} className={`imp-pip${i <= meta.pips ? " on" : ""}`} />
