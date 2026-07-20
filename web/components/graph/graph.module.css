@@ -206,7 +206,7 @@
   letter-spacing: 0.07em; text-transform: uppercase;
   padding: 0 12px;
   white-space: nowrap; overflow: hidden;
-  cursor: default;
+  cursor: pointer;
 }
 /* If the width estimate ever falls short, the name shrinks and ellipsizes —
    glyphs are never sliced. min-width: 0 lets the flex item actually shrink. */
@@ -215,6 +215,19 @@
 .pillFor     { background: var(--st-supported-tint);    border-color: var(--stance-for);     color: var(--stance-for); }
 .pillAgainst { background: var(--st-contradicted-tint); border-color: var(--stance-against); color: var(--stance-against); }
 .pillNeutral { background: var(--paper-sunk);           border-color: var(--faint);          color: var(--muted); }
+
+/* #249: a clicked pill pins its explanation and rings the claims the argument
+   rests on — the map's actual destinations. The ring settles rather than
+   blinking; it clears when the pinned preview does. */
+.nudged {
+  outline: 2px solid color-mix(in srgb, var(--link) 65%, transparent);
+  outline-offset: 3px;
+  animation: nudgeIn 0.7s ease-out;
+}
+@keyframes nudgeIn {
+  0%   { outline-offset: 10px; outline-color: transparent; }
+  100% { outline-offset: 3px; }
+}
 
 /* overflow chip */
 .more {
@@ -363,6 +376,13 @@
   padding-left: 9px; margin-bottom: 8px;
 }
 .previewNote .relLine { display: block; margin-bottom: 2px; }
+/* #249: the steer shown when an argument pill is clicked — same shape as a
+   note, but keyed to the ring it narrates. */
+.previewNudge {
+  font-size: 0.68rem; line-height: 1.45; color: var(--ink-soft);
+  border-left: 2px solid color-mix(in srgb, var(--link) 65%, transparent);
+  padding-left: 9px; margin-bottom: 8px;
+}
 .previewFoot {
   display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem;
   font-size: 0.6rem; letter-spacing: 0.04em; color: var(--faint);
@@ -394,6 +414,9 @@
 .legendGlyph { font-weight: 700; }
 .legendRule { width: 1px; height: 16px; background: var(--rule); }
 .legendBed { width: 20px; height: 6px; display: inline-block; border-radius: 1px; }
+/* the shape key (#253): a claim box and an argument pill in miniature */
+.legendClaim { width: 14px; height: 10px; display: inline-block; border: 1px solid var(--faint); border-radius: 2px; background: var(--paper-card); }
+.legendPill  { width: 18px; height: 10px; display: inline-block; border: 1px solid var(--faint); border-radius: 5px; background: var(--paper-sunk); }
 .legendEdge { width: 22px; height: 0; border-top: 1.4px solid; display: inline-block; }
 .legendEdge.dashed { border-top-style: dashed; }
 .legendEdge.dotted { border-top-style: dotted; }
