@@ -134,17 +134,13 @@ export default async function ClaimsIndex({
                     <span className="tag kind">{c.claim_type?.replace(/_/g, " ")}</span>
                   )}
                   {c.state !== "active" && <span className="tag">{c.state.replace(/_/g, " ")}</span>}
-                  <span style={{ marginLeft: "auto", display: "inline-flex", gap: ".6rem", alignItems: "center" }}>
+                  <span style={{ marginLeft: "auto" }}>
+                    {/* No numbers in this corner. Verdict confidence sat here
+                        as a bare figure and read as P(claim true) (#160); the
+                        raw cosine then did the same, a muted number fused with
+                        a muted meter. Rank order already carries relevance —
+                        the exact score meant nothing to readers. */}
                     <Importance value={c.importance} linkTo={claimHref} />
-                    {/* Verdict confidence used to sit here as a bare number and
-                        read as P(claim true); it now lives on the claim page,
-                        quietly labelled (#160). Search relevance stays: it is
-                        about the match, not the claim. */}
-                    {typeof c.similarity_score === "number" && (
-                      <span className="conf-num" title="search relevance">
-                        {c.similarity_score.toFixed(2)}
-                      </span>
-                    )}
                   </span>
                 </div>
               </div>

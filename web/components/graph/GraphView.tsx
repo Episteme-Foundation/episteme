@@ -10,7 +10,7 @@ import type {
 import type { DataSource } from "@/lib/data";
 import {
   CLAIM_TYPE_LABEL, RELATION, STATUS, STATUS_ORDER,
-  claimTypeMeta, decompositionNote, importanceLevel, IMPORTANCE, statusMeta,
+  claimTypeMeta, decompositionNote, statusMeta,
   nodeStatusMeta, UNASSESSED_META, VERDICT_CONFIDENCE_GLOSS, CREDENCE_GLOSS,
   DEFINED_IN, STEWARD_SOURCE, isAssumesRelation,
 } from "@/lib/ontology";
@@ -513,7 +513,6 @@ export function GraphView({
   const d = view.detail;
   const focusStatus = d.assessment?.status ?? null;
   const focusMeta = statusMeta(focusStatus);
-  const impLevel = importanceLevel(d.claim.importance);
   const argDesc = (argId: string | null): string | null =>
     (d.arguments ?? []).find((a) => a.id === argId)?.content ?? null;
   // Canonical text for every claim in the focus tree, so a written form's
@@ -554,20 +553,16 @@ export function GraphView({
                   unassessed
                 </Term>
               )}
-              {/* Verdict confidence is meta and easily misread as P(claim
-                  true); on the map it lives in the hover preview, labelled,
-                  not as a bare number beside the badge (#160). */}
-              {!view.partial && (
-                <Term
-                  gloss={`importance · ${IMPORTANCE[impLevel].label}: ${IMPORTANCE[impLevel].gloss}`}
-                  href={DEFINED_IN.importance}
-                  ariaLabel={`importance: ${IMPORTANCE[impLevel].label}`}
-                >
-                  <span className="imp-pips">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <span key={i} className={`imp-pip${i < IMPORTANCE[impLevel].pips ? " on" : ""}`} />
-                    ))}
-                  </span>
+              {/* Credence beside the badge, as on the claim page and the hover
+                  preview (#238): the reader's number, P(claim true), labelled
+                  with its word. Importance pips used to sit here and read as
+                  exactly this — an unlabelled meter next to a verdict. The
+                  importance band now lives on the claim page, worded. Verdict
+                  confidence stays meta and stays in the hover preview,
+                  labelled, never a bare number beside the badge (#160). */}
+              {d.assessment?.claim_credence != null && (
+                <Term gloss={CREDENCE_GLOSS} href={DEFINED_IN.confidence} align="start" className={styles.confNum}>
+                  credence {d.assessment.claim_credence.toFixed(2)}
                 </Term>
               )}
             </div>

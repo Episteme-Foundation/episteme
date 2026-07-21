@@ -33,24 +33,20 @@ export function Unassessed({ linkTo }: { linkTo?: string } = {}) {
   );
 }
 
-// Importance is rendered as a neutral five-pip meter, deliberately NOT coloured
-// by assessment status so it never competes with the verdict. The numeric value
-// and band live in the popover; `showLabel` adds the band name inline.
+// Importance is administrative — what the Steward assesses and decomposes
+// first — not a degree of belief, so it is carried by its band word, never a
+// meter. The old five-pip meter, unlabelled on cards and the map, read as
+// P(claim true): every other meter here measures belief. The numeric value
+// and band definition live in the popover.
 export function Importance({
-  value, showLabel = false, linkTo,
-}: { value: number | null | undefined; showLabel?: boolean; linkTo?: string }) {
+  value, linkTo,
+}: { value: number | null | undefined; linkTo?: string }) {
   if (typeof value !== "number") return null;
-  const level = importanceLevel(value);
-  const meta = IMPORTANCE[level];
+  const meta = IMPORTANCE[importanceLevel(value)];
   const gloss = `Importance ${value.toFixed(2)}, from 0 to 1 · ${meta.label}: ${meta.gloss}. The Steward assesses and decomposes higher-importance claims first.`;
   return (
-    <Term gloss={gloss} href={DEFINED_IN.importance} linkTo={linkTo} className="imp" ariaLabel={`importance: ${meta.label}`}>
-      <span className="imp-pips" aria-hidden>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={`imp-pip${i <= meta.pips ? " on" : ""}`} />
-        ))}
-      </span>
-      {showLabel && <span className="imp-label">{meta.label}</span>}
+    <Term gloss={gloss} href={DEFINED_IN.importance} linkTo={linkTo} className="imp-label" ariaLabel={`importance: ${meta.label}`}>
+      importance · {meta.label}
     </Term>
   );
 }

@@ -46,7 +46,7 @@ export function ClaimView({ detail }: { detail: ClaimDetail }) {
         {claim.state !== "active" && <span className="tag">{claim.state.replace(/_/g, " ")}</span>}
         {typeof claim.importance === "number" && (
           <span style={{ marginLeft: "auto" }}>
-            <Importance value={claim.importance} showLabel />
+            <Importance value={claim.importance} />
           </span>
         )}
       </div>

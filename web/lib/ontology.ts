@@ -283,12 +283,12 @@ export function importanceLevel(v: number): ImportanceLevel {
   return "peripheral";
 }
 
-export const IMPORTANCE: Record<ImportanceLevel, { label: string; pips: number; gloss: string }> = {
-  foundational: { label: "central",  pips: 5, gloss: "consequential and genuinely contested — a live crux" },
-  high:         { label: "major",    pips: 4, gloss: "real consequence within a domain, actively argued" },
-  medium:       { label: "notable",  pips: 3, gloss: "a contested point in a live debate (also the default before judging)" },
-  low:          { label: "minor",    pips: 2, gloss: "narrow or largely settled — cheap to get right" },
-  peripheral:   { label: "settled",  pips: 1, gloss: "uncontested — low even if much depends on it" },
+export const IMPORTANCE: Record<ImportanceLevel, { label: string; gloss: string }> = {
+  foundational: { label: "central",  gloss: "consequential and genuinely contested — a live crux" },
+  high:         { label: "major",    gloss: "real consequence within a domain, actively argued" },
+  medium:       { label: "notable",  gloss: "a contested point in a live debate (also the default before judging)" },
+  low:          { label: "minor",    gloss: "narrow or largely settled — cheap to get right" },
+  peripheral:   { label: "settled",  gloss: "uncontested — low even if much depends on it" },
 };
 
 // Minimum-importance bands for the browse/search filter. Each `min` is the lower
