@@ -193,6 +193,11 @@ export function GraphView({
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [edgesShown, setEdgesShown] = useState(true);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  // At narrow widths the preview renders as a fixed bottom sheet over the
+  // stage's lower edge; its measured height lets the map centre in the band
+  // that stays visible above it.
+  const previewRef = useRef<HTMLElement>(null);
+  const [sheetH, setSheetH] = useState(0);
 
   const focusId = view.detail.claim.id;
   const focusRef = useRef(focusId);
@@ -209,6 +214,23 @@ export function GraphView({
     setBox({ w: el.clientWidth, h: el.clientHeight });
     return () => ro.disconnect();
   }, []);
+
+  // ---- sheet measurement ------------------------------------------------------
+  // Touch has no hover, so on a phone every recentre also opens the preview
+  // sheet — the focus must therefore centre in the space above it, or each tap
+  // lands the clicked claim behind the sheet. Observed, not assumed: the sheet
+  // is as tall as its content, up to the CSS cap.
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!compact || embed || !el) {
+      setSheetH(0);
+      return;
+    }
+    const ro = new ResizeObserver(() => setSheetH(el.offsetHeight));
+    ro.observe(el);
+    setSheetH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, [preview, compact, embed]);
 
   // ---- recentring -------------------------------------------------------------
   const settle = useCallback((id: string, detail: ClaimDetail) => {
@@ -386,26 +408,34 @@ export function GraphView({
   const halfW = Math.max(-layout.bounds.minX, layout.bounds.maxX) + PAD;
   const contentW = halfW * 2;
   const contentH = layout.bounds.maxY - layout.bounds.minY + PAD * 2;
-  const fit = Math.min(1, box.w / contentW, box.h / contentH);
+  // The stage's usable height: on a phone the open preview sheet covers the
+  // stage's lower edge, so the world fits and centres in the band above it.
+  // Clamped so a tall sheet can never squeeze the band away entirely; zero on
+  // desktop and in embed, where the preview floats clear of the map.
+  const sheetOverlap = compact && !embed ? Math.min(sheetH, box.h * 0.55) : 0;
+  const availH = box.h - sheetOverlap;
+  const fit = Math.min(1, box.w / contentW, availH / contentH);
   const SCALE_FLOOR = compact ? 0.7 : 0.55; // below this, text stops being text
   const scale = Math.max(fit, SCALE_FLOOR);
   const scrollable = fit < SCALE_FLOOR - 1e-6;
   const spacerW = Math.max(contentW * scale, box.w);
   const spacerH = Math.max(contentH * scale, box.h);
   const tx = spacerW / 2; // world x=0 lands dead centre
-  const ty = (spacerH - contentH * scale) / 2 + (PAD - layout.bounds.minY) * scale;
+  const ty = Math.max(0, (availH - contentH * scale) / 2) + (PAD - layout.bounds.minY) * scale;
 
-  // When the stage does scroll, land each recentre with the focus card in view.
+  // When the stage does scroll, land each recentre with the focus card in view
+  // — in the band above the sheet, when one is open. Re-runs when the sheet
+  // opens, closes or resizes, so the focus stays in the visible band.
   useEffect(() => {
     const el = stageRef.current;
     if (!el || !scrollable) return;
     el.scrollTo({
       left: layout.focus.x * scale + tx - box.w / 2,
-      top: (layout.focus.y - 120) * scale + ty - box.h / 2,
+      top: (layout.focus.y - 120) * scale + ty - availH / 2,
       behavior: "smooth",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId, scrollable]);
+  }, [focusId, scrollable, sheetOverlap]);
 
   // Entering nodes fade in (exit/enter classes; moves are CSS-transitioned FLIPs).
   const prevKeys = useRef<Set<string>>(new Set());
@@ -835,6 +865,7 @@ export function GraphView({
             (links, buttons, and in-progress text selections excepted) */}
         {preview && (
           <aside
+            ref={previewRef}
             className={`${styles.preview}${
               preview.kind === "claim" && preview.claim && !preview.isFocus ? ` ${styles.previewClickable}` : ""
             }`}
